@@ -12,6 +12,7 @@ Hash = str  # A Type alias for identify claims
 ProofAttempt = List[Hash]
 
 ORANGE = (255, 165, 0)
+ROOT_HASH = "#root"
 
 
 def fmt(s, fg=None, bg=None):
@@ -85,20 +86,20 @@ class Sprig:
         self.language = language
         self.constraints = constraints
         self.challenges = {}
-        self.claims = {"": root_claim}
+        self.claims = {ROOT_HASH: root_claim}
         self.proof_attempts = {}
 
         self.language.validate_top_level(root_claim)
         self.language.validate_subclaims(root_claim, *sub_claims)
 
-        self._add_proof_attempt("", *sub_claims)
+        self._add_proof_attempt(ROOT_HASH, *sub_claims)
 
     def __str__(self):
         INDENT = " " * 4
 
         def claim_str(claim_hash: Hash):
             ret = ""
-            if claim_hash != "":
+            if claim_hash != ROOT_HASH:
                 # We don't want to draw the root here
                 claim = self.claims[claim_hash]
                 claim_s = fmt(claim.statement, claim.status.color())
@@ -116,13 +117,13 @@ class Sprig:
 
             return ret
 
-        root_claim = self.claims[""]
+        root_claim = self.claims[ROOT_HASH]
         return f"""
 SPRIG instance:
  - Language: {self.language}
  - Claimer: {root_claim.claimer}
  - Claim: {fmt(root_claim.statement, ORANGE)}
-{indent(claim_str(""), "   ")}"""
+{indent(claim_str(ROOT_HASH), "   ")}"""
 
     def _add_claim(self, claim: Claim) -> Hash:
         """Add a claim to the dictionnary of claims, returning the generated hash."""
@@ -155,7 +156,7 @@ SPRIG instance:
         claim.status = Status.CHALLENGED
 
     def answer(self, challenge: Hash, *sub_claims: Claim):
-        assert challenge in self.challenges or challenge == ""
+        assert challenge in self.challenges or challenge == ROOT_HASH
         claim = self.claims[challenge]
         assert claim.status == Status.CHALLENGED
         self.language.validate_subclaims(self.claims[challenge], *sub_claims)
@@ -163,7 +164,14 @@ SPRIG instance:
         self._add_proof_attempt(challenge, *sub_claims)
 
     def distribute_bets(self):
-        ...
+        now = time()
+        # we propagate status and bets repartition starting from the leaves
+        # so we move in DFS order
+        for claim in self._dfs():
+            pass
+
+    def _dfs(self, start=""):
+        pass
 
 
 class Claim:
