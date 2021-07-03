@@ -64,6 +64,7 @@ class Constraints:
 
 class Sprig:
     """An instance of the SPRIG protocol"""
+
     constraints: Constraints
     language: Language
     claims: Dict[Hash, Claim]
@@ -72,22 +73,25 @@ class Sprig:
 
     challenges: Dict[Hash, Address]
 
-    def __init__(self, language: Language, constraints: Constraints, root_claim: Claim, *sub_claims: Claim):
+    def __init__(
+        self,
+        language: Language,
+        constraints: Constraints,
+        root_claim: Claim,
+        *sub_claims: Claim,
+    ):
         """Start a new instance of the SPRIG protocol."""
 
         self.language = language
         self.constraints = constraints
         self.challenges = {}
-        self.claims = {
-            "": root_claim
-        }
+        self.claims = {"": root_claim}
         self.proof_attempts = {}
 
         self.language.validate_top_level(root_claim)
         self.language.validate_subclaims(root_claim, *sub_claims)
 
-        hashes = [self._add_claim(claim) for claim in sub_claims]
-        self._add_proof_attempt("", *hashes)
+        self._add_proof_attempt("", *sub_claims)
 
     def __str__(self):
         INDENT = " " * 4
@@ -108,11 +112,11 @@ class Sprig:
                 ret += f"Attempt {i + 1} by {self.claims[attempt[0]].claimer}:\n"
                 for claim in attempt:
                     claim_s = indent(claim_str(claim), INDENT)
-                    ret += "  - " + claim_s[len(INDENT):]
+                    ret += "  - " + claim_s[len(INDENT) :]
 
             return ret
 
-        root_claim = self.claims['']
+        root_claim = self.claims[""]
         return f"""
 SPRIG instance:
  - Language: {self.language}
@@ -129,34 +133,34 @@ SPRIG instance:
         self.claims[hash_] = claim
         return hash_
 
-    def _add_proof_attempt(self, root: Hash, *sub_claims: Hash):
-        """Add a proof attempt given a hash of a claim and all the hashes of its proof.
-
-        This doesn't check that the claim hashes are valid. They must have been created before with _add_claim()."""
+    def _add_proof_attempt(self, root: Hash, *sub_claims: Claim):
+        """Add a proof attempt given the of the claim it proves and the subclaims that build the proof."""
 
         if root not in self.proof_attempts:
-            # Create the list of proof attempts if it doesn't exist.
+            # Create the list of proof attempts if it doesn't exist yet.
             # We could have used a defaultdict, by I doubt can use defaultdicts on any blockchain.
             self.proof_attempts[root] = []
 
-        self.proof_attempts[root].append([*sub_claims])
+        hashes = [self._add_claim(claim) for claim in sub_claims]
+        self.proof_attempts[root].append(hashes)
 
     def challenge(self, skeptic: Address, claim_hash: Hash):
         assert claim_hash in self.claims, "The claim hash is not valid."
-        assert self.claims[claim_hash].status == Status.UNCHALLENGED, "This claim has already been challenged."
+        assert (
+            self.claims[claim_hash].status == Status.UNCHALLENGED
+        ), "This claim has already been challenged."
 
         self.challenges[claim_hash] = skeptic
         claim = self.claims[claim_hash]
         claim.status = Status.CHALLENGED
 
-    def answer(self, *sub_claims: Claim, challenge: Hash = ""):
+    def answer(self, challenge: Hash, *sub_claims: Claim):
         assert challenge in self.challenges or challenge == ""
         claim = self.claims[challenge]
         assert claim.status == Status.CHALLENGED
         self.language.validate_subclaims(self.claims[challenge], *sub_claims)
 
-        hashes = [self._add_claim(claim) for claim in sub_claims]
-        self._add_proof_attempt(challenge, *hashes)
+        self._add_proof_attempt(challenge, *sub_claims)
 
     def distribute_bets(self):
         ...
@@ -176,15 +180,17 @@ class Claim:
 
 
 class Language:
-
     def __str__(self):
         return self.__class__.__name__
 
-    def judge_low_level(self): ...
+    def judge_low_level(self):
+        raise NotImplementedError
 
-    def validate_subclaims(self, root: Claim, *subclaims: Claim): ...
+    def validate_subclaims(self, root: Claim, *subclaims: Claim):
+        raise NotImplementedError
 
-    def validate_top_level(self, initial_claim: Claim): ...
+    def validate_top_level(self, initial_claim: Claim):
+        raise NotImplementedError
 
 
 class TicTacToe(Language):
@@ -214,8 +220,12 @@ class TicTacToe(Language):
             assert win == prev_win, "The winner has changed."
 
             # Check that it correspond to a move from both players
-            assert grid.count("X") == prev_grid.count("X") + 1, "X did not play exactly once."
-            assert grid.count("O") == prev_grid.count("O") + 1, "Y did not play exactly once."
+            assert (
+                grid.count("X") == prev_grid.count("X") + 1
+            ), "X did not play exactly once."
+            assert (
+                grid.count("O") == prev_grid.count("O") + 1
+            ), "Y did not play exactly once."
 
             for cell, (a, b) in enumerate(zip(prev_grid, grid)):
                 # The new board extend the previous
@@ -224,11 +234,15 @@ class TicTacToe(Language):
 
                 # Find if the other player played here
                 if a == "." and b == turn:
-                    assert not move_covered[cell], f"Two claims cover the same move for {prev_turn}."
+                    assert not move_covered[
+                        cell
+                    ], f"Two claims cover the same move for {prev_turn}."
                     move_covered[cell] = True
 
         # Check that all possibilites have been checked
-        assert prev_grid.count(".") == sum(move_covered), f"Not all possibilities for {prev_turn} have been covered."
+        assert prev_grid.count(".") == sum(
+            move_covered
+        ), f"Not all possibilities for {prev_turn} have been covered."
 
     def validate_top_level(self, initial_claim: Claim):
         grid, turn, win = self.parse_board(initial_claim.statement)
@@ -267,43 +281,43 @@ if __name__ == "__main__":
         question_bounties=[1] * level,
     )
 
-    claim = Claim(
-        "Diego",
-        "...|XX.|... O plays X wins"
-    )
+    claim = Claim("Diego", "...|XX.|... O plays X wins")
 
     ctx = " O plays X wins"
-    sprig = Sprig(TicTacToe(), recommended_constraints, claim,
-                  Claim("Diego", "O..|XXX|..." + ctx),
-                  Claim("Diego", ".O.|XXX|..." + ctx),
-                  Claim("Diego", "..O|XXX|..." + ctx),
-                  Claim("Diego", "X..|XXO|..." + ctx),
-                  Claim("Diego", "...|XXX|O.." + ctx),
-                  Claim("Diego", "...|XXX|.O." + ctx),
-                  Claim("Diego", "...|XXX|..O" + ctx),
-                  )
+    sprig = Sprig(
+        TicTacToe(),
+        recommended_constraints,
+        claim,
+        Claim("Diego", "O..|XXX|..." + ctx),
+        Claim("Diego", ".O.|XXX|..." + ctx),
+        Claim("Diego", "..O|XXX|..." + ctx),
+        Claim("Diego", "X..|XXO|..." + ctx),
+        Claim("Diego", "...|XXX|O.." + ctx),
+        Claim("Diego", "...|XXX|.O." + ctx),
+        Claim("Diego", "...|XXX|..O" + ctx),
+    )
 
     sprig.challenge("Michael", "#4")
     sprig.challenge("Michael", "#2")
 
     sprig.answer(
+        "#4",
         Claim("Diego", "XO.|XXO|X.." + ctx),
         Claim("Diego", "XXO|XXO|..." + ctx),
         Claim("Diego", "X..|XXO|O.X" + ctx),
         Claim("Diego", "X..|XXO|XO." + ctx),
         Claim("Diego", "X..|XXO|X.O" + ctx),
-        challenge="#4"
     )
 
     sprig.challenge("Michael", "#9")
 
     sprig.answer(
+        "#4",
         Claim("Clément", "XO.|XXO|X.." + ctx),
         Claim("Clément", "X.O|XXO|X.." + ctx),
         Claim("Clément", "X..|XXO|O.X" + ctx),
         Claim("Clément", "X..|XXO|XO." + ctx),
         Claim("Clément", "X..|XXO|X.O" + ctx),
-        challenge="#4"
     )
 
     print(sprig)
