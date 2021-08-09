@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from enum import Enum
 from textwrap import indent
 from time import time
-from typing import Dict, List
+from typing import Dict, Iterator, List, Tuple
 
 Address = str  # A type alias to know when a str is the address of someone.
 Hash = str  # A Type alias for identify claims
@@ -43,6 +43,10 @@ class Status(Enum):
     REJECTED = 2
     UNCHALLENGED = 3
 
+    def decided(self):
+        """Whether the validity of the claim has been decided or not."""
+        return self in (Status.VALIDATED, Status.REJECTED)
+
     def color(self):
         return {
             Status.REJECTED: (255, 0, 0),
@@ -72,14 +76,14 @@ class Sprig:
     proof_attempts: Dict[Hash, List[ProofAttempt]]
     """A mapping from claims to a list of all proof attempts, where each one is a list of children claims."""
 
-    challenges: Dict[Hash, Address]
+    challenges: Dict[Hash, Challenge]
 
     def __init__(
-        self,
-        language: Language,
-        constraints: Constraints,
-        root_claim: Claim,
-        *sub_claims: Claim,
+            self,
+            language: Language,
+            constraints: Constraints,
+            root_claim: Claim,
+            *sub_claims: Claim,
     ):
         """Start a new instance of the SPRIG protocol."""
 
@@ -113,7 +117,7 @@ class Sprig:
                 ret += f"Attempt {i + 1} by {self.claims[attempt[0]].claimer}:\n"
                 for claim in attempt:
                     claim_s = indent(claim_str(claim), INDENT)
-                    ret += "  - " + claim_s[len(INDENT) :]
+                    ret += "  - " + claim_s[len(INDENT):]
 
             return ret
 
@@ -139,7 +143,7 @@ SPRIG instance:
 
         if root not in self.proof_attempts:
             # Create the list of proof attempts if it doesn't exist yet.
-            # We could have used a defaultdict, by I doubt can use defaultdicts on any blockchain.
+            # We could have used a defaultdict, but I doubt can use defaultdicts on any blockchain.
             self.proof_attempts[root] = []
 
         hashes = [self._add_claim(claim) for claim in sub_claims]
@@ -148,10 +152,10 @@ SPRIG instance:
     def challenge(self, skeptic: Address, claim_hash: Hash):
         assert claim_hash in self.claims, "The claim hash is not valid."
         assert (
-            self.claims[claim_hash].status == Status.UNCHALLENGED
+                self.claims[claim_hash].status == Status.UNCHALLENGED
         ), "This claim has already been challenged."
 
-        self.challenges[claim_hash] = skeptic
+        self.challenges[claim_hash] = Challenge(skeptic)
         claim = self.claims[claim_hash]
         claim.status = Status.CHALLENGED
 
@@ -163,15 +167,95 @@ SPRIG instance:
 
         self._add_proof_attempt(challenge, *sub_claims)
 
-    def distribute_bets(self):
+    def proof_attempt_status(self, attempt: List[Hash]):
+        """Compute the status of a proof attempt based on its claims."""
+
+        cannot_be_decided = False
+        for h in attempt:
+            status = self.claims[h].status 
+            if status is Status.REJECTED:
+                # If any claim is false, the proof attempt is instantly rejected.
+                return Status.REJECTED
+            elif not status.decided():
+                cannot_be_decided = True
+
+        # There is a claim that is either UNCHALLENGED or CHALLENGED,
+        # so the proof attempt cannot be closed thus stays CHALLENGED
+        if cannot_be_decided:
+            return Status.CHALLENGED
+
+        # All claims are VALIDATED, so this one too.
+        return Status.VALIDATED
+
+    def distribute_all_bets(self):
         now = time()
         # we propagate status and bets repartition starting from the leaves
         # so we move in DFS order
-        for claim in self._dfs():
-            pass
+        for hash, level in self._dfs():
+            self.distribute_bets(hash, level, now)
 
-    def _dfs(self, start=""):
-        pass
+    def distribute_bets(self, hash: Hash, level: int, now: int):
+        claim = self.claims[hash]
+        if claim.status in (Status.VALIDATED, Status.REJECTED):
+            # Nothing to do here, the bets have already been distributed.
+            return
+
+        elif claim.status in (Status.UNCHALLENGED):
+            if now > claim.time + self.constraints.time_for_questions:
+                # no question came, the proof is valid!
+                claim.status = Status.VALIDATED
+                # No bet distribution here, it is done downwards
+                # from the challenge that is closed.
+
+        elif claim.status is Status.CHALLENGED:
+            challenge = self.challenges[hash]
+            attempts = self.proof_attempts.get(hash, [])
+            last_interaction = max(challenge.time, *(claim.time for claim in attempts))
+
+            attempts_status = [self.proof_attempt_status(attempt) for attempt in attempts]
+
+            # If an attempt is validated, the claim is validated too.
+            for i, status in enumerate(attempts_status):
+                if status is Status.VALIDATED:
+                    # proof is correct! 
+                    claimer = self.claims[attempts[i][0]].claimer  
+                    # We used that all claims in an attempt have the same claimer.
+                    self.pay(claimer, self.constraints.question_bounties[level])
+                    claim.status = Status.VALIDATED
+                    return
+
+            # Otherwise, after the time elapsed
+            if now > last_interaction + self.constraints.time_for_answers:
+                # With one of the subclaims is still undecided, we need to wait.
+                if any(not status.decided() for status in attempts_status):
+                    return
+                else:  # Otherwise, all subclaims are rejected
+                    assert all(s is Status.REJECTED for s in attempts_status)
+
+                    claim.status = Status.REJECTED
+                    self.pay(challenge.skeptic, self.constraints.downstakes[level] + self.constraints.question_bounties[level])
+
+        else:
+            # Yes, I miss exaustive matching from Rust...
+            raise ValueError(f"Unkown status {claim.status} for {hash}")
+
+    # Helper functions
+
+    def _dfs(self, _start=ROOT_HASH, _level=None) -> Iterator[Tuple[Hash, int]]:
+        """Yield all the hashes of claims in the node tree with their corresponding levels, starting with the leaves.
+
+        Claims are always yielded after all their children are yielded."""
+
+        if _level is None:
+            _level = self.constraints.max_depth
+
+        for attempt in self.proof_attempts[_start]:
+            for hash in attempt:
+                yield from self._dfs(hash, _level-1)
+        yield (_start, _level)
+
+    def pay(self, who: Address, amount: int):
+        print(f"{who} gets a reward of {amount}.")
 
 
 class Claim:
@@ -185,6 +269,18 @@ class Claim:
         self.statement = statement
         self.time = time()
         self.status = Status.UNCHALLENGED
+
+
+class Challenge:
+    skeptic: Address
+    time: float
+
+    def __init__(self, skeptic):
+        self.skeptic = skeptic
+        self.time = time()
+
+    def __str__(self):
+        return self.skeptic
 
 
 class Language:
@@ -229,10 +325,10 @@ class TicTacToe(Language):
 
             # Check that it correspond to a move from both players
             assert (
-                grid.count("X") == prev_grid.count("X") + 1
+                    grid.count("X") == prev_grid.count("X") + 1
             ), "X did not play exactly once."
             assert (
-                grid.count("O") == prev_grid.count("O") + 1
+                    grid.count("O") == prev_grid.count("O") + 1
             ), "Y did not play exactly once."
 
             for cell, (a, b) in enumerate(zip(prev_grid, grid)):
@@ -275,7 +371,7 @@ def tree_str(iterable):
     return out
 
 
-if __name__ == "__main__":
+def main():
     MINUTES = 60
 
     level = 8
@@ -329,3 +425,7 @@ if __name__ == "__main__":
     )
 
     print(sprig)
+
+
+if __name__ == '__main__':
+    main()
