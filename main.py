@@ -4,7 +4,7 @@ import re
 from dataclasses import dataclass
 from enum import Enum
 from textwrap import indent
-from time import time
+# from time import time
 from typing import Dict, Iterator, List, Tuple
 
 Address = str  # A type alias to know when a str is the address of someone.
@@ -14,6 +14,12 @@ ProofAttempt = List[Hash]
 ORANGE = (255, 165, 0)
 ROOT_HASH = "#root"
 
+
+def time(increment=0, __now=[0]):
+    """Own time function for testing purpose"""
+    __now[0] += increment
+
+    return __now[0]
 
 def fmt(s, fg=None, bg=None):
     """
@@ -109,9 +115,9 @@ class Sprig:
                 claim_s = fmt(claim.statement, claim.status.color())
                 status = claim.status.name.title()
                 if claim_hash in self.challenges:
-                    ret = f"{claim_s} ({status} by {self.challenges[claim_hash]}) {claim_hash}\n"
+                    ret = f"{claim_s} ({status} by {self.challenges[claim_hash]}) {claim_hash} at {claim.time}\n"
                 else:
-                    ret = f"{claim_s} ({status}) {claim_hash}\n"
+                    ret = f"{claim_s} ({status}) {claim_hash} at {claim.time}\n"
 
             for i, attempt in enumerate(self.proof_attempts.get(claim_hash, [])):
                 ret += f"Attempt {i + 1} by {self.claims[attempt[0]].claimer}:\n"
@@ -200,7 +206,7 @@ SPRIG instance:
             # Nothing to do here, the bets have already been distributed.
             return
 
-        elif claim.status in (Status.UNCHALLENGED):
+        elif claim.status is Status.UNCHALLENGED:
             if now > claim.time + self.constraints.time_for_questions:
                 # no question came, the proof is valid!
                 claim.status = Status.VALIDATED
@@ -210,7 +216,7 @@ SPRIG instance:
         elif claim.status is Status.CHALLENGED:
             challenge = self.challenges[hash]
             attempts = self.proof_attempts.get(hash, [])
-            last_interaction = max(challenge.time, *(claim.time for claim in attempts))
+            last_interaction = max((self.claims[h].time for attempt in attempts for h in attempt), default=challenge.time)
 
             attempts_status = [self.proof_attempt_status(attempt) for attempt in attempts]
 
@@ -249,13 +255,16 @@ SPRIG instance:
         if _level is None:
             _level = self.constraints.max_depth
 
-        for attempt in self.proof_attempts[_start]:
+        for attempt in self.proof_attempts.get(_start, []):
             for hash in attempt:
                 yield from self._dfs(hash, _level-1)
         yield (_start, _level)
 
     def pay(self, who: Address, amount: int):
-        print(f"{who} gets a reward of {amount}.")
+        txt = f" >>> {who} gets a reward of {amount}. <<< "
+        space = " " * len(txt) 
+        for t in (space, txt, space):
+            print(fmt(t, bg=(12, 34, 56)))
 
 
 class Claim:
@@ -270,6 +279,8 @@ class Claim:
         self.time = time()
         self.status = Status.UNCHALLENGED
 
+    def __str__(self):
+        return fmt(self.statement, fg=self.status.color()) + f" ({self.status}) at {self.time} by {self.claimer}"
 
 class Challenge:
     skeptic: Address
@@ -374,12 +385,18 @@ def tree_str(iterable):
 def main():
     MINUTES = 60
 
+    def time_passes(amount=1):
+        print("\n\n")
+        time(amount)
+        sprig.distribute_all_bets()
+        print(sprig)
+
     level = 8
     recommended_constraints = Constraints(
         max_depth=level,
         max_length=1000,
-        time_for_questions=2 * MINUTES,
-        time_for_answers=2 * MINUTES,
+        time_for_questions=2,
+        time_for_answers=2,
         upstakes=[1] * level,
         downstakes=[1] * level,
         question_bounties=[1] * level,
@@ -401,8 +418,13 @@ def main():
         Claim("Diego", "...|XXX|..O" + ctx),
     )
 
+    print(sprig)
+    time_passes()
+
     sprig.challenge("Michael", "#4")
     sprig.challenge("Michael", "#2")
+
+    time_passes()
 
     sprig.answer(
         "#4",
@@ -413,7 +435,11 @@ def main():
         Claim("Diego", "X..|XXO|X.O" + ctx),
     )
 
+    time_passes()
+
     sprig.challenge("Michael", "#9")
+
+    time_passes()
 
     sprig.answer(
         "#4",
@@ -424,7 +450,9 @@ def main():
         Claim("Clément", "X..|XXO|X.O" + ctx),
     )
 
-    print(sprig)
+    time_passes()
+    time_passes()
+    time_passes()
 
 
 if __name__ == '__main__':
