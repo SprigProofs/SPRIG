@@ -1,12 +1,17 @@
 from __future__ import annotations
 
+import dataclasses
+from operator import attrgetter
+from pprint import pprint
 import re
 from dataclasses import dataclass
 from enum import Enum
 from textwrap import indent
+import json
 
 # from time import time
 from typing import Dict, Iterator, List, Tuple
+
 
 Address = str  # A type alias to know when a str is the address of someone.
 Hash = str  # A Type alias for identify claims
@@ -16,11 +21,27 @@ ORANGE = (255, 165, 0)
 ROOT_HASH = "#root"
 
 
-def time(increment=0, __now=[0]):
+def now(increment=0, __now=[0]):
     """Own time function for testing purpose"""
     __now[0] += increment
 
     return __now[0]
+
+
+def get(iterator, **kwargs):
+    """Return the first object in iterator that has the correct values for each attribute name in kwargs."""
+    getter = attrgetter(*kwargs.keys())
+    values = tuple(kwargs.values())
+    for obj in iterator:
+        if getter(obj) == values:
+            return obj
+
+
+def all_subclasses(klass: type) -> Iterator[type]:
+    """Yield all subclasses of a class."""
+    for k in klass.__subclasses__():
+        yield from all_subclasses(k)
+    yield klass
 
 
 def fmt(s, fg=None, bg=None):
@@ -75,6 +96,7 @@ class Constraints:
     question_bounties: List[int]
 
 
+@dataclass()
 class Sprig:
     """An instance of the SPRIG protocol"""
 
@@ -86,8 +108,9 @@ class Sprig:
 
     challenges: Dict[Hash, Challenge]
 
-    def __init__(
-        self,
+    @classmethod
+    def start(
+        cls,
         language: Language,
         constraints: Constraints,
         root_claim: Claim,
@@ -95,16 +118,14 @@ class Sprig:
     ):
         """Start a new instance of the SPRIG protocol."""
 
-        self.language = language
-        self.constraints = constraints
-        self.challenges = {}
-        self.claims = {ROOT_HASH: root_claim}
-        self.proof_attempts = {}
+        self = cls(constraints, language, {ROOT_HASH: root_claim}, {}, {})
 
         self.language.validate_top_level(root_claim)
         self.language.validate_subclaims(root_claim, *sub_claims)
 
         self._add_proof_attempt(ROOT_HASH, *sub_claims)
+
+        return self
 
     def __str__(self):
         INDENT = " " * 4
@@ -196,11 +217,11 @@ SPRIG instance:
         return Status.VALIDATED
 
     def distribute_all_bets(self):
-        now = time()
+        now_ = now()
         # we propagate status and bets repartition starting from the leaves
         # so we move in DFS order
         for hash, level in self._dfs():
-            self.distribute_bets(hash, level, now)
+            self.distribute_bets(hash, level, now_)
 
     def distribute_bets(self, hash: Hash, level: int, now: int):
         claim = self.claims[hash]
@@ -256,8 +277,6 @@ SPRIG instance:
             # Yes, I miss exaustive matching from Rust...
             raise ValueError(f"Unkown status {claim.status} for {hash}")
 
-    # Helper functions
-
     def _dfs(self, _start=ROOT_HASH, _level=None) -> Iterator[Tuple[Hash, int]]:
         """Yield all the hashes of claims in the node tree with their corresponding levels, starting with the leaves.
 
@@ -277,18 +296,73 @@ SPRIG instance:
         for t in (space, txt, space):
             print(fmt(t, bg=(12, 34, 56)))
 
+    # Serialisation
 
+    def dumps(self):
+        base = dataclasses.asdict(self)
+        # return {
+        #     "language": self.language.__class__.__name__,
+        #     "constraints": dataclasses.asdict(self.constraints),
+        #     "claims": {
+        #         h: dataclasses.asdict(claim)
+        #         for h, claim in self.claims.items()
+        #     },
+        #     "proof_attempts": self.proof_attempts,
+        #     "challenges": {
+        #         h: dataclasses.asdict(challenge)
+        #         for h, challenge in self.challenges.items()
+        #     }
+        # }
+
+        class CustomEncoder(json.JSONEncoder):
+            def default(self, o):
+                if isinstance(o, Status):
+                    return {"name": o.name, "__class__": "Status"}
+                if isinstance(o, Language):
+                    return {"__class__": o.__class__.__name__}
+                return o
+
+        return json.dumps(base, cls=CustomEncoder)
+
+    @classmethod
+    def loads(cls, s: str):
+        def object_hook(dct: dict):
+            if "__class__" in dct:
+                klass = dct.pop("__class__")
+                if klass == "Status":
+                    return Status[dct["name"]]
+
+                lang = get(all_subclasses(Language), __name__=klass)
+                if lang is not None:
+                    return lang(**dct)
+
+            return dct
+
+        data = json.loads(s, object_hook=object_hook)
+
+        constraints = Constraints(**data["constraints"])
+        claims = {h: Claim(**claim) for h, claim in data["claims"].items()}
+        challenges = {
+            h: Challenge(**challenge) for h, challenge in data["challenges"].items()
+        }
+
+        return cls(
+            constraints, data["language"], claims, data["proof_attempts"], challenges
+        )
+
+
+@dataclass()
 class Claim:
     claimer: Address
     time: float
     statement: str
     status: Status
 
-    def __init__(self, claimer, statement):
+    def __init__(self, claimer, statement, *, time=None, status=None):
         self.claimer = claimer
         self.statement = statement
-        self.time = time()
-        self.status = Status.UNCHALLENGED
+        self.time = now() if time is None else time
+        self.status = Status.UNCHALLENGED if status is None else status
 
     def __str__(self):
         return (
@@ -297,13 +371,14 @@ class Claim:
         )
 
 
+@dataclass()
 class Challenge:
     skeptic: Address
     time: float
 
-    def __init__(self, skeptic):
+    def __init__(self, skeptic, *, time=None):
         self.skeptic = skeptic
-        self.time = time()
+        self.time = now() if time is None else time
 
     def __str__(self):
         return self.skeptic
@@ -402,7 +477,7 @@ def main():
 
     def time_passes(amount=1):
         print("\n\n")
-        time(amount)
+        now(amount)
         sprig.distribute_all_bets()
         print(sprig)
 
@@ -418,10 +493,9 @@ def main():
     )
 
     claim = Claim("Diego", "...|XX.|... O plays X wins")
-    claim = Claim("Diego", "...|XX.|... O plays X wins")
 
     ctx = " O plays X wins"
-    sprig = Sprig(
+    sprig = Sprig.start(
         TicTacToe(),
         recommended_constraints,
         claim,
@@ -469,6 +543,11 @@ def main():
     time_passes()
     time_passes()
     time_passes()
+
+    print(sprig.dumps())
+    pprint(json.loads(sprig.dumps()))
+    new = Sprig.loads(sprig.dumps())
+    print(new)
 
 
 if __name__ == "__main__":
