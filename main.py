@@ -4,6 +4,7 @@ import re
 from dataclasses import dataclass
 from enum import Enum
 from textwrap import indent
+
 # from time import time
 from typing import Dict, Iterator, List, Tuple
 
@@ -20,6 +21,7 @@ def time(increment=0, __now=[0]):
     __now[0] += increment
 
     return __now[0]
+
 
 def fmt(s, fg=None, bg=None):
     """
@@ -85,11 +87,11 @@ class Sprig:
     challenges: Dict[Hash, Challenge]
 
     def __init__(
-            self,
-            language: Language,
-            constraints: Constraints,
-            root_claim: Claim,
-            *sub_claims: Claim,
+        self,
+        language: Language,
+        constraints: Constraints,
+        root_claim: Claim,
+        *sub_claims: Claim,
     ):
         """Start a new instance of the SPRIG protocol."""
 
@@ -123,7 +125,7 @@ class Sprig:
                 ret += f"Attempt {i + 1} by {self.claims[attempt[0]].claimer}:\n"
                 for claim in attempt:
                     claim_s = indent(claim_str(claim), INDENT)
-                    ret += "  - " + claim_s[len(INDENT):]
+                    ret += "  - " + claim_s[len(INDENT) :]
 
             return ret
 
@@ -158,7 +160,7 @@ SPRIG instance:
     def challenge(self, skeptic: Address, claim_hash: Hash):
         assert claim_hash in self.claims, "The claim hash is not valid."
         assert (
-                self.claims[claim_hash].status == Status.UNCHALLENGED
+            self.claims[claim_hash].status == Status.UNCHALLENGED
         ), "This claim has already been challenged."
 
         self.challenges[claim_hash] = Challenge(skeptic)
@@ -178,7 +180,7 @@ SPRIG instance:
 
         cannot_be_decided = False
         for h in attempt:
-            status = self.claims[h].status 
+            status = self.claims[h].status
             if status is Status.REJECTED:
                 # If any claim is false, the proof attempt is instantly rejected.
                 return Status.REJECTED
@@ -216,15 +218,20 @@ SPRIG instance:
         elif claim.status is Status.CHALLENGED:
             challenge = self.challenges[hash]
             attempts = self.proof_attempts.get(hash, [])
-            last_interaction = max((self.claims[h].time for attempt in attempts for h in attempt), default=challenge.time)
+            last_interaction = max(
+                (self.claims[h].time for attempt in attempts for h in attempt),
+                default=challenge.time,
+            )
 
-            attempts_status = [self.proof_attempt_status(attempt) for attempt in attempts]
+            attempts_status = [
+                self.proof_attempt_status(attempt) for attempt in attempts
+            ]
 
             # If an attempt is validated, the claim is validated too.
             for i, status in enumerate(attempts_status):
                 if status is Status.VALIDATED:
-                    # proof is correct! 
-                    claimer = self.claims[attempts[i][0]].claimer  
+                    # proof is correct!
+                    claimer = self.claims[attempts[i][0]].claimer
                     # We used that all claims in an attempt have the same claimer.
                     self.pay(claimer, self.constraints.question_bounties[level])
                     claim.status = Status.VALIDATED
@@ -239,7 +246,11 @@ SPRIG instance:
                     assert all(s is Status.REJECTED for s in attempts_status)
 
                     claim.status = Status.REJECTED
-                    self.pay(challenge.skeptic, self.constraints.downstakes[level] + self.constraints.question_bounties[level])
+                    self.pay(
+                        challenge.skeptic,
+                        self.constraints.downstakes[level]
+                        + self.constraints.question_bounties[level],
+                    )
 
         else:
             # Yes, I miss exaustive matching from Rust...
@@ -257,12 +268,12 @@ SPRIG instance:
 
         for attempt in self.proof_attempts.get(_start, []):
             for hash in attempt:
-                yield from self._dfs(hash, _level-1)
+                yield from self._dfs(hash, _level - 1)
         yield (_start, _level)
 
     def pay(self, who: Address, amount: int):
         txt = f" >>> {who} gets a reward of {amount}. <<< "
-        space = " " * len(txt) 
+        space = " " * len(txt)
         for t in (space, txt, space):
             print(fmt(t, bg=(12, 34, 56)))
 
@@ -280,7 +291,11 @@ class Claim:
         self.status = Status.UNCHALLENGED
 
     def __str__(self):
-        return fmt(self.statement, fg=self.status.color()) + f" ({self.status}) at {self.time} by {self.claimer}"
+        return (
+            fmt(self.statement, fg=self.status.color())
+            + f" ({self.status}) at {self.time} by {self.claimer}"
+        )
+
 
 class Challenge:
     skeptic: Address
@@ -336,10 +351,10 @@ class TicTacToe(Language):
 
             # Check that it correspond to a move from both players
             assert (
-                    grid.count("X") == prev_grid.count("X") + 1
+                grid.count("X") == prev_grid.count("X") + 1
             ), "X did not play exactly once."
             assert (
-                    grid.count("O") == prev_grid.count("O") + 1
+                grid.count("O") == prev_grid.count("O") + 1
             ), "Y did not play exactly once."
 
             for cell, (a, b) in enumerate(zip(prev_grid, grid)):
@@ -403,6 +418,7 @@ def main():
     )
 
     claim = Claim("Diego", "...|XX.|... O plays X wins")
+    claim = Claim("Diego", "...|XX.|... O plays X wins")
 
     ctx = " O plays X wins"
     sprig = Sprig(
@@ -455,5 +471,5 @@ def main():
     time_passes()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
