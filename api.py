@@ -5,6 +5,7 @@ from fastapi import FastAPI
 import sprig
 
 DATA = Path(__file__).parent / "data"
+DATA.mkdir(exist_ok=True)
 USERS = DATA / "user.json"
 USERS.touch()
 
