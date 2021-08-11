@@ -158,6 +158,24 @@ SPRIG instance:
  - Claim: {fmt(root_claim.statement, ORANGE)}
 {indent(claim_str(ROOT_HASH), "   ")}"""
 
+    @property
+    def open_challenge_count(self):
+        """Numper of claim that are challenged and not resolved yet"""
+        return sum(
+            1
+            for challenge in self.challenges
+            if self.claims[challenge].status is Status.CHALLENGED
+        )
+
+    @property
+    def unchallenged_claim_count(self):
+        """Numper of claim that are unchallenged."""
+        return sum(
+            1
+            for challenge in self.challenges
+            if self.claims[challenge].status is Status.UNCHALLENGED
+        )
+
     def _add_claim(self, claim: Claim) -> Hash:
         """Add a claim to the dictionnary of claims, returning the generated hash."""
 
@@ -385,8 +403,17 @@ class Challenge:
 
 
 class Language:
+    ID = None
+    REGISTER = {}
+
     def __str__(self):
         return self.__class__.__name__
+
+    def __init_subclass__(cls, **kwargs):
+        if cls.ID is None:
+            cls.ID = cls.__name__
+
+        Language.REGISTER[cls.ID] = cls
 
     def judge_low_level(self):
         raise NotImplementedError
@@ -399,6 +426,7 @@ class Language:
 
 
 class TicTacToe(Language):
+
     RE_BOARD = re.compile(r"[.XO]{3}\|[.XO]{3}\|[.XO]{3} ([XO]) plays ([.XO]) wins")
 
     def parse_board(self, board):

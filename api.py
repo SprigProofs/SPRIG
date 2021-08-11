@@ -1,4 +1,12 @@
-from fastapi import *
+from pathlib import Path
+
+from fastapi import FastAPI
+
+import sprig
+
+DATA = Path(__file__).parent / "data"
+USERS = DATA / "user.json"
+USERS.touch()
 
 api = FastAPI()
 
@@ -6,6 +14,27 @@ api = FastAPI()
 @api.get("/instances")
 def get_instances_list():
     """Return a dictionnary of all the SPRIG instances along with short details."""
+    instances = {}
+    for file in DATA.glob("*.json"):
+        if file.stem == "users":
+            continue
+
+        data = sprig.Sprig.loads(file.read_text())
+        instances[file.stem] = {
+            "constraints": data.constraints,
+            "language": data.language.ID,
+            "root_claim": data.claims[sprig.ROOT_HASH],
+            "claim_count": len(data.claims),
+            "challenge_count": data.open_challenge_count,
+            "unchallenged_count": data.unchallenged_claim_count,
+        }
+
+    return instances
+
+
+@api.post("/instances")
+def add_new_instance():
+    """Start a new instance of the sprig protocol."""
     ...
 
 
