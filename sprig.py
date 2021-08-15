@@ -32,6 +32,11 @@ def get(iterator, **kwargs):
     """Return the first object in iterator that has the correct values for each attribute name in kwargs."""
     getter = attrgetter(*kwargs.keys())
     values = tuple(kwargs.values())
+
+    # attrgetter does not return a tuple in this case.
+    if len(values) == 1:
+        values = values[0]
+
     for obj in iterator:
         if getter(obj) == values:
             return obj
@@ -67,10 +72,10 @@ def fmt(s, fg=None, bg=None):
 
 
 class Status(Enum):
-    CHALLENGED = 0
-    VALIDATED = 1
-    REJECTED = 2
-    UNCHALLENGED = 3
+    CHALLENGED = "challenged"
+    VALIDATED = "validated"
+    REJECTED = "rejected"
+    UNCHALLENGED = "unchallenged"
 
     def decided(self):
         """Whether the validity of the claim has been decided or not."""
@@ -85,8 +90,35 @@ class Status(Enum):
         }[self]
 
 
+class AbstractConstraints:
+    """
+    Abstract base class for all constraints types.
+
+    Its purpose is *for now* only to register and load
+    the correct constraints types.
+    """
+
+    ID = None
+    REGISTER = {}
+
+    def __init_subclass__(cls, **kwargs):
+        """Registers the subclasses in REGISTER with their class name as key or ID if defined."""
+
+        # Note: This code is duplicated with Language
+        id_ = cls.__name__ if cls.ID is None else cls.ID
+        assert id_ not in AbstractConstraints.REGISTER
+        AbstractConstraints.REGISTER[id_] = cls
+
+    @staticmethod
+    def load(**data):
+        id_ = data.pop("type")
+        cls = AbstractConstraints.REGISTER[id_]
+        print(cls)
+        return cls(**data)
+
+
 @dataclass
-class Constraints:
+class Constraints(AbstractConstraints):
     max_depth: int
     max_length: int
     time_for_questions: int
@@ -94,6 +126,19 @@ class Constraints:
     upstakes: List[int]
     downstakes: List[int]
     question_bounties: List[int]
+
+
+class DefaultConstraints(Constraints):
+    def __init__(self):
+        super().__init__(
+            max_depth=10,
+            max_length=1000,
+            time_for_questions=2,
+            time_for_answers=2,
+            upstakes=(1,) * 10,
+            downstakes=(1,) * 10,
+            question_bounties=(1,) * 10,
+        )
 
 
 @dataclass()
@@ -345,6 +390,7 @@ SPRIG instance:
     @classmethod
     def loads(cls, s: str):
         def object_hook(dct: dict):
+            print(dct)
             if "__class__" in dct:
                 klass = dct.pop("__class__")
                 if klass == "Status":
@@ -353,6 +399,9 @@ SPRIG instance:
                 lang = get(all_subclasses(Language), __name__=klass)
                 if lang is not None:
                     return lang(**dct)
+
+                print(dct)
+                raise ValueError()
 
             return dct
 
@@ -403,17 +452,28 @@ class Challenge:
 
 
 class Language:
-    ID = None
     REGISTER = {}
 
+    @classmethod
+    def name(cls):
+        return cls.__name__
+
     def __str__(self):
-        return self.__class__.__name__
+        return self.name()
 
     def __init_subclass__(cls, **kwargs):
-        if cls.ID is None:
-            cls.ID = cls.__name__
+        """Registers the subclasses in REGISTER with their class name as key or ID if defined."""
 
-        Language.REGISTER[cls.ID] = cls
+        # Note: This code is duplicated with AbstractConstraints
+        id_ = cls.name()
+        assert id_ not in Language.REGISTER
+        Language.REGISTER[id_] = cls
+
+    @staticmethod
+    def load(**data):
+        id_ = data.pop("type")
+        cls = Language.REGISTER[id_]
+        return cls(**data)
 
     def judge_low_level(self):
         raise NotImplementedError
