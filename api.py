@@ -1,6 +1,5 @@
 import json
 from contextlib import contextmanager
-from http import HTTPStatus
 from pathlib import Path
 from typing import List
 
@@ -71,7 +70,7 @@ def get_instances_list():
         data = sprig.Sprig.loads(file.read_text())
         instances[file.stem] = {
             "constraints": data.constraints,
-            "language": data.language.name(),
+            "language": data.language.name,
             "root_claim": data.claims[sprig.ROOT_HASH],
             "claim_count": len(data.claims),
             "challenge_count": data.open_challenge_count,

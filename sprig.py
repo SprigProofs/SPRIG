@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from operator import attrgetter
 from pprint import pprint
-import re
 from enum import Enum
 from textwrap import indent
 import json
@@ -11,7 +10,7 @@ import json
 from typing import Dict, Iterator, List, Tuple
 
 # Drop in replacement for dataclass that works better with fastapi
-from pydantic import dataclasses
+import dataclasses
 from pydantic.dataclasses import dataclass
 
 
@@ -142,6 +141,94 @@ class DefaultConstraints(Constraints):
             downstakes=(1,) * 10,
             question_bounties=(1,) * 10,
         )
+
+
+@dataclass
+class Claim:
+    claimer: Address
+    time: float
+    statement: str
+    status: Status
+
+    def __init__(self, claimer, statement, *, time=None, status=None):
+        self.claimer = claimer
+        self.statement = statement
+        self.time = now() if time is None else time
+        if status is None:
+            self.status = Status.UNCHALLENGED
+        elif isinstance(status, str):
+            self.status = Status(status.lower())
+        else:
+            self.status = status
+
+    def __str__(self):
+        return (
+            fmt(self.statement, fg=self.status.color())
+            + f" ({self.status}) at {self.time} by {self.claimer}"
+        )
+
+
+@dataclass
+class Challenge:
+    skeptic: Address
+    time: float
+
+    def __init__(self, skeptic, *, time=None):
+        self.skeptic = skeptic
+        self.time = now() if time is None else time
+
+    def __str__(self):
+        return self.skeptic
+
+
+class Language(str):
+    """
+    The base class for all languages.
+
+    Languages and be loaded via Language.load automaticaly,
+    as long as they are loaded in the interpreter (imported).
+
+    Languages are supposed to be very lght classes containing almost no data,
+    but describe the rules of a specific game. Those rules are implemented
+    in three methods:
+        - validate_top_level: validate the initial claim.
+        - validate_subclaims: verify the coherence of proof attempts.
+        - judge_low_level: machine level verification of a claim.
+
+    A Language is identified with its class name.
+    """
+
+    REGISTER = {}
+
+    def __str__(self):
+        return self.name
+
+    def __init_subclass__(cls, **kwargs):
+        """Registers the subclasses in REGISTER with their class name as key."""
+
+        # Note: This code is duplicated with AbstractConstraints
+        id_ = cls.__name__
+        cls.name = cls.__name__
+        assert id_ not in Language.REGISTER
+        Language.REGISTER[id_] = cls
+
+    @staticmethod
+    def load(**data):
+        id_ = data.pop("type")
+        cls = Language.REGISTER[id_]
+        return cls(**data)
+
+    def dump(self):
+        return {"__class__": self.name, **self.__dict__}
+
+    def judge_low_level(self):
+        raise NotImplementedError
+
+    def validate_subclaims(self, root: "Claim", *subclaims: "Claim"):
+        raise NotImplementedError
+
+    def validate_top_level(self, initial_claim: "Claim"):
+        raise NotImplementedError
 
 
 @dataclass
@@ -436,135 +523,6 @@ SPRIG instance:
         )
 
 
-@dataclass()
-class Claim:
-    claimer: Address
-    time: float
-    statement: str
-    status: Status
-
-    def __init__(self, claimer, statement, *, time=None, status=None):
-        self.claimer = claimer
-        self.statement = statement
-        self.time = now() if time is None else time
-        if status is None:
-            self.status = Status.UNCHALLENGED
-        elif isinstance(status, str):
-            self.status = Status(status.lower())
-        else:
-            self.status = status
-
-    def __str__(self):
-        return (
-            fmt(self.statement, fg=self.status.color())
-            + f" ({self.status}) at {self.time} by {self.claimer}"
-        )
-
-
-@dataclass()
-class Challenge:
-    skeptic: Address
-    time: float
-
-    def __init__(self, skeptic, *, time=None):
-        self.skeptic = skeptic
-        self.time = now() if time is None else time
-
-    def __str__(self):
-        return self.skeptic
-
-
-class Language:
-    REGISTER = {}
-
-    @classmethod
-    def name(cls):
-        return cls.__name__
-
-    def __str__(self):
-        return self.name()
-
-    def __init_subclass__(cls, **kwargs):
-        """Registers the subclasses in REGISTER with their class name as key or ID if defined."""
-
-        # Note: This code is duplicated with AbstractConstraints
-        id_ = cls.name()
-        assert id_ not in Language.REGISTER
-        Language.REGISTER[id_] = cls
-
-    @staticmethod
-    def load(**data):
-        id_ = data.pop("type")
-        cls = Language.REGISTER[id_]
-        return cls(**data)
-
-    def judge_low_level(self):
-        raise NotImplementedError
-
-    def validate_subclaims(self, root: Claim, *subclaims: Claim):
-        raise NotImplementedError
-
-    def validate_top_level(self, initial_claim: Claim):
-        raise NotImplementedError
-
-
-class TicTacToe(Language):
-
-    RE_BOARD = re.compile(r"[.XO]{3}\|[.XO]{3}\|[.XO]{3} ([XO]) plays ([.XO]) wins")
-
-    def parse_board(self, board):
-        match = self.RE_BOARD.match(board)
-
-        assert match, "Invalid board format."
-
-        turn = match.group(1)
-        wins = match.group(2)
-        grid = board[:3] + board[4:7] + board[8:11]
-
-        return grid, turn, wins
-
-    def judge_low_level(self):
-        return True
-
-    def validate_subclaims(self, root: Claim, *subclaims: Claim):
-        move_covered = [False] * 9
-        prev_grid, prev_turn, prev_win = self.parse_board(root.statement)
-        for claim in subclaims:
-            grid, turn, win = self.parse_board(claim.statement)
-
-            assert turn == prev_turn, "The turn has changed."
-            assert win == prev_win, "The winner has changed."
-
-            # Check that it correspond to a move from both players
-            assert (
-                grid.count("X") == prev_grid.count("X") + 1
-            ), "X did not play exactly once."
-            assert (
-                grid.count("O") == prev_grid.count("O") + 1
-            ), "Y did not play exactly once."
-
-            for cell, (a, b) in enumerate(zip(prev_grid, grid)):
-                # The new board extend the previous
-                if a in "XO":
-                    assert a == b, "New grid is incompatible with previous grid."
-
-                # Find if the other player played here
-                if a == "." and b == turn:
-                    assert not move_covered[
-                        cell
-                    ], f"Two claims cover the same move for {prev_turn}."
-                    move_covered[cell] = True
-
-        # Check that all possibilites have been checked
-        assert prev_grid.count(".") == sum(
-            move_covered
-        ), f"Not all possibilities for {prev_turn} have been covered."
-
-    def validate_top_level(self, initial_claim: Claim):
-        grid, turn, win = self.parse_board(initial_claim.statement)
-        assert turn != win
-
-
 def tree_str(iterable):
     # For future reference for printing tree.
     if not iterable:
@@ -584,6 +542,8 @@ def tree_str(iterable):
 
 
 def main():
+    from languages import TicTacToe
+
     MINUTES = 60
 
     def time_passes(amount=1):
