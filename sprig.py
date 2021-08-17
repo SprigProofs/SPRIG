@@ -128,6 +128,21 @@ class Constraints(AbstractConstraints):
     downstakes: List[int]
     question_bounties: List[int]
 
+    def pay_to_challenge(self, skeptik, challenge, claim, bank):
+        ...
+
+    def pay_to_answer(self, claim, claimer, bank):
+        ...
+
+    def pay_for_machine_verification(self, claimer, bank):
+        ...
+
+    def pay_claim_validated(self, claimer, claim, bank):
+        ...
+
+    def pay_challenge_unanswered(self, skeptic, challenge, claim, bank):
+        ...
+
 
 @dataclass
 class DefaultConstraints(Constraints):
