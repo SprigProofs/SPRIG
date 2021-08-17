@@ -1,9 +1,12 @@
+import json
+from contextlib import contextmanager
 from http import HTTPStatus
 from pathlib import Path
 from typing import List
 
-import pydantic
 from fastapi import FastAPI, HTTPException
+from fastapi.params import Depends
+from pydantic import BaseModel
 
 import sprig
 
@@ -37,8 +40,26 @@ def save(instance: sprig.Sprig, hash_: str):
     path_from_hash(hash_).write_text(instance.dumps())
 
 
-def load(hash_: str):
-    return sprig.Sprig.loads(path_from_hash(hash_).read_text())
+def load(instance_hash: str) -> sprig.Sprig:
+    return sprig.Sprig.loads(path_from_hash(instance_hash).read_text())
+
+
+@contextmanager
+def load_users():
+    user_dict = json.loads(USERS.read_text() or "{}")
+    try:
+        yield user_dict
+    finally:
+        # Todo: do we really want to always save it on error ?
+        USERS.write_text(json.dumps(user_dict))
+
+
+class SprigInitData(BaseModel):
+    language: dict
+    constraints: dict
+    claimer: sprig.Address
+    root_claim: str
+    sub_claims: List[str]
 
 
 @api.get("/instances")
@@ -58,14 +79,6 @@ def get_instances_list():
         }
 
     return instances
-
-
-class SprigInitData(pydantic.BaseModel):
-    language: dict
-    constraints: dict
-    claimer: sprig.Address
-    root_claim: str
-    sub_claims: List[str]
 
 
 @api.post("/instances")
@@ -98,9 +111,9 @@ def add_new_instance(new_instance: SprigInitData):
 
 
 @api.get("/{instance_hash}")
-def get_instance():
+def get_instance(instance_hash: str):
     """All the metadata of one SPRIG instance."""
-    ...
+    return json.loads(path_from_hash(instance_hash).read_text())
 
 
 @api.get("/{instance_hash}/tree")
@@ -109,41 +122,59 @@ def get_instance_tree():
     ...
 
 
-@api.get("/{instance_hash}/{claim_hash}")
-def get_claim():
+@api.get("/{instance_hash}/{claim_hash}", response_model=sprig.Claim)
+def get_claim(claim_hash: str, instance: sprig.Sprig = Depends(load)):
     """Return all the details about one claim."""
-    ...
+    return instance.claims[claim_hash]
 
 
-@api.get("/{instance_hash}/{claim_hash}/challenge")
-def get_claim_challenge():
+@api.get("/{instance_hash}/{claim_hash}/challenge", response_model=sprig.Challenge)
+def get_claim_challenge(claim_hash: str, instance: sprig.Sprig = Depends(load)):
     """Return all the details about one challenge."""
-    ...
+    return instance.challenges[claim_hash]
 
 
 @api.post("/{instance_hash}/{claim_hash}/challenge")
-def new_challenge_claim():
+def new_challenge_claim(
+    skeptic: sprig.Address, claim_hash: str, instance: sprig.Sprig = Depends(load)
+):
     """Challenge a claim that isn't yet challenged and still active."""
-    ...
+    assert claim_hash not in instance.challenges
+
+    with load_users() as users:
+        instance.challenge(skeptic, claim_hash)
+        # TODO: payment in Sprig, not just a default of 1
+        users[skeptic] = users.get(skeptic, 100) - 1
 
 
-@api.get("/{instance_hash}/{claim_hash}/proof_attempts")
-def get_proof_attempts():
+@api.get(
+    "/{instance_hash}/{claim_hash}/proof_attempts", response_model=List[sprig.Hash]
+)
+def get_proof_attempts(claim_hash: str, instance: sprig.Sprig = Depends(load)):
     """Return a list of all proof attempts for a claim.
     A proof attempt is a list of the hashes of the claims that make up the proof."""
-    ...
+    return instance.proof_attempts[claim_hash]
+
+
+class NewProofAttempt(BaseModel):
+    claimer: sprig.Address
+    claims: List[str]
 
 
 @api.post("/{instance_hash}/{claim_hash}/proof_attempts")
-def add_proof_attempt():
+def add_proof_attempt(
+    attempt: NewProofAttempt, claim_hash: str, instance: sprig.Sprig = Depends(load)
+):
     """Create a new proof attempt of a challenged claim."""
-    ...
+    claims = [sprig.Claim(attempt.claimer, claim) for claim in attempt.claims]
+    instance.answer(claim_hash, *claims)
 
 
 @api.get("/users")
 def get_users():
     """Return a mapping User -> Account Balance."""
-    ...
+    with load_users() as users:
+        return users
 
 
 if __name__ == "__main__":

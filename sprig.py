@@ -1,16 +1,18 @@
 from __future__ import annotations
 
-import dataclasses
 from operator import attrgetter
 from pprint import pprint
 import re
-from dataclasses import dataclass
 from enum import Enum
 from textwrap import indent
 import json
 
 # from time import time
 from typing import Dict, Iterator, List, Tuple
+
+# Drop in replacement for dataclass that works better with fastapi
+from pydantic import dataclasses
+from pydantic.dataclasses import dataclass
 
 
 Address = str  # A type alias to know when a str is the address of someone.
@@ -71,7 +73,7 @@ def fmt(s, fg=None, bg=None):
     return f"\033[{flags}m{s}\033[m"
 
 
-class Status(Enum):
+class Status(str, Enum):
     CHALLENGED = "challenged"
     VALIDATED = "validated"
     REJECTED = "rejected"
@@ -128,6 +130,7 @@ class Constraints(AbstractConstraints):
     question_bounties: List[int]
 
 
+@dataclass
 class DefaultConstraints(Constraints):
     def __init__(self):
         super().__init__(
@@ -141,7 +144,7 @@ class DefaultConstraints(Constraints):
         )
 
 
-@dataclass()
+@dataclass
 class Sprig:
     """An instance of the SPRIG protocol"""
 
@@ -247,8 +250,18 @@ SPRIG instance:
             self.claims[claim_hash].status == Status.UNCHALLENGED
         ), "This claim has already been challenged."
 
-        self.challenges[claim_hash] = Challenge(skeptic)
         claim = self.claims[claim_hash]
+
+        # TODO: add a level attribute in Claim
+        # This is a quick hack while it is not done.
+        for hash_, level in self._dfs():
+            if hash_ == claim_hash:
+                break
+        else:
+            raise RuntimeError
+
+        self.pay(skeptic, -self.constraints.question_bounties[level])
+        self.challenges[claim_hash] = Challenge(skeptic)
         claim.status = Status.CHALLENGED
 
     def answer(self, challenge: Hash, *sub_claims: Claim):
@@ -361,6 +374,9 @@ SPRIG instance:
 
     # Serialisation
 
+    def dump_as_dict(self):
+        return json.loads(self.dumps())
+
     def dumps(self):
         base = dataclasses.asdict(self)
         # return {
@@ -387,25 +403,27 @@ SPRIG instance:
 
         return json.dumps(base, cls=CustomEncoder)
 
-    @classmethod
-    def loads(cls, s: str):
+    @staticmethod
+    def loads_to_dict(s):
         def object_hook(dct: dict):
-            print(dct)
             if "__class__" in dct:
                 klass = dct.pop("__class__")
                 if klass == "Status":
                     return Status[dct["name"]]
 
                 lang = get(all_subclasses(Language), __name__=klass)
-                if lang is not None:
-                    return lang(**dct)
+                if lang is None:
+                    assert False, f"No language found for the name {klass}"
 
-                print(dct)
-                raise ValueError()
+                return lang(**dct)
 
             return dct
 
-        data = json.loads(s, object_hook=object_hook)
+        return json.loads(s, object_hook=object_hook)
+
+    @classmethod
+    def loads(cls, s: str):
+        data = cls.loads_to_dict(s)
 
         constraints = Constraints(**data["constraints"])
         claims = {h: Claim(**claim) for h, claim in data["claims"].items()}
@@ -429,7 +447,12 @@ class Claim:
         self.claimer = claimer
         self.statement = statement
         self.time = now() if time is None else time
-        self.status = Status.UNCHALLENGED if status is None else status
+        if status is None:
+            self.status = Status.UNCHALLENGED
+        elif isinstance(status, str):
+            self.status = Status(status.lower())
+        else:
+            self.status = status
 
     def __str__(self):
         return (
@@ -632,10 +655,10 @@ def main():
     time_passes()
     time_passes()
 
-    print(sprig.dumps())
+    # pprint(sprig.dumps())
     pprint(json.loads(sprig.dumps()))
     new = Sprig.loads(sprig.dumps())
-    print(new)
+    print(new.claims[ROOT_HASH].status.__class__)
 
 
 if __name__ == "__main__":
