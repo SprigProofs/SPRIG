@@ -1,18 +1,17 @@
 from __future__ import annotations
 
+# Drop in replacement for dataclass that works better with fastapi
+import dataclasses
+import json
+from enum import Enum
 from operator import attrgetter
 from pprint import pprint
-from enum import Enum
 from textwrap import indent
-import json
 
 # from time import time
 from typing import Dict, Iterator, List, Tuple
 
-# Drop in replacement for dataclass that works better with fastapi
-import dataclasses
 from pydantic.dataclasses import dataclass
-
 
 Address = str  # A type alias to know when a str is the address of someone.
 Hash = str  # A Type alias for identify claims
@@ -20,6 +19,7 @@ ProofAttempt = List[Hash]
 
 ORANGE = (255, 165, 0)
 ROOT_HASH = "#root"
+SPRIG_ADDRESS = "@SPRIG"
 
 
 def now(increment=0, __now=[0]):
@@ -72,6 +72,17 @@ def fmt(s, fg=None, bg=None):
     return f"\033[{flags}m{s}\033[m"
 
 
+def transfer_money(from_, to, amount):
+    """Function called to for all payements.
+
+    It only prints the payments, but can be overriden to do something meaningful."""
+
+    txt = f" >>> {to} gets {amount} pokedollars from {from_}. <<< "
+    space = " " * len(txt)
+    for t in (space, txt, space):
+        print(fmt(t, bg=(12, 34, 56)))
+
+
 class Status(str, Enum):
     CHALLENGED = "challenged"
     VALIDATED = "validated"
@@ -117,6 +128,33 @@ class AbstractConstraints:
         print(cls)
         return cls(**data)
 
+    def pay_to_challenge(self, skeptic, claim):
+        pass
+
+    def pay_to_answer(self, claim):
+        pass
+
+    def pay_for_machine_verification(self, claim: Claim):
+        pass
+
+    def pay_claim_validated(self, claim: Claim):
+        pass
+
+    def pay_claim_invalidated_by_challenge(self, claim: Claim, challenge: Challenge):
+        pass
+
+    def pay_claim_failed_to_answer_question(self, challenge: Challenge, claim: Claim):
+        pass
+
+    def inside_limits(self, claim) -> bool:
+        pass
+
+    def can_challenge(self, claim) -> bool:
+        pass
+
+    def can_answer(self, claim) -> bool:
+        pass
+
 
 @dataclass
 class Constraints(AbstractConstraints):
@@ -127,21 +165,52 @@ class Constraints(AbstractConstraints):
     upstakes: List[int]
     downstakes: List[int]
     question_bounties: List[int]
+    verification_cost: int
 
-    def pay_to_challenge(self, skeptik, challenge, claim, bank):
-        ...
+    def pay_to_challenge(self, skeptic, claim):
+        level = 0
+        transfer_money(skeptic, SPRIG_ADDRESS, self.question_bounties[level])
 
-    def pay_to_answer(self, claim, claimer, bank):
-        ...
+    def pay_to_answer(self, claim):
+        level = 0
+        transfer_money(
+            claim.claimer, SPRIG_ADDRESS, self.upstakes[level] + self.downstakes[level]
+        )
 
-    def pay_for_machine_verification(self, claimer, bank):
-        ...
+    def pay_for_machine_verification(self, claim):
+        transfer_money(claim.claimer, SPRIG_ADDRESS, self.verification_cost)
 
-    def pay_claim_validated(self, claimer, claim, bank):
-        ...
+    def pay_claim_validated(self, claim):
+        level = 1
+        amount = self.upstakes[level] + self.downstakes[level]
 
-    def pay_challenge_unanswered(self, skeptic, challenge, claim, bank):
-        ...
+        if level > 0:
+            amount += self.question_bounties[level - 1]
+
+        transfer_money(SPRIG_ADDRESS, claim.claimer, amount)
+
+    def pay_challenge_answered(self, claim, challenge):
+        level = 1
+        transfer_money(SPRIG_ADDRESS, claim.claimer, self.question_bounties[level])
+
+    def pay_claim_invalidated_by_challenge(self, claim: Claim, challenge: Challenge):
+        level = 1
+        amount = self.question_bounties[level] + self.downstakes[level]
+        transfer_money(SPRIG_ADDRESS, challenge.skeptic, amount)
+
+    def pay_claim_failed_to_answer_question(self, challenge: Challenge, claim: Claim):
+        level = 1
+        amount = self.question_bounties[level - 1] + self.upstakes[level]
+        transfer_money(SPRIG_ADDRESS, challenge.skeptic, amount)
+
+    def inside_limits(self, claim):
+        return len(claim.statement) < self.max_length
+
+    def can_challenge(self, claim):
+        return now() < claim.time + self.time_for_questions
+
+    def can_answer(self, claim):
+        return now() < claim.time + self.time_for_answers
 
 
 @dataclass
@@ -155,6 +224,7 @@ class DefaultConstraints(Constraints):
             upstakes=(1,) * 10,
             downstakes=(1,) * 10,
             question_bounties=(1,) * 10,
+            verification_cost=1,
         )
 
 
@@ -362,7 +432,7 @@ SPRIG instance:
         else:
             raise RuntimeError
 
-        self.pay(skeptic, -self.constraints.question_bounties[level])
+        self.constraints.pay_to_challenge(skeptic, claim)
         self.challenges[claim_hash] = Challenge(skeptic)
         claim.status = Status.CHALLENGED
 
@@ -410,6 +480,7 @@ SPRIG instance:
         elif claim.status is Status.UNCHALLENGED:
             if now > claim.time + self.constraints.time_for_questions:
                 # no question came, the proof is valid!
+                self.constraints.pay_claim_validated(claim)
                 claim.status = Status.VALIDATED
                 # No bet distribution here, it is done downwards
                 # from the challenge that is closed.
@@ -432,7 +503,8 @@ SPRIG instance:
                     # proof is correct!
                     claimer = self.claims[attempts[i][0]].claimer
                     # We used that all claims in an attempt have the same claimer.
-                    self.pay(claimer, self.constraints.question_bounties[level])
+                    self.constraints.pay_claim_validated(claim)
+                    self.constraints.pay_challenge_answered(claim, challenge)
                     claim.status = Status.VALIDATED
                     return
 
@@ -444,12 +516,11 @@ SPRIG instance:
                 else:  # Otherwise, all subclaims are rejected
                     assert all(s is Status.REJECTED for s in attempts_status)
 
-                    claim.status = Status.REJECTED
-                    self.pay(
-                        challenge.skeptic,
-                        self.constraints.downstakes[level]
-                        + self.constraints.question_bounties[level],
+                    # Todo: distribute the upstake too
+                    self.constraints.pay_claim_invalidated_by_challenge(
+                        claim, challenge
                     )
+                    claim.status = Status.REJECTED
 
         else:
             # Yes, I miss exaustive matching from Rust...
@@ -467,12 +538,6 @@ SPRIG instance:
             for hash in attempt:
                 yield from self._dfs(hash, _level - 1)
         yield (_start, _level)
-
-    def pay(self, who: Address, amount: int):
-        txt = f" >>> {who} gets a reward of {amount}. <<< "
-        space = " " * len(txt)
-        for t in (space, txt, space):
-            print(fmt(t, bg=(12, 34, 56)))
 
     # Serialisation
 
@@ -576,6 +641,7 @@ def main():
         upstakes=[1] * level,
         downstakes=[1] * level,
         question_bounties=[1] * level,
+        verification_cost=1,
     )
 
     claim = Claim("Diego", "...|XX.|... O plays X wins")

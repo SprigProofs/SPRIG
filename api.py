@@ -1,4 +1,5 @@
 import json
+from collections import defaultdict
 from contextlib import contextmanager
 from pathlib import Path
 from typing import List
@@ -44,13 +45,24 @@ def load(instance_hash: str) -> sprig.Sprig:
 
 
 @contextmanager
-def load_users():
+def load_users() -> defaultdict:
     user_dict = json.loads(USERS.read_text() or "{}")
     try:
-        yield user_dict
+        yield defaultdict(int, user_dict)
     finally:
         # Todo: do we really want to always save it on error ?
         USERS.write_text(json.dumps(user_dict))
+
+
+def transfer_money(from_, to, amount):
+    old_transfer_money(from_, to, amount)
+
+    with load_users() as users:
+        users[from_] -= amount
+        users[to] += amount
+
+
+sprig.transfer_money, old_transfer_money = transfer_money, sprig.transfer_money
 
 
 class SprigInitData(BaseModel):
