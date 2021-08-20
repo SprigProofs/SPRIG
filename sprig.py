@@ -1,18 +1,19 @@
-from __future__ import annotations
-
 # Drop in replacement for dataclass that works better with fastapi
 import dataclasses
 import json
 from collections import defaultdict
 from enum import Enum
 from operator import attrgetter
-from pprint import pprint
 from textwrap import indent
 
-# from time import time
 from typing import Dict, Iterator, List, Tuple
 
-from pydantic.dataclasses import dataclass
+try:
+    # Simplifies stuff for the web interface,
+    # but if the api is not wanted, work without.
+    from pydantic.dataclasses import dataclass
+except ImportError:
+    from dataclasses import dataclass
 
 Address = str  # A type alias to know when a str is the address of someone.
 Hash = str  # A Type alias for identify claims
