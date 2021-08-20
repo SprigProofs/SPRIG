@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 # Drop in replacement for dataclass that works better with fastapi
 import dataclasses
 import json
