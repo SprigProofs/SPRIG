@@ -54,8 +54,8 @@ def load_users() -> defaultdict:
         USERS.write_text(json.dumps(user_dict))
 
 
-def transfer_money(from_, to, amount):
-    old_transfer_money(from_, to, amount)
+def transfer_money(from_, to, amount, msg=""):
+    old_transfer_money(from_, to, amount, msg)
 
     with load_users() as users:
         users[from_] -= amount

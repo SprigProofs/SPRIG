@@ -3,6 +3,7 @@ from __future__ import annotations
 # Drop in replacement for dataclass that works better with fastapi
 import dataclasses
 import json
+from collections import defaultdict
 from enum import Enum
 from operator import attrgetter
 from pprint import pprint
@@ -50,7 +51,7 @@ def all_subclasses(klass: type) -> Iterator[type]:
     yield klass
 
 
-def fmt(s, fg=None, bg=None):
+def fmt(s, fg=None, bg=None, end=True):
     """
     Add ANSI escape codes to a string.
 
@@ -69,18 +70,26 @@ def fmt(s, fg=None, bg=None):
         flags += f"48;2;{r};{g};{b};"
 
     flags = flags.strip(";")
-    return f"\033[{flags}m{s}\033[m"
+    ending = "\033[m" if end else ""
+    return f"\033[{flags}m{s}{ending}"
 
 
-def transfer_money(from_, to, amount):
+BANK = defaultdict(int)
+
+
+def transfer_money(from_, to, amount, msg=""):
     """Function called to for all payements.
 
     It only prints the payments, but can be overriden to do something meaningful."""
+    BG = 12, 34, 56
 
-    txt = f" >>> {to} gets {amount} pokedollars from {from_}. <<< "
-    space = " " * len(txt)
-    for t in (space, txt, space):
-        print(fmt(t, bg=(12, 34, 56)))
+    if msg:
+        msg = f" ({fmt(msg, ORANGE)}" + fmt(") <<< ", bg=BG)
+    txt = f" >>> {to} gets {amount} pokedollars from {from_}.{msg}"
+    print(fmt(txt, bg=BG))
+
+    BANK[to] += amount
+    BANK[from_] -= amount
 
 
 class Status(str, Enum):
@@ -169,39 +178,57 @@ class Constraints(AbstractConstraints):
 
     def pay_to_challenge(self, skeptic, claim):
         level = 0
-        transfer_money(skeptic, SPRIG_ADDRESS, self.question_bounties[level])
+        transfer_money(
+            skeptic, SPRIG_ADDRESS, self.question_bounties[level], "challenge"
+        )
 
     def pay_to_answer(self, claim):
         level = 0
         transfer_money(
-            claim.claimer, SPRIG_ADDRESS, self.upstakes[level] + self.downstakes[level]
+            claim.claimer,
+            SPRIG_ADDRESS,
+            self.upstakes[level] + self.downstakes[level],
+            "answer",
         )
 
     def pay_for_machine_verification(self, claim):
-        transfer_money(claim.claimer, SPRIG_ADDRESS, self.verification_cost)
+        transfer_money(
+            claim.claimer, SPRIG_ADDRESS, self.verification_cost, "machine verification"
+        )
 
     def pay_claim_validated(self, claim):
+        """
+        Reimbourse the stakes of the claimer when a claim is validated.
+        Doesn't take any challenge into account.
+        """
+
         level = 1
         amount = self.upstakes[level] + self.downstakes[level]
 
-        if level > 0:
-            amount += self.question_bounties[level - 1]
-
-        transfer_money(SPRIG_ADDRESS, claim.claimer, amount)
+        transfer_money(SPRIG_ADDRESS, claim.claimer, amount, "claim validated")
 
     def pay_challenge_answered(self, claim, challenge):
         level = 1
-        transfer_money(SPRIG_ADDRESS, claim.claimer, self.question_bounties[level])
+        transfer_money(
+            SPRIG_ADDRESS,
+            claim.claimer,
+            self.question_bounties[level],
+            "challenge answered",
+        )
 
     def pay_claim_invalidated_by_challenge(self, claim: Claim, challenge: Challenge):
         level = 1
         amount = self.question_bounties[level] + self.downstakes[level]
-        transfer_money(SPRIG_ADDRESS, challenge.skeptic, amount)
+        transfer_money(
+            SPRIG_ADDRESS, challenge.skeptic, amount, "claim invalidated by challenge"
+        )
 
     def pay_claim_failed_to_answer_question(self, challenge: Challenge, claim: Claim):
         level = 1
         amount = self.question_bounties[level - 1] + self.upstakes[level]
-        transfer_money(SPRIG_ADDRESS, challenge.skeptic, amount)
+        transfer_money(
+            SPRIG_ADDRESS, challenge.skeptic, amount, "claim failed to answer challenge"
+        )
 
     def inside_limits(self, claim):
         return len(claim.statement) < self.max_length
@@ -343,6 +370,8 @@ class Sprig:
         self.language.validate_top_level(root_claim)
         self.language.validate_subclaims(root_claim, *sub_claims)
 
+        for claim in sub_claims:
+            self.constraints.pay_to_answer(claim)
         self._add_proof_attempt(ROOT_HASH, *sub_claims)
 
         return self
@@ -406,7 +435,9 @@ SPRIG instance:
         return hash_
 
     def _add_proof_attempt(self, root: Hash, *sub_claims: Claim):
-        """Add a proof attempt given the of the claim it proves and the subclaims that build the proof."""
+        """Add a proof attempt given the of the claim it proves and the subclaims that build the proof.
+
+        This method does not perform any check nor payment."""
 
         if root not in self.proof_attempts:
             # Create the list of proof attempts if it doesn't exist yet.
@@ -441,6 +472,9 @@ SPRIG instance:
         claim = self.claims[challenge]
         assert claim.status == Status.CHALLENGED
         self.language.validate_subclaims(self.claims[challenge], *sub_claims)
+
+        for claim in sub_claims:
+            self.constraints.pay_to_answer(claim)
 
         self._add_proof_attempt(challenge, *sub_claims)
 
@@ -482,7 +516,7 @@ SPRIG instance:
                 # no question came, the proof is valid!
                 self.constraints.pay_claim_validated(claim)
                 claim.status = Status.VALIDATED
-                # No bet distribution here, it is done downwards
+                # No challenge stake distribution here, it is done downwards
                 # from the challenge that is closed.
 
         elif claim.status is Status.CHALLENGED:
@@ -501,10 +535,10 @@ SPRIG instance:
             for i, status in enumerate(attempts_status):
                 if status is Status.VALIDATED:
                     # proof is correct!
-                    claimer = self.claims[attempts[i][0]].claimer
+                    closing_claim = self.claims[attempts[i][0]]
                     # We used that all claims in an attempt have the same claimer.
                     self.constraints.pay_claim_validated(claim)
-                    self.constraints.pay_challenge_answered(claim, challenge)
+                    self.constraints.pay_challenge_answered(closing_claim, challenge)
                     claim.status = Status.VALIDATED
                     return
 
@@ -627,10 +661,13 @@ def main():
     MINUTES = 60
 
     def time_passes(amount=1):
-        print("\n\n")
         now(amount)
         sprig.distribute_all_bets()
         print(sprig)
+
+        for address, balance in BANK.items():
+            balance = f"{balance} ₽"
+            print(f"{address} ({fmt(balance, ORANGE)})")
 
     level = 8
     recommended_constraints = Constraints(
@@ -697,9 +734,9 @@ def main():
     time_passes()
 
     # pprint(sprig.dumps())
-    pprint(json.loads(sprig.dumps()))
-    new = Sprig.loads(sprig.dumps())
-    print(new.claims[ROOT_HASH].status.__class__)
+    # pprint(json.loads(sprig.dumps()))
+    # new = Sprig.loads(sprig.dumps())
+    # print(new.claims[ROOT_HASH].status.__class__)
 
 
 if __name__ == "__main__":
