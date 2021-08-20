@@ -668,9 +668,11 @@ def main():
         sprig.distribute_all_bets()
         print(sprig)
 
+        padding = max(map(len, BANK))
         for address, balance in BANK.items():
             balance = f"{balance} ₽"
-            print(f"{address} ({fmt(balance, ORANGE)})")
+            print(f"{address.ljust(padding)} ({fmt(balance, ORANGE)})")
+        print()
 
     level = 8
     recommended_constraints = Constraints(

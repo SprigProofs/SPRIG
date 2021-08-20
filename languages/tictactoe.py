@@ -1,7 +1,5 @@
 import re
 
-from typing_extensions import TYPE_CHECKING
-
 from sprig import Claim, Language
 
 
