@@ -163,7 +163,7 @@ class AbstractConstraints:
     def pay_skeptic_invalidating_claim(self, claim: Claim):
         pass
 
-    def pay_skeptic_on_failed_answer(self, claim: Claim):
+    def pay_skeptic_on_failed_answer(self, parent_claim: Claim, claim: Claim):
         pass
 
     def inside_limits(self, claim) -> bool:
@@ -243,13 +243,16 @@ class Constraints(AbstractConstraints):
         )
         claim.money_held -= amount
 
-    def pay_skeptic_on_failed_answer(self, claim: Claim):
+    def pay_skeptic_on_failed_answer(self, parent_claim: Claim, claim: Claim):
+        """Distribute the upstake."""
+
         level = 1
-        amount = self.question_bounties[level - 1] + self.upstakes[level]
+        amount = self.question_bounties[level] + self.upstakes[level + 1]
         transfer_money(
             SPRIG_ADDRESS, claim.skeptic, amount, "claim failed to answer challenge"
         )
-        claim.money_held -= amount
+        parent_claim.money_held -= self.question_bounties[level]
+        claim.money_held -= self.upstakes[level + 1]
 
     def inside_limits(self, claim):
         return len(claim.statement) < self.max_length
@@ -551,14 +554,21 @@ SPRIG instance:
         # All claims are VALIDATED, so this one too.
         return Status.VALIDATED
 
-    def distribute_all_bets(self):
-        now_ = now()
-        # we propagate status and bets repartition starting from the leaves
-        # so we move in DFS order
-        for hash in self._dfs():
-            self.distribute_bets(hash, now_)
+    def distribute_all_bets(self, _start=None, _parent=None, _now=None):
+        if _start is None:
+            _start = ROOT_HASH
+            _now = now()
 
-    def distribute_bets(self, hash: Hash, now: int):
+        # we propagate status and bets repartition starting from the leaves
+        # so we move in DFS order, but we also need to provide the parents
+        # of each claim to distribute the upstakes
+
+        for attempt in self.proof_attempts.get(_start, []):
+            for claim in attempt:
+                self.distribute_all_bets(claim, _start, _now)
+        self.distribute_bets(_start, _parent, _now)
+
+    def distribute_bets(self, hash: Hash, parent_claim_hash: Hash, now: int):
         claim = self.claims[hash]
         if claim.status in (Status.VALIDATED, Status.REJECTED):
             # Nothing to do here, the bets have already been distributed.
@@ -613,7 +623,11 @@ SPRIG instance:
                         ...
                     else:
                         self.constraints.pay_skeptic_invalidating_claim(claim)
-                    # Todo: distribute the upstake too
+
+                    if parent_claim_hash:
+                        parent = self.claims[parent_claim_hash]
+                        if parent.skeptic:
+                            self.constraints.pay_skeptic_on_failed_answer(parent, claim)
 
         else:
             # Yes, I miss exaustive matching from Rust...
