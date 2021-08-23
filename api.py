@@ -139,18 +139,11 @@ def get_claim(claim_hash: str, instance: sprig.Sprig = Depends(load)):
     return instance.claims[claim_hash]
 
 
-@api.get("/{instance_hash}/{claim_hash}/challenge", response_model=sprig.Challenge)
-def get_claim_challenge(claim_hash: str, instance: sprig.Sprig = Depends(load)):
-    """Return all the details about one challenge."""
-    return instance.challenges[claim_hash]
-
-
 @api.post("/{instance_hash}/{claim_hash}/challenge")
 def new_challenge_claim(
     skeptic: sprig.Address, claim_hash: str, instance: sprig.Sprig = Depends(load)
 ):
     """Challenge a claim that isn't yet challenged and still active."""
-    assert claim_hash not in instance.challenges
 
     with load_users() as users:
         instance.challenge(skeptic, claim_hash)
