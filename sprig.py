@@ -163,7 +163,7 @@ class AbstractConstraints:
     def pay_skeptic_invalidating_claim(self, claim: Claim):
         pass
 
-    def pay_skeptic_on_failed_answer(self, parent_claim: Claim, claim: Claim):
+    def pay_upstake_on_failed_answer(self, parent_claim: Claim, claim: Claim):
         pass
 
     def inside_limits(self, claim) -> bool:
@@ -221,12 +221,12 @@ class Constraints(AbstractConstraints):
         transfer_money(SPRIG_ADDRESS, claim.claimer, amount, "claim validated")
         claim.money_held -= amount
 
-    def pay_challenge_answered(self, claim):
-        amount = self.question_bounties[claim.level]
+    def pay_challenge_answered(self, challenged_claim: Claim, closing_claim: Claim):
+        amount = self.question_bounties[challenged_claim.level]
         transfer_money(
-            SPRIG_ADDRESS, claim.claimer, amount, "challenge answered",
+            SPRIG_ADDRESS, closing_claim.claimer, amount, "challenge answered",
         )
-        claim.money_held -= amount
+        challenged_claim.money_held -= amount
 
     def pay_skeptic_invalidating_claim(self, claim: Claim):
         amount = self.question_bounties[claim.level] + self.downstakes[claim.level]
@@ -235,15 +235,21 @@ class Constraints(AbstractConstraints):
         )
         claim.money_held -= amount
 
-    def pay_skeptic_on_failed_answer(self, parent_claim: Claim, claim: Claim):
+    def pay_upstake_on_failed_answer(self, parent_claim: Claim, claim: Claim):
         """Distribute the upstake."""
 
-        amount = self.question_bounties[parent_claim.level] + self.upstakes[claim.level]
+        if parent_claim.skeptic:
+            destination = parent_claim.skeptic
+        else:
+            # When the parent claim is not challenged,
+            # This happens at the root of sprig.
+            destination = claim.claimer
+
+        amount = self.upstakes[claim.level]
         transfer_money(
-            SPRIG_ADDRESS, claim.skeptic, amount, "claim failed to answer challenge"
+            SPRIG_ADDRESS, destination, amount, "claim failed to answer challenge"
         )
-        parent_claim.money_held -= self.question_bounties[parent_claim.level]
-        claim.money_held -= self.upstakes[claim.level]
+        claim.money_held -= amount
 
     def inside_limits(self, claim):
         return len(claim.statement) < self.max_length
@@ -608,7 +614,10 @@ SPRIG instance:
                         # otherwise there is nothing to do.
                         ...
                     else:
-                        self.constraints.pay_challenge_answered(closing_claim)
+                        if claim.skeptic:  # Always the case, except for the root claim
+                            self.constraints.pay_challenge_answered(
+                                claim, closing_claim
+                            )
                     claim.status = Status.VALIDATED
                     return
 
@@ -629,8 +638,7 @@ SPRIG instance:
 
                     if parent_claim_hash:
                         parent = self.claims[parent_claim_hash]
-                        if parent.skeptic:
-                            self.constraints.pay_skeptic_on_failed_answer(parent, claim)
+                        self.constraints.pay_upstake_on_failed_answer(parent, claim)
 
         else:
             # Yes, I miss exaustive matching from Rust...
