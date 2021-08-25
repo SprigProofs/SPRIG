@@ -9,6 +9,7 @@ from fastapi.params import Depends
 from pydantic import BaseModel
 
 import sprig
+import utils
 
 DATA = Path(__file__).parent / "data"
 DATA.mkdir(exist_ok=True)
@@ -148,7 +149,7 @@ def new_challenge_claim(
     with load_users() as users:
         instance.challenge(skeptic, claim_hash)
         # TODO: payment in Sprig, not just a default of 1
-        users[skeptic] = users.get(skeptic, 100) - 1
+        users[skeptic] = utils.get(skeptic, 100) - 1
 
 
 @api.get(

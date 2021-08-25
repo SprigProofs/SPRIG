@@ -5,11 +5,9 @@ import dataclasses
 import json
 from collections import defaultdict
 from enum import Enum
-from operator import attrgetter
-from pprint import pprint
-from textwrap import indent
+from typing import Dict, List, NewType, Optional
 
-from typing import Dict, Iterator, List, Optional, Tuple
+from utils import *
 
 try:
     # Simplifies stuff for the web interface,
@@ -18,16 +16,18 @@ try:
 except ImportError:
     from dataclasses import dataclass
 
-Address = str  # A type alias to know when a str is the address of someone.
-Hash = str  # A Type alias for identify claims
-ProofAttempt = List[Hash]
+# A type alias to know when a str is the address of someone.
+# It is used only for type checking, and does nothing at runtime
+Address = NewType("Address", str)
+# A Type alias to identify claims
+Hash = NewType("Hash", str)
 
-ORANGE = (255, 165, 0)
-ROOT_HASH = "#root"
-SPRIG_ADDRESS = "@SPRIG"
-CURRENCY = " ₽"
+ROOT_HASH = Hash("#root")
+SPRIG_ADDRESS = Address("@SPRIG")
+BANK = defaultdict(int)
 
 
+# noinspection PyDefaultArgument
 def now(increment=0, __now=[0]):
     """Own time function for testing purpose"""
     __now[0] += increment
@@ -35,67 +35,13 @@ def now(increment=0, __now=[0]):
     return __now[0]
 
 
-def get(iterator, **kwargs):
-    """Return the first object in iterator that has the correct values for each attribute name in kwargs."""
-    getter = attrgetter(*kwargs.keys())
-    values = tuple(kwargs.values())
-
-    # attrgetter does not return a tuple in this case.
-    if len(values) == 1:
-        values = values[0]
-
-    for obj in iterator:
-        if getter(obj) == values:
-            return obj
-
-
-def all_subclasses(klass: type) -> Iterator[type]:
-    """Yield all subclasses of a class."""
-    for k in klass.__subclasses__():
-        yield from all_subclasses(k)
-    yield klass
-
-
-def fmt(s, fg=None, bg=None, end=True):
-    """
-    Add ANSI escape codes to a string.
-
-    [fg] and [bg] are a rgb tuple of integers.
-
-    If [reset] is False, the colors and any ANSI flags are not cleared.
-    """
-
-    flags = ""
-    if fg is not None:
-        r, g, b = fg
-        flags += f"38;2;{r};{g};{b};"
-
-    if bg is not None:
-        r, g, b = bg
-        flags += f"48;2;{r};{g};{b};"
-
-    flags = flags.strip(";")
-    ending = "\033[m" if end else ""
-    return f"\033[{flags}m{s}{ending}"
-
-
-def fmt_money(amount):
-    return fmt(str(amount) + CURRENCY, ORANGE)
-
-
-BANK = defaultdict(int)
-
-
 def transfer_money(from_, to, amount, msg=""):
-    """Function called to for all payements.
+    """Function called to for all payements."""
 
-    It only prints the payments, but can be overriden to do something meaningful."""
-    BG = 12, 34, 56
-    assert from_
-    assert to
+    assert from_ and to
 
     if msg:
-        msg = f" ({fmt(msg, ORANGE)}" + fmt(") <<< ", bg=BG)
+        msg = f" ({FG_ORANGE}{msg}{RESET}{BG_BLUE}) <<< "
     txt = f" >>> {to} gets {amount} pokedollars from {from_}.{msg}"
     print(fmt(txt, bg=BG))
 
@@ -104,10 +50,10 @@ def transfer_money(from_, to, amount, msg=""):
 
 
 class Status(str, Enum):
+    UNCHALLENGED = "unchallenged"
     CHALLENGED = "challenged"
     VALIDATED = "validated"
     REJECTED = "rejected"
-    UNCHALLENGED = "unchallenged"
 
     def decided(self):
         """Whether the validity of the claim has been decided or not."""
@@ -137,7 +83,7 @@ class AbstractConstraints:
         """Registers the subclasses in REGISTER with their class name as key or ID if defined."""
 
         # Note: This code is duplicated with Language
-        id_ = cls.__name__ if cls.ID is None else cls.ID
+        id_ = cls.ID or cls.__name__
         assert id_ not in AbstractConstraints.REGISTER
         AbstractConstraints.REGISTER[id_] = cls
 
@@ -147,37 +93,45 @@ class AbstractConstraints:
         cls = AbstractConstraints.REGISTER[id_]
         return cls(**data)
 
-    def pay_to_challenge(self, skeptic, claim):
+    def pay_to_challenge(self, skeptic: Address, claim: Claim):
         pass
 
-    def pay_to_answer(self, claim):
+    def pay_new_proof_attempt(self, attempt: ProofAttempt):
         pass
 
     def pay_for_machine_verification(self, claim: Claim):
         pass
 
-    def pay_claim_validated(self, claim: Claim):
+    def pay_attempt_validated(self, attempt: ProofAttempt):
+        """
+        Reimbourse the stakes of the claimer when an attempt is validated.
+        Doesn't take any challenge into account.
+        """
         pass
 
-    def pay_skeptic_invalidating_claim(self, claim: Claim):
+    def pay_challenge_answered(self, challenged_claim: Claim, closing_attempt: ProofAttempt):
         pass
 
-    def pay_upstake_on_failed_answer(self, parent_claim: Claim, claim: Claim):
+    def pay_skeptic_invalidating_attempt(self, attempt: ProofAttempt, claim: Claim):
         pass
 
-    def inside_limits(self, claim) -> bool:
+    def pay_upstake_on_failed_answer(self, parent_claim: Claim, attempt: ProofAttempt):
+        """Distribute the upstake."""
         pass
 
-    def can_challenge(self, claim) -> bool:
+    def inside_limits(self, claim: Claim) -> bool:
         pass
 
-    def can_answer(self, claim) -> bool:
+    def can_challenge(self, claim: Claim) -> bool:
+        pass
+
+    def can_answer(self, claim: Claim) -> bool:
         pass
 
 
 @dataclass
 class Constraints(AbstractConstraints):
-    max_depth: int
+    root_height: int
     max_length: int
     time_for_questions: int
     time_for_answers: int
@@ -186,55 +140,58 @@ class Constraints(AbstractConstraints):
     question_bounties: List[int]
     verification_cost: int
 
-    def pay_to_challenge(self, skeptic, claim):
-        amount = self.question_bounties[claim.level]
-        transfer_money(skeptic, SPRIG_ADDRESS, amount, "challenge")
-        claim.money_held += amount
-
-    def pay_to_answer(self, claim):
-
-        amount = self.downstakes[claim.level]
-        if claim.level > 0:
-            amount += self.upstakes[claim.level]
-
+    def pay_to_challenge(self, skeptic: Address, claim: Claim):
+        amount = self.question_bounties[claim.height]
         transfer_money(
-            claim.claimer, SPRIG_ADDRESS, amount, "answer",
+            skeptic, SPRIG_ADDRESS, amount, f"challenge {claim.hash}",
         )
         claim.money_held += amount
 
-    def pay_for_machine_verification(self, claim):
+    def pay_new_proof_attempt(self, attempt: ProofAttempt):
+        # Would be a bug as pay_for_machine_verification should be called.
+        assert attempt.height > 0
+
+        amount = self.downstakes[attempt.height] + self.upstakes[attempt.height]
         transfer_money(
-            claim.claimer, SPRIG_ADDRESS, self.verification_cost, "machine verification"
+            attempt.claimer, SPRIG_ADDRESS, amount, f"new proof attempt - ⛰️{attempt.height}",
+        )
+        attempt.money_held += amount
+
+    def pay_for_machine_verification(self, claim: Claim):
+        assert claim.height == 0
+        transfer_money(
+            claim.claimer,
+            SPRIG_ADDRESS,
+            self.verification_cost,
+            f"machine verification {claim.hash}",
         )
 
-    def pay_claim_validated(self, claim):
+    def pay_attempt_validated(self, attempt: ProofAttempt):
         """
-        Reimbourse the stakes of the claimer when a claim is validated.
+        Reimbourse the stakes of the claimer when an attempt is validated.
         Doesn't take any challenge into account.
         """
 
-        amount = self.downstakes[claim.level]
-        if claim.level > 0:
-            amount += self.upstakes[claim.level]
+        amount = self.downstakes[attempt.height] + self.upstakes[attempt.height]
 
-        transfer_money(SPRIG_ADDRESS, claim.claimer, amount, "claim validated")
-        claim.money_held -= amount
+        transfer_money(SPRIG_ADDRESS, attempt.claimer, amount, f"attempt validated")
+        attempt.money_held -= amount
 
-    def pay_challenge_answered(self, challenged_claim: Claim, closing_claim: Claim):
-        amount = self.question_bounties[challenged_claim.level]
+    def pay_challenge_answered(self, challenged_claim: Claim, closing_attempt: ProofAttempt):
+        amount = self.question_bounties[closing_attempt.height + 1]
         transfer_money(
-            SPRIG_ADDRESS, closing_claim.claimer, amount, "challenge answered",
+            SPRIG_ADDRESS, closing_attempt.claimer, amount, "challenge answered",
         )
         challenged_claim.money_held -= amount
 
-    def pay_skeptic_invalidating_claim(self, claim: Claim):
-        amount = self.question_bounties[claim.level] + self.downstakes[claim.level]
-        transfer_money(
-            SPRIG_ADDRESS, claim.skeptic, amount, "skeptic invalidated claim"
-        )
-        claim.money_held -= amount
+    def pay_skeptic_invalidating_attempt(self, attempt: ProofAttempt, claim: Claim):
+        bounty = self.question_bounties[claim.height]
+        stake = self.downstakes[claim.height]
+        transfer_money(SPRIG_ADDRESS, claim.skeptic, bounty + stake, "skeptic invalidated attempt")
+        attempt.money_held -= stake
+        claim.money_held -= bounty
 
-    def pay_upstake_on_failed_answer(self, parent_claim: Claim, claim: Claim):
+    def pay_upstake_on_failed_answer(self, parent_claim: Claim, attempt: ProofAttempt):
         """Distribute the upstake."""
 
         if parent_claim.skeptic:
@@ -242,46 +199,27 @@ class Constraints(AbstractConstraints):
         else:
             # When the parent claim is not challenged,
             # This happens at the root of sprig.
-            destination = claim.claimer
+            destination = attempt.claimer
 
-        amount = self.upstakes[claim.level]
-        transfer_money(
-            SPRIG_ADDRESS, destination, amount, "claim failed to answer challenge"
-        )
-        claim.money_held -= amount
+        amount = self.upstakes[attempt.height]
+        transfer_money(SPRIG_ADDRESS, destination, amount, "claim failed to answer challenge")
+        attempt.money_held -= amount
 
-    def inside_limits(self, claim):
+    def inside_limits(self, claim: Claim) -> bool:
         return len(claim.statement) < self.max_length
 
-    def can_challenge(self, claim):
+    def can_challenge(self, claim: Claim) -> bool:
         return now() < claim.time + self.time_for_questions
 
-    def can_answer(self, claim):
+    def can_answer(self, claim: Claim) -> bool:
         return now() < claim.time + self.time_for_answers
 
 
 @dataclass
-class DefaultConstraints(Constraints):
-    def __init__(self):
-        super().__init__(
-            max_depth=10,
-            max_length=1000,
-            time_for_questions=2,
-            time_for_answers=2,
-            upstakes=(1,) * 10,
-            downstakes=(1,) * 10,
-            question_bounties=(1,) * 10,
-            verification_cost=1,
-        )
-
-
-@dataclass
 class Claim:
-    claimer: Address
-    time: float
     statement: str
     status: Status
-    level: int
+    height: int
 
     # The skeptic is the one who challenged the claim
     # and not the challenge from which the claim originates,
@@ -289,7 +227,6 @@ class Claim:
     # if set, to the person asking the initial question.
     # The case of the root claim must always be treated separately.
     # TODO: Add logic to handle initial questions.
-
     skeptic: Address
     challenged_time: Optional[int]
 
@@ -299,25 +236,22 @@ class Claim:
 
     def __init__(
         self,
-        claimer,
         statement,
-        level,
+        height,
         hash,
         *,
-        time=None,
         status=None,
         skeptic=None,
         challenged_time=None,
         money_held=0,
     ):
-        self.level = level
+        self.height = height
         self.hash = hash
-        self.claimer = claimer
         self.statement = statement
-        self.time = now() if time is None else time
         if status is None:
             self.status = Status.UNCHALLENGED
         elif isinstance(status, str):
+            # For deserialisation
             self.status = Status(status.lower())
         else:
             self.status = status
@@ -331,11 +265,12 @@ class Claim:
         self.money_held = money_held
 
     def __str__(self):
-        skeptic = f" by {self.skeptic}" if self.skeptic is not None else ""
+        skeptic = f" skeptic: {self.skeptic}" if self.skeptic is not None else ""
         money = f" {self.money_held}{CURRENCY}" if self.money_held else ""
         return (
-            fmt(self.statement, fg=self.status.color())
-            + f" at {self.time} by {self.claimer} ({self.status}{skeptic})"
+            f"{self.hash} - "
+            + fmt(self.statement, fg=self.status.color())
+            + f" ({self.status}){skeptic}"
             + money
         )
 
@@ -347,17 +282,55 @@ class Claim:
         self.challenged_time = now()
 
 
-@dataclass
-class Challenge:
-    skeptic: Address
-    time: float
+@dataclass()
+class ProofAttempt:
+    claimer: Address
+    claims: List[Hash]
+    height: int
+    time: int
+    status: Status
 
-    def __init__(self, skeptic, *, time=None):
-        self.skeptic = skeptic
-        self.time = now() if time is None else time
+    # For debugging purposes
+    money_held: int
 
-    def __str__(self):
-        return self.skeptic
+    def __init__(self, claimer, claims, height, *, time=None, status: Status = None, money_held=0):
+        self.claimer = claimer
+        self.claims = claims
+        self.height = height
+        self.status = status or Status.UNCHALLENGED
+        self.time = time if time is not None else now()
+        self.money_held = money_held
+
+    # def status(self, claims_register: Dict[Hash, Claim]):
+    #     """Compute the status of a proof attempt based on its claims."""
+    #
+    #     def any_status_is(status, op=any):
+    #         return op(claims_register[h].status is status for h in self.claims)
+    #
+    #     if any_status_is(Status.REJECTED):
+    #         return Status.REJECTED
+    #     if any_status_is(Status.VALIDATED, all):
+    #         return Status.VALIDATED
+    #     if any_status_is(Status.CHALLENGED):
+    #         return Status.CHALLENGED
+    #     return Status.UNCHALLENGED
+    #
+    #     cannot_be_decided = False
+    #     for h in self.claims:
+    #         status = claims_register[h].status
+    #         if status is Status.REJECTED:
+    #             # If any claim is false, the proof attempt is instantly rejected.
+    #             return Status.REJECTED
+    #         elif not status.decided():
+    #             cannot_be_decided = True
+    #
+    #     # There is a claim that is either UNCHALLENGED or CHALLENGED,
+    #     # so the proof attempt cannot be closed thus stays CHALLENGED
+    #     if cannot_be_decided:
+    #         return Status.CHALLENGED
+    #
+    #     # All claims are VALIDATED, so this one too.
+    #     return Status.VALIDATED
 
 
 class Language(str):
@@ -382,6 +355,20 @@ class Language(str):
     def __str__(self):
         return self.name
 
+    def judge_low_level(self, statement: str):
+        """Perform the machine level verification."""
+        raise NotImplementedError
+
+    def validate_subclaims(self, root_statement: str, *sub_claim_statements: str):
+        """Check that a proof attempt is coherent."""
+        raise NotImplementedError
+
+    def validate_top_level(self, initial_claim: str):
+        """Check that an initial claim is valid."""
+        raise NotImplementedError
+
+    # Serialisation
+
     def __init_subclass__(cls, **kwargs):
         """Registers the subclasses in REGISTER with their class name as key."""
 
@@ -400,15 +387,6 @@ class Language(str):
     def dump(self):
         return {"__class__": self.name, **self.__dict__}
 
-    def judge_low_level(self, statement: str):
-        raise NotImplementedError
-
-    def validate_subclaims(self, root_statement: str, *sub_claim_statements: str):
-        raise NotImplementedError
-
-    def validate_top_level(self, initial_claim: str):
-        raise NotImplementedError
-
 
 @dataclass
 class Sprig:
@@ -418,7 +396,6 @@ class Sprig:
     language: Language
     claims: Dict[Hash, Claim]
     proof_attempts: Dict[Hash, List[ProofAttempt]]
-    """A mapping from claims to a list of all proof attempts, where each one is a list of children claims."""
 
     @classmethod
     def start(
@@ -427,19 +404,25 @@ class Sprig:
         constraints: Constraints,
         claimer: Address,
         claim: str,
-        *statements: str,
+        *proof_attempt: str,
     ):
-        """Start a new instance of the SPRIG protocol."""
+        """Start a new instance of the SPRIG protocol, originating from a claim."""
 
         root_claim = Claim(
-            claimer, claim, constraints.max_depth, ROOT_HASH, status=Status.CHALLENGED
+            claim,
+            constraints.root_height,
+            ROOT_HASH,
+            status=Status.CHALLENGED,
+            challenged_time=now(),
         )
 
         self = cls(constraints, language, {ROOT_HASH: root_claim}, {})
 
         self.language.validate_top_level(root_claim.statement)
+        # TODO: Do we need to pay at the root ?
+        # self.constraints.pay_to_answer(root_claim)
 
-        self.answer(ROOT_HASH, claimer, *statements)
+        self.answer(ROOT_HASH, claimer, *proof_attempt)
 
         return self
 
@@ -455,13 +438,17 @@ class Sprig:
                 status = claim.status.name.title()
                 money = f" ({fmt_money(claim.money_held)})" if claim.money_held else ""
                 if claim.skeptic is not None:
-                    ret = f"{claim_s} ({status} by {claim.skeptic}) {claim_hash} at {claim.time}{money}\n"
+                    ret = f"{claim_s} ({status} by {claim.skeptic}) {claim_hash}{money}\n"
                 else:
-                    ret = f"{claim_s} ({status}) {claim_hash} at {claim.time}{money}\n"
+                    ret = f"{claim_s} ({status}) {claim_hash}{money}\n"
 
+            attempt: ProofAttempt
             for i, attempt in enumerate(self.proof_attempts.get(claim_hash, [])):
-                ret += f"Attempt {i + 1} by {self.claims[attempt[0]].claimer}:\n"
-                for claim in attempt:
+                ret += (
+                    fmt(f"Attempt {i + 1} by {attempt.claimer}", attempt.status.color())
+                    + f" at {attempt.time}⌛ ({fmt_money(attempt.money_held)}):\n"
+                )
+                for claim in attempt.claims:
                     claim_s = indent(claim_str(claim), INDENT)
                     ret += "  - " + claim_s[len(INDENT) :]
 
@@ -471,40 +458,35 @@ class Sprig:
         return f"""
 SPRIG instance:
  - Language: {self.language}
- - Claimer: {root_claim.claimer}
  - Claim: {fmt(root_claim.statement, root_claim.status.color())} ({fmt_money(root_claim.money_held)})
 {indent(claim_str(ROOT_HASH), "   ")}"""
 
     @property
     def open_challenge_count(self):
-        """Numper of claim that are challenged and not resolved yet"""
-        return sum(
-            1 for claim in self.claims if self.claims[claim].status is Status.CHALLENGED
-        )
+        """Number of claim that are challenged and not resolved yet"""
+        return sum(1 for claim in self.claims.values() if claim.status is Status.CHALLENGED)
 
     @property
     def unchallenged_claim_count(self):
         """Numper of claim that are unchallenged."""
-        return sum(
-            1
-            for claim in self.claims
-            if self.claims[claim].status is Status.UNCHALLENGED
-        )
+        return sum(1 for claim in self.claims.values() if claim.status is Status.UNCHALLENGED)
 
-    def _add_claim(self, claimer: Address, statement: str, level) -> Hash:
+    def _add_claim(self, statement: str, height: int) -> Hash:
         """Add a claim to the dictionnary of claims, returning the generated hash."""
 
-        hash_ = "#" + str(len(self.claims))
+        assert height >= 0
+
+        hash_ = Hash("#" + str(len(self.claims)))
         assert hash_ not in self.claims  # Should never happen, it would be a bug
 
-        self.claims[hash_] = Claim(claimer, statement, level, hash_)
+        self.claims[hash_] = Claim(statement, height, hash_)
         return hash_
 
     def challenge(self, skeptic: Address, claim_hash: Hash):
         assert claim_hash in self.claims, "The claim hash is not valid."
         assert (
             self.claims[claim_hash].status == Status.UNCHALLENGED
-        ), "This claim has already been challenged."
+        ), "This claim cannot be challenged anymore."
 
         claim = self.claims[claim_hash]
 
@@ -515,133 +497,93 @@ SPRIG instance:
         assert challenged_claim in self.claims
         claim = self.claims[challenged_claim]
         assert claim.status is Status.CHALLENGED
-        assert claim.level > 1, "Use answer_low_level instead"
+        assert claim.height > 1, "Use answer_low_level instead"
 
         self.language.validate_subclaims(claim.statement, *sub_statements)
 
+        # Create the list of proof attempts if it doesn't exist yet.
         if challenged_claim not in self.proof_attempts:
-            # Create the list of proof attempts if it doesn't exist yet.
             self.proof_attempts[challenged_claim] = []
 
-        hashes = [
-            self._add_claim(claimer, statement, claim.level - 1)
-            for statement in sub_statements
-        ]
-        self.proof_attempts[challenged_claim].append(hashes)
+        hashes = [self._add_claim(statement, claim.height - 1) for statement in sub_statements]
+        attempt = ProofAttempt(claimer, hashes, claim.height - 1)
 
-        try:
-            for h in hashes:
-                self.constraints.pay_to_answer(self.claims[h])
-        except Exception:
-            # Revert if cannot pay.
-            self.proof_attempts[challenged_claim].pop()
-            for h in hashes:
-                del self.claims[h]
-            raise
+        self.constraints.pay_new_proof_attempt(attempt)
+        self.proof_attempts[challenged_claim].append(attempt)
 
-    def answer_low_level(self, claim: Hash, machine_proof: str):
-        ...
+    def answer_low_level(self, claim: Hash, claimer: Address, machine_proof: str):
+        ...  # TODO!
 
-    def proof_attempt_status(self, attempt: List[Hash]):
-        """Compute the status of a proof attempt based on its claims."""
+    def distribute_all_bets(self):
+        self._distribute_all_bets(ROOT_HASH, None, None, now())
 
-        cannot_be_decided = False
-        for h in attempt:
-            status = self.claims[h].status
-            if status is Status.REJECTED:
-                # If any claim is false, the proof attempt is instantly rejected.
-                return Status.REJECTED
-            elif not status.decided():
-                cannot_be_decided = True
-
-        # There is a claim that is either UNCHALLENGED or CHALLENGED,
-        # so the proof attempt cannot be closed thus stays CHALLENGED
-        if cannot_be_decided:
-            return Status.CHALLENGED
-
-        # All claims are VALIDATED, so this one too.
-        return Status.VALIDATED
-
-    def distribute_all_bets(self, _start=None, _parent=None, _now=None):
-        if _start is None:
-            _start = ROOT_HASH
-            _now = now()
-
+    def _distribute_all_bets(self, start, parent, parent_attempt, now_):
         # we propagate status and bets repartition starting from the leaves
         # so we move in DFS order, but we also need to provide the parents
         # of each claim to distribute the upstakes
 
-        for attempt in self.proof_attempts.get(_start, []):
-            for claim in attempt:
-                self.distribute_all_bets(claim, _start, _now)
-        self.distribute_bets(_start, _parent, _now)
+        for attempt in self.proof_attempts.get(start, []):
+            for claim in attempt.claims:
+                self._distribute_all_bets(claim, start, attempt, now_)
+            self.update_attempt_status(attempt, start)
+        self.update_claim_status(start, parent, parent_attempt, now_)
 
-    def distribute_bets(self, hash: Hash, parent_claim_hash: Hash, now: int):
+    def update_attempt_status(self, attempt: ProofAttempt, parent_claim: Hash):
+        """This method updates the status of one attempt and distributes the up/down stakes when needed."""
+        if attempt.status.decided():
+            # Nothing to do here, the bets have already been distributed.
+            return
+
+        if all(self.claims[h].status is Status.VALIDATED for h in attempt.claims):
+            attempt.status = Status.VALIDATED
+            self.constraints.pay_attempt_validated(attempt)
+
+        rejecting_claim = get((self.claims[h] for h in attempt.claims), status=Status.REJECTED)
+        if rejecting_claim:
+            attempt.status = Status.REJECTED
+            self.constraints.pay_skeptic_invalidating_attempt(attempt, rejecting_claim)
+            if parent_claim and parent_claim != ROOT_HASH:
+                parent = self.claims[parent_claim]
+                self.constraints.pay_upstake_on_failed_answer(parent, attempt)
+
+    def update_claim_status(
+        self, hash: Hash, parent_claim_hash: Hash, parent_attempt: ProofAttempt, now: int,
+    ):
+        """This method updates the status of one claim and distribute its question bounty if needed."""
+        if hash == ROOT_HASH:
+            # TODO: Handle the root
+            return
+
         claim = self.claims[hash]
-        if claim.status in (Status.VALIDATED, Status.REJECTED):
+        if claim.status.decided():
             # Nothing to do here, the bets have already been distributed.
             return
 
         elif claim.status is Status.UNCHALLENGED:
-            if now > claim.time + self.constraints.time_for_questions:
-                # no question came, the proof is valid!
-                self.constraints.pay_claim_validated(claim)
+            # If no question came, this part of the proof is valid!
+            if now > parent_attempt.time + self.constraints.time_for_questions:
                 claim.status = Status.VALIDATED
-                # No challenge stake distribution here, it is done downwards
-                # from the challenge that is closed.
 
         elif claim.status is Status.CHALLENGED:
             attempts = self.proof_attempts.get(hash, [])
+
+            # If any proof attempt is validated, the claim is validated too.
+            validated_attempt = get(attempts, status=Status.VALIDATED)
+            if validated_attempt:
+                claim.status = Status.VALIDATED
+                # Distribute the bet from the challenge that just closed
+                # downwards to the successful attempt
+                self.constraints.pay_challenge_answered(claim, validated_attempt)
+                return
+
             last_interaction = max(
-                (self.claims[h].time for attempt in attempts for h in attempt),
-                default=claim.challenged_time,
+                (attempt.time for attempt in attempts), default=claim.challenged_time
             )
-
-            attempts_status = [
-                self.proof_attempt_status(attempt) for attempt in attempts
-            ]
-
-            # If an attempt is validated, the claim is validated too.
-            for i, status in enumerate(attempts_status):
-                if status is Status.VALIDATED:
-                    # proof is correct!
-                    closing_claim = self.claims[attempts[i][0]]
-                    # We used that all claims in an attempt have the same claimer.
-                    self.constraints.pay_claim_validated(claim)
-                    if hash == ROOT_HASH:
-                        # TODO: pay root if there is an initial question
-                        # otherwise there is nothing to do.
-                        ...
-                    else:
-                        if claim.skeptic:  # Always the case, except for the root claim
-                            self.constraints.pay_challenge_answered(
-                                claim, closing_claim
-                            )
-                    claim.status = Status.VALIDATED
-                    return
-
             # Otherwise, after the time elapsed
             if now > last_interaction + self.constraints.time_for_answers:
-                # With one of the subclaims is still undecided, we need to wait.
-                if any(not status.decided() for status in attempts_status):
-                    return
-                else:  # Otherwise, all subclaims are rejected
-                    assert all(s is Status.REJECTED for s in attempts_status)
-
+                # If the battle of each attempt is decided and we are here, all attempts failed
+                if all(attempt.status.decided() for attempt in attempts):
                     claim.status = Status.REJECTED
-                    if hash == ROOT_HASH:
-                        # TODO: if there is an initial question, send money back
-                        ...
-                    else:
-                        self.constraints.pay_skeptic_invalidating_claim(claim)
-
-                    if parent_claim_hash:
-                        parent = self.claims[parent_claim_hash]
-                        self.constraints.pay_upstake_on_failed_answer(parent, claim)
-
-        else:
-            # Yes, I miss exaustive matching from Rust...
-            raise ValueError(f"Unkown status {claim.status} for {hash}")
 
     def _dfs(self, _start=ROOT_HASH) -> Iterator[Hash]:
         """Yield all the hashes of claims in the node tree, starting with the leaves.
@@ -649,7 +591,7 @@ SPRIG instance:
         Claims are always yielded after all their children are yielded."""
 
         for attempt in self.proof_attempts.get(_start, []):
-            for hash in attempt:
+            for hash in attempt.claims:
                 yield from self._dfs(hash)
         yield _start
 
@@ -660,6 +602,7 @@ SPRIG instance:
 
     def dumps(self):
         base = dataclasses.asdict(self)
+
         # return {
         #     "language": self.language.__class__.__name__,
         #     "constraints": dataclasses.asdict(self.constraints),
@@ -708,31 +651,9 @@ SPRIG instance:
 
         constraints = Constraints(**data["constraints"])
         claims = {h: Claim(**claim) for h, claim in data["claims"].items()}
-        challenges = {
-            h: Challenge(**challenge) for h, challenge in data["challenges"].items()
-        }
+        challenges = {h: Challenge(**challenge) for h, challenge in data["challenges"].items()}
 
-        return cls(
-            constraints, data["language"], claims, data["proof_attempts"], challenges
-        )
-
-
-def tree_str(iterable):
-    # For future reference for printing tree.
-    if not iterable:
-        return ""
-
-    BIFURC = "├── "
-    LAST_BIFURC = "└── "
-
-    out = ""
-    for item in iterable[:-1]:
-        s = indent(str(item), "│   ")
-        out += BIFURC + s[4:]
-    # add the last separately as we don't want the gutter
-    out += LAST_BIFURC + indent(str(iterable[-1]), "    ")[4:]
-
-    return out
+        return cls(constraints, data["language"], claims, data["proof_attempts"], challenges)
 
 
 def main():
@@ -749,15 +670,15 @@ def main():
             print(f"{address.ljust(padding)} ({fmt(balance, ORANGE)})")
         print()
 
-    level = 8
+    level = 6
     recommended_constraints = Constraints(
-        max_depth=level,
+        root_height=level - 1,
         max_length=1000,
         time_for_questions=2,
         time_for_answers=2,
-        upstakes=[1] * level,
-        downstakes=[1] * level,
-        question_bounties=[1] * level,
+        upstakes=list(range(level)),
+        downstakes=list(range(level)),
+        question_bounties=list(range(level)),
         verification_cost=1,
     )
 
@@ -765,7 +686,7 @@ def main():
     sprig = Sprig.start(
         TicTacToe(),
         recommended_constraints,
-        "Diego",
+        Address("Diego"),
         "...|XX.|... O plays X wins",
         "O..|XXX|..." + ctx,
         ".O.|XXX|..." + ctx,
@@ -792,6 +713,17 @@ def main():
         "X..|XXO|O.X" + ctx,
         "X..|XXO|XO." + ctx,
         "X..|XXO|X.O" + ctx,
+    )
+    sprig.answer(
+        ROOT_HASH,
+        "Patrick",
+        "O..|XXX|..." + ctx,
+        ".O.|XXX|..." + ctx,
+        "..O|XXX|..." + ctx,
+        "X..|XXO|..." + ctx,
+        "...|XXX|O.." + ctx,
+        "...|XXX|.O." + ctx,
+        "...|XXX|..O" + ctx,
     )
 
     time_passes()
