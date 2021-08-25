@@ -285,6 +285,7 @@ class Claim:
     time: float
     statement: str
     status: Status
+    level: int
 
     # The skeptic is the one who challenged the claim
     # and not the challenge from which the claim originates,
@@ -298,11 +299,14 @@ class Claim:
 
     # For debugging purposes
     money_held: int
+    hash: Hash
 
     def __init__(
         self,
         claimer,
         statement,
+        level,
+        hash,
         *,
         time=None,
         status=None,
@@ -310,6 +314,8 @@ class Claim:
         challenged_time=None,
         money_held=0,
     ):
+        self.level = level
+        self.hash = hash
         self.claimer = claimer
         self.statement = statement
         self.time = now() if time is None else time
@@ -401,10 +407,10 @@ class Language(str):
     def judge_low_level(self):
         raise NotImplementedError
 
-    def validate_subclaims(self, root: "Claim", *subclaims: "Claim"):
+    def validate_subclaims(self, root_statement: str, *sub_claim_statements: str):
         raise NotImplementedError
 
-    def validate_top_level(self, initial_claim: "Claim"):
+    def validate_top_level(self, initial_claim: str):
         raise NotImplementedError
 
 
@@ -423,21 +429,21 @@ class Sprig:
         cls,
         language: Language,
         constraints: Constraints,
-        root_claim: Claim,
-        *sub_claims: Claim,
+        claimer: Address,
+        claim: str,
+        *statements: str,
     ):
         """Start a new instance of the SPRIG protocol."""
 
-        root_claim.status = Status.CHALLENGED
+        root_claim = Claim(
+            claimer, claim, constraints.max_depth, ROOT_HASH, status=Status.CHALLENGED
+        )
 
         self = cls(constraints, language, {ROOT_HASH: root_claim}, {})
 
-        self.language.validate_top_level(root_claim)
-        self.language.validate_subclaims(root_claim, *sub_claims)
+        self.language.validate_top_level(root_claim.statement)
 
-        for claim in sub_claims:
-            self.constraints.pay_to_answer(claim)
-        self._add_proof_attempt(ROOT_HASH, *sub_claims)
+        self.answer(ROOT_HASH, claimer, *statements)
 
         return self
 
@@ -489,27 +495,14 @@ SPRIG instance:
             if self.claims[claim].status is Status.UNCHALLENGED
         )
 
-    def _add_claim(self, claim: Claim) -> Hash:
+    def _add_claim(self, claimer: Address, statement: str, level) -> Hash:
         """Add a claim to the dictionnary of claims, returning the generated hash."""
 
         hash_ = "#" + str(len(self.claims))
         assert hash_ not in self.claims  # Should never happen, it would be a bug
 
-        self.claims[hash_] = claim
+        self.claims[hash_] = Claim(claimer, statement, level, hash_)
         return hash_
-
-    def _add_proof_attempt(self, root: Hash, *sub_claims: Claim):
-        """Add a proof attempt given the of the claim it proves and the subclaims that build the proof.
-
-        This method does not perform any check nor payment."""
-
-        if root not in self.proof_attempts:
-            # Create the list of proof attempts if it doesn't exist yet.
-            # We could have used a defaultdict, but I doubt can use defaultdicts on any blockchain.
-            self.proof_attempts[root] = []
-
-        hashes = [self._add_claim(claim) for claim in sub_claims]
-        self.proof_attempts[root].append(hashes)
 
     def challenge(self, skeptic: Address, claim_hash: Hash):
         assert claim_hash in self.claims, "The claim hash is not valid."
@@ -522,17 +515,36 @@ SPRIG instance:
         self.constraints.pay_to_challenge(skeptic, claim)
         claim.challenge(skeptic)
 
-    def answer(self, challenged_claim: Hash, *sub_claims: Claim):
+    def answer(self, challenged_claim: Hash, claimer: Address, *sub_statements: str):
         assert challenged_claim in self.claims
         claim = self.claims[challenged_claim]
         assert claim.status is Status.CHALLENGED
+        assert claim.level > 1, "Use answer_low_level instead"
 
-        self.language.validate_subclaims(claim, *sub_claims)
+        self.language.validate_subclaims(claim.statement, *sub_statements)
 
-        for sub_claim in sub_claims:
-            self.constraints.pay_to_answer(sub_claim)
+        if challenged_claim not in self.proof_attempts:
+            # Create the list of proof attempts if it doesn't exist yet.
+            self.proof_attempts[challenged_claim] = []
 
-        self._add_proof_attempt(challenged_claim, *sub_claims)
+        hashes = [
+            self._add_claim(claimer, statement, claim.level - 1)
+            for statement in sub_statements
+        ]
+        self.proof_attempts[challenged_claim].append(hashes)
+
+        try:
+            for h in hashes:
+                self.constraints.pay_to_answer(self.claims[h])
+        except Exception:
+            # Revert if cannot pay.
+            self.proof_attempts[challenged_claim].pop()
+            for h in hashes:
+                del self.claims[h]
+            raise
+
+    def answer_low_level(self, claim: Hash, machine_proof: str):
+        ...
 
     def proof_attempt_status(self, attempt: List[Hash]):
         """Compute the status of a proof attempt based on its claims."""
@@ -728,8 +740,6 @@ def tree_str(iterable):
 def main():
     from languages import TicTacToe
 
-    MINUTES = 60
-
     def time_passes(amount=1):
         now(amount)
         sprig.distribute_all_bets()
@@ -753,20 +763,19 @@ def main():
         verification_cost=1,
     )
 
-    claim = Claim("Diego", "...|XX.|... O plays X wins")
-
     ctx = " O plays X wins"
     sprig = Sprig.start(
         TicTacToe(),
         recommended_constraints,
-        claim,
-        Claim("Diego", "O..|XXX|..." + ctx),
-        Claim("Diego", ".O.|XXX|..." + ctx),
-        Claim("Diego", "..O|XXX|..." + ctx),
-        Claim("Diego", "X..|XXO|..." + ctx),
-        Claim("Diego", "...|XXX|O.." + ctx),
-        Claim("Diego", "...|XXX|.O." + ctx),
-        Claim("Diego", "...|XXX|..O" + ctx),
+        "Diego",
+        "...|XX.|... O plays X wins",
+        "O..|XXX|..." + ctx,
+        ".O.|XXX|..." + ctx,
+        "..O|XXX|..." + ctx,
+        "X..|XXO|..." + ctx,
+        "...|XXX|O.." + ctx,
+        "...|XXX|.O." + ctx,
+        "...|XXX|..O" + ctx,
     )
 
     print(sprig)
@@ -779,11 +788,12 @@ def main():
 
     sprig.answer(
         "#4",
-        Claim("Diego", "XO.|XXO|X.." + ctx),
-        Claim("Diego", "XXO|XXO|..." + ctx),
-        Claim("Diego", "X..|XXO|O.X" + ctx),
-        Claim("Diego", "X..|XXO|XO." + ctx),
-        Claim("Diego", "X..|XXO|X.O" + ctx),
+        "Diego",
+        "XO.|XXO|X.." + ctx,
+        "XXO|XXO|..." + ctx,
+        "X..|XXO|O.X" + ctx,
+        "X..|XXO|XO." + ctx,
+        "X..|XXO|X.O" + ctx,
     )
 
     time_passes()
@@ -794,11 +804,12 @@ def main():
 
     sprig.answer(
         "#4",
-        Claim("Clément", "XO.|XXO|X.." + ctx),
-        Claim("Clément", "X.O|XXO|X.." + ctx),
-        Claim("Clément", "X..|XXO|O.X" + ctx),
-        Claim("Clément", "X..|XXO|XO." + ctx),
-        Claim("Clément", "X..|XXO|X.O" + ctx),
+        "Clément",
+        "XO.|XXO|X.." + ctx,
+        "X.O|XXO|X.." + ctx,
+        "X..|XXO|O.X" + ctx,
+        "X..|XXO|XO." + ctx,
+        "X..|XXO|X.O" + ctx,
     )
 
     time_passes()

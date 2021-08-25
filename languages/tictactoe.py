@@ -8,6 +8,7 @@ class TicTacToe(Language):
     RE_BOARD = re.compile(r"[.XO]{3}\|[.XO]{3}\|[.XO]{3} ([XO]) plays ([.XO]) wins")
 
     def parse_board(self, board):
+        print(board)
         match = self.RE_BOARD.match(board)
 
         assert match, "Invalid board format."
@@ -21,11 +22,11 @@ class TicTacToe(Language):
     def judge_low_level(self):
         return True  # todo
 
-    def validate_subclaims(self, root: "Claim", *subclaims: "Claim"):
+    def validate_subclaims(self, root_statement: str, *sub_claim_statements: str):
         move_covered = [False] * 9
-        prev_grid, prev_turn, prev_win = self.parse_board(root.statement)
-        for claim in subclaims:
-            grid, turn, win = self.parse_board(claim.statement)
+        prev_grid, prev_turn, prev_win = self.parse_board(root_statement)
+        for claim in sub_claim_statements:
+            grid, turn, win = self.parse_board(claim)
 
             assert turn == prev_turn, "The turn has changed."
             assert win == prev_win, "The winner has changed."
@@ -55,6 +56,6 @@ class TicTacToe(Language):
             move_covered
         ), f"Not all possibilities for {prev_turn} have been covered."
 
-    def validate_top_level(self, initial_claim: "Claim"):
-        grid, turn, win = self.parse_board(initial_claim.statement)
+    def validate_top_level(self, initial_statement: str):
+        grid, turn, win = self.parse_board(initial_statement)
         assert turn != win

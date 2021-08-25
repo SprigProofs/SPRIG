@@ -171,7 +171,7 @@ def add_proof_attempt(
 ):
     """Create a new proof attempt of a challenged claim."""
     claims = [sprig.Claim(attempt.claimer, claim) for claim in attempt.claims]
-    instance.answer(claim_hash, *claims)
+    instance.answer(claim_hash, "Diego", *claims)
 
 
 @api.get("/users")
