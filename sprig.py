@@ -145,7 +145,6 @@ class AbstractConstraints:
     def load(**data):
         id_ = data.pop("type")
         cls = AbstractConstraints.REGISTER[id_]
-        print(cls)
         return cls(**data)
 
     def pay_to_challenge(self, skeptic, claim):
@@ -401,7 +400,7 @@ class Language(str):
     def dump(self):
         return {"__class__": self.name, **self.__dict__}
 
-    def judge_low_level(self):
+    def judge_low_level(self, statement: str):
         raise NotImplementedError
 
     def validate_subclaims(self, root_statement: str, *sub_claim_statements: str):

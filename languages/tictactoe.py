@@ -8,7 +8,6 @@ class TicTacToe(Language):
     RE_BOARD = re.compile(r"[.XO]{3}\|[.XO]{3}\|[.XO]{3} ([XO]) plays ([.XO]) wins")
 
     def parse_board(self, board):
-        print(board)
         match = self.RE_BOARD.match(board)
 
         assert match, "Invalid board format."
@@ -19,8 +18,33 @@ class TicTacToe(Language):
 
         return grid, turn, wins
 
-    def judge_low_level(self):
-        return True  # todo
+    def _all_same(self, s: str):
+        if set(s) == {s[0]}:
+            return s[0]
+        else:
+            return "."
+
+    def _winner(self, grid: str, to_check="."):
+        lines = (
+            [self._all_same(grid[i::3]) for i in range(3)]
+            + [self._all_same(grid[3 * i : 3 * i + 3]) for i in range(3)]
+            + [self._all_same(grid[::4]), self._all_same(grid[2::2])]
+        )
+
+        for result in lines:
+            if result != ".":
+                if to_check == ".":
+                    return False
+                else:
+                    return result == to_check
+
+        if to_check == ".":
+            return True
+
+    def judge_low_level(self, statement: str):
+        grid, turn, win = self.parse_board(statement)
+
+        return self._winner(grid, to_check=win)
 
     def validate_subclaims(self, root_statement: str, *sub_claim_statements: str):
         move_covered = [False] * 9
@@ -50,6 +74,11 @@ class TicTacToe(Language):
                         cell
                     ], f"Two claims cover the same move for {prev_turn}."
                     move_covered[cell] = True
+
+            # The other player did not win
+            assert not self._winner(
+                grid, to_check="XO"[win == "X"]
+            ), "The other player won."
 
         # Check that all possibilites have been checked
         assert prev_grid.count(".") == sum(
