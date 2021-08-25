@@ -188,17 +188,15 @@ class Constraints(AbstractConstraints):
     verification_cost: int
 
     def pay_to_challenge(self, skeptic, claim):
-        level = 0
-        amount = self.question_bounties[level]
+        amount = self.question_bounties[claim.level]
         transfer_money(skeptic, SPRIG_ADDRESS, amount, "challenge")
         claim.money_held += amount
 
     def pay_to_answer(self, claim):
-        level = 1
 
-        amount = self.downstakes[level]
-        if level > 0:
-            amount += self.upstakes[level]
+        amount = self.downstakes[claim.level]
+        if claim.level > 0:
+            amount += self.upstakes[claim.level]
 
         transfer_money(
             claim.claimer, SPRIG_ADDRESS, amount, "answer",
@@ -216,28 +214,22 @@ class Constraints(AbstractConstraints):
         Doesn't take any challenge into account.
         """
 
-        level = 1
-
-        amount = self.downstakes[level]
-        if level > 0:
-            amount += self.upstakes[level]
-
-        amount = self.upstakes[level] + self.downstakes[level]
+        amount = self.downstakes[claim.level]
+        if claim.level > 0:
+            amount += self.upstakes[claim.level]
 
         transfer_money(SPRIG_ADDRESS, claim.claimer, amount, "claim validated")
         claim.money_held -= amount
 
     def pay_challenge_answered(self, claim):
-        level = 1
-        amount = self.question_bounties[level]
+        amount = self.question_bounties[claim.level]
         transfer_money(
             SPRIG_ADDRESS, claim.claimer, amount, "challenge answered",
         )
         claim.money_held -= amount
 
     def pay_skeptic_invalidating_claim(self, claim: Claim):
-        level = 1
-        amount = self.question_bounties[level] + self.downstakes[level]
+        amount = self.question_bounties[claim.level] + self.downstakes[claim.level]
         transfer_money(
             SPRIG_ADDRESS, claim.skeptic, amount, "skeptic invalidated claim"
         )
@@ -246,13 +238,12 @@ class Constraints(AbstractConstraints):
     def pay_skeptic_on_failed_answer(self, parent_claim: Claim, claim: Claim):
         """Distribute the upstake."""
 
-        level = 1
-        amount = self.question_bounties[level] + self.upstakes[level + 1]
+        amount = self.question_bounties[parent_claim.level] + self.upstakes[claim.level]
         transfer_money(
             SPRIG_ADDRESS, claim.skeptic, amount, "claim failed to answer challenge"
         )
-        parent_claim.money_held -= self.question_bounties[level]
-        claim.money_held -= self.upstakes[level + 1]
+        parent_claim.money_held -= self.question_bounties[parent_claim.level]
+        claim.money_held -= self.upstakes[claim.level]
 
     def inside_limits(self, claim):
         return len(claim.statement) < self.max_length
