@@ -4,8 +4,26 @@ from sprig import Claim, Language
 
 
 class TicTacToe(Language):
+    """
+    Language that represents a game of Tic-Tac-Toe.
+
+    A claim has the form
+        xxx|xxx|xxx A plays x wins
+    With x any character in "X", "O" or ".".
+    The X and O represents the two players, and the "."
+    is either an empty square or indicates a tie.
+
+    A machine level proof that a claim is indeed a draw is ".".
+    A machine level proof that a claim is winning for one of the
+    two players is of the form:
+        - "\" if the win is in the diagonal.
+        - "/" if the win is in the antidiagonal.
+        - "|1", "|2" or "|3" of the win is in the 1st, 2nd or 3rd column.
+        - "-1", "-2" or "-3" similarly for the lines.
+    """
 
     RE_BOARD = re.compile(r"[.XO]{3}\|[.XO]{3}\|[.XO]{3} ([XO]) plays ([.XO]) wins")
+    RE_MACHINE_LEVEL = re.compile(r"[./\\]|[|-][123]")
 
     def parse_board(self, board):
         match = self.RE_BOARD.match(board)
@@ -41,10 +59,26 @@ class TicTacToe(Language):
         if to_check == ".":
             return True
 
-    def judge_low_level(self, statement: str):
+    def judge_low_level(self, statement: str, machine_proof: str) -> bool:
+        if not self.RE_MACHINE_LEVEL.match(machine_proof):
+            return False
+
         grid, turn, win = self.parse_board(statement)
 
-        return self._winner(grid, to_check=win)
+        if (machine_proof == ".") != (win == "."):
+            return False
+        elif machine_proof == ".":
+            return self._winner(grid, ".")
+        elif machine_proof == "/":
+            return set(grid[2::2]) == {win}
+        elif machine_proof == "\\":
+            return set(grid[::4]) == {win}
+        else:
+            i = int(machine_proof[1]) - 1
+            if machine_proof[0] == "|":
+                return set(grid[i::3]) == {win}
+            else:
+                return set(grid[3 * i : 3 * i + 3]) == {win}
 
     def validate_subclaims(self, root_statement: str, *sub_claim_statements: str):
         move_covered = [False] * 9
@@ -56,12 +90,8 @@ class TicTacToe(Language):
             assert win == prev_win, "The winner has changed."
 
             # Check that it correspond to a move from both players
-            assert (
-                grid.count("X") == prev_grid.count("X") + 1
-            ), "X did not play exactly once."
-            assert (
-                grid.count("O") == prev_grid.count("O") + 1
-            ), "Y did not play exactly once."
+            assert grid.count("X") == prev_grid.count("X") + 1, "X did not play exactly once."
+            assert grid.count("O") == prev_grid.count("O") + 1, "Y did not play exactly once."
 
             for cell, (a, b) in enumerate(zip(prev_grid, grid)):
                 # The new board extend the previous
@@ -76,9 +106,7 @@ class TicTacToe(Language):
                     move_covered[cell] = True
 
             # The other player did not win
-            assert not self._winner(
-                grid, to_check="XO"[win == "X"]
-            ), "The other player won."
+            assert not self._winner(grid, to_check="XO"[win == "X"]), "The other player won."
 
         # Check that all possibilites have been checked
         assert prev_grid.count(".") == sum(

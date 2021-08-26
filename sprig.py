@@ -38,7 +38,8 @@ def now(increment=0, __now=[0]):
 def transfer_money(from_, to, amount, msg=""):
     """Function called to for all payements."""
 
-    assert from_ and to
+    assert from_
+    assert to
 
     if msg:
         msg = f" ({FG_ORANGE}{msg}{RESET}{BG_BLUE}) <<< "
@@ -109,7 +110,7 @@ class AbstractConstraints:
         """
         pass
 
-    def pay_challenge_answered(self, challenged_claim: Claim, closing_attempt: ProofAttempt):
+    def pay_challenge_closed(self, challenged_claim: Claim, closing_attempt: ProofAttempt):
         pass
 
     def pay_skeptic_invalidating_attempt(self, attempt: ProofAttempt, claim: Claim):
@@ -151,20 +152,21 @@ class Constraints(AbstractConstraints):
         # Would be a bug as pay_for_machine_verification should be called.
         assert attempt.height > 0
 
-        amount = self.downstakes[attempt.height] + self.upstakes[attempt.height]
+        amount = self.downstakes[attempt.height]
+        if attempt.height < self.root_height - 1:
+            amount += self.upstakes[attempt.height]
         transfer_money(
             attempt.claimer, SPRIG_ADDRESS, amount, f"new proof attempt - ⛰️{attempt.height}",
         )
         attempt.money_held += amount
 
-    def pay_for_machine_verification(self, claim: Claim):
-        assert claim.height == 0
+    def pay_for_machine_verification(self, attempt: ProofAttempt):
+        assert attempt.height == 0
+        amount = self.verification_cost + self.upstakes[attempt.height]
         transfer_money(
-            claim.claimer,
-            SPRIG_ADDRESS,
-            self.verification_cost,
-            f"machine verification {claim.hash}",
+            attempt.claimer, SPRIG_ADDRESS, amount, f"machine verification {attempt.claims[0]}",
         )
+        attempt.money_held += amount
 
     def pay_attempt_validated(self, attempt: ProofAttempt):
         """
@@ -172,15 +174,42 @@ class Constraints(AbstractConstraints):
         Doesn't take any challenge into account.
         """
 
-        amount = self.downstakes[attempt.height] + self.upstakes[attempt.height]
+        amount = self.downstakes[attempt.height]
+        if attempt.height < self.root_height - 1:
+            amount += self.upstakes[attempt.height]
 
         transfer_money(SPRIG_ADDRESS, attempt.claimer, amount, f"attempt validated")
         attempt.money_held -= amount
 
-    def pay_challenge_answered(self, challenged_claim: Claim, closing_attempt: ProofAttempt):
-        amount = self.question_bounties[closing_attempt.height + 1]
+    def pay_attempt_rejected(self, attempt: ProofAttempt, rejecting: Claim, parent: Claim):
+        if rejecting.height > 0:
+            # The only reason for now downstakes is that
+            # the rejecting claim is a wrong machine proof
+            amount = self.downstakes[attempt.height]
+            transfer_money(
+                SPRIG_ADDRESS, rejecting.skeptic, amount, f"downstakes to {rejecting.hash}",
+            )
+            attempt.money_held -= amount
+
+        if parent.skeptic:
+            # Always but at the root
+            amount = self.upstakes[attempt.height]
+            transfer_money(
+                SPRIG_ADDRESS, parent.skeptic, amount, f"upstakes to {parent.hash}",
+            )
+            attempt.money_held -= amount
+
+    def pay_challenge_closed(self, challenged_claim: Claim, closing_attempt: ProofAttempt = None):
+        """Transfer the challenge fee to who deserves them."""
+
+        if challenged_claim.status is Status.VALIDATED:
+            destination = closing_attempt.claimer
+        else:
+            destination = challenged_claim.skeptic
+
+        amount = self.question_bounties[challenged_claim.height]
         transfer_money(
-            SPRIG_ADDRESS, closing_attempt.claimer, amount, "challenge answered",
+            SPRIG_ADDRESS, destination, amount, f"challenge {challenged_claim.hash} answered",
         )
         challenged_claim.money_held -= amount
 
@@ -355,8 +384,10 @@ class Language(str):
     def __str__(self):
         return self.name
 
-    def judge_low_level(self, statement: str):
-        """Perform the machine level verification."""
+    def judge_low_level(self, statement: str, machine_proof: str) -> bool:
+        """Perform the machine level verification.
+        :param machine_proof:
+        """
         raise NotImplementedError
 
     def validate_subclaims(self, root_statement: str, *sub_claim_statements: str):
@@ -444,9 +475,10 @@ class Sprig:
 
             attempt: ProofAttempt
             for i, attempt in enumerate(self.proof_attempts.get(claim_hash, [])):
+                money = f" ({fmt_money(attempt.money_held)})" if attempt.money_held else ""
                 ret += (
                     fmt(f"Attempt {i + 1} by {attempt.claimer}", attempt.status.color())
-                    + f" at {attempt.time}⌛ ({fmt_money(attempt.money_held)}):\n"
+                    + f" at {attempt.time}⌛{money}:\n"
                 )
                 for claim in attempt.claims:
                     claim_s = indent(claim_str(claim), INDENT)
@@ -484,35 +516,40 @@ SPRIG instance:
 
     def challenge(self, skeptic: Address, claim_hash: Hash):
         assert claim_hash in self.claims, "The claim hash is not valid."
-        assert (
-            self.claims[claim_hash].status == Status.UNCHALLENGED
-        ), "This claim cannot be challenged anymore."
-
         claim = self.claims[claim_hash]
+        assert claim.status == Status.UNCHALLENGED, "This claim cannot be challenged anymore."
+        assert claim.height > 0, "A machine level claim cannot be challenged."
 
         self.constraints.pay_to_challenge(skeptic, claim)
         claim.challenge(skeptic)
 
     def answer(self, challenged_claim: Hash, claimer: Address, *sub_statements: str):
-        assert challenged_claim in self.claims
+        assert challenged_claim in self.claims, "No such claim."
         claim = self.claims[challenged_claim]
         assert claim.status is Status.CHALLENGED
         assert claim.height > 1, "Use answer_low_level instead"
 
         self.language.validate_subclaims(claim.statement, *sub_statements)
 
-        # Create the list of proof attempts if it doesn't exist yet.
-        if challenged_claim not in self.proof_attempts:
-            self.proof_attempts[challenged_claim] = []
-
         hashes = [self._add_claim(statement, claim.height - 1) for statement in sub_statements]
         attempt = ProofAttempt(claimer, hashes, claim.height - 1)
 
         self.constraints.pay_new_proof_attempt(attempt)
-        self.proof_attempts[challenged_claim].append(attempt)
+        # Create the list of proof attempts if it doesn't exist yet and add the attempt.
+        self.proof_attempts.setdefault(challenged_claim, []).append(attempt)
 
-    def answer_low_level(self, claim: Hash, claimer: Address, machine_proof: str):
-        ...  # TODO!
+    def answer_low_level(self, challenged_claim: Hash, claimer: Address, machine_proof: str):
+        assert challenged_claim in self.claims, "No such claim."
+        claim = self.claims[challenged_claim]
+        assert claim.status is Status.CHALLENGED
+        assert claim.height >= 0
+
+        h = self._add_claim(machine_proof, 0)
+        attempt = ProofAttempt(claimer, [h], 0)
+
+        self.constraints.pay_for_machine_verification(attempt)
+        # Create the list of proof attempts if it doesn't exist yet and add the attempt.
+        self.proof_attempts.setdefault(challenged_claim, []).append(attempt)
 
     def distribute_all_bets(self):
         self._distribute_all_bets(ROOT_HASH, None, None, now())
@@ -530,21 +567,23 @@ SPRIG instance:
 
     def update_attempt_status(self, attempt: ProofAttempt, parent_claim: Hash):
         """This method updates the status of one attempt and distributes the up/down stakes when needed."""
+
+        # Nothing to do here, the bets have already been distributed.
         if attempt.status.decided():
-            # Nothing to do here, the bets have already been distributed.
             return
 
+        # If all the claims are validated, the attempt too.
         if all(self.claims[h].status is Status.VALIDATED for h in attempt.claims):
             attempt.status = Status.VALIDATED
             self.constraints.pay_attempt_validated(attempt)
+            return
 
+        # If any claim is rejected, the attempt is rejected.
         rejecting_claim = get((self.claims[h] for h in attempt.claims), status=Status.REJECTED)
         if rejecting_claim:
             attempt.status = Status.REJECTED
-            self.constraints.pay_skeptic_invalidating_attempt(attempt, rejecting_claim)
-            if parent_claim and parent_claim != ROOT_HASH:
-                parent = self.claims[parent_claim]
-                self.constraints.pay_upstake_on_failed_answer(parent, attempt)
+            parent = self.claims.get(parent_claim)
+            self.constraints.pay_attempt_rejected(attempt, rejecting_claim, parent)
 
     def update_claim_status(
         self, hash: Hash, parent_claim_hash: Hash, parent_attempt: ProofAttempt, now: int,
@@ -560,8 +599,14 @@ SPRIG instance:
             return
 
         elif claim.status is Status.UNCHALLENGED:
-            # If no question came, this part of the proof is valid!
-            if now > parent_attempt.time + self.constraints.time_for_questions:
+            if claim.height == 0:
+                parent = self.claims[parent_claim_hash]
+                if self.language.judge_low_level(parent.statement, claim.statement):
+                    claim.status = Status.VALIDATED
+                else:
+                    claim.status = Status.REJECTED
+            elif now > parent_attempt.time + self.constraints.time_for_questions:
+                # If no question came, this part of the proof is valid!
                 claim.status = Status.VALIDATED
 
         elif claim.status is Status.CHALLENGED:
@@ -573,7 +618,7 @@ SPRIG instance:
                 claim.status = Status.VALIDATED
                 # Distribute the bet from the challenge that just closed
                 # downwards to the successful attempt
-                self.constraints.pay_challenge_answered(claim, validated_attempt)
+                self.constraints.pay_challenge_closed(claim, validated_attempt)
                 return
 
             last_interaction = max(
@@ -584,6 +629,7 @@ SPRIG instance:
                 # If the battle of each attempt is decided and we are here, all attempts failed
                 if all(attempt.status.decided() for attempt in attempts):
                     claim.status = Status.REJECTED
+                    self.constraints.pay_challenge_closed(claim, None)
 
     def _dfs(self, _start=ROOT_HASH) -> Iterator[Hash]:
         """Yield all the hashes of claims in the node tree, starting with the leaves.
@@ -670,6 +716,10 @@ def main():
             print(f"{address.ljust(padding)} ({fmt(balance, ORANGE)})")
         print()
 
+    MICHAEL = Address("Michael")
+    DIEGO = Address("Diego")
+    CLEMENT = Address("Clément")
+
     level = 6
     recommended_constraints = Constraints(
         root_height=level - 1,
@@ -700,41 +750,32 @@ def main():
     print(sprig)
     time_passes()
 
-    sprig.challenge("Michael", "#4")
-    sprig.challenge("Michael", "#2")
+    sprig.challenge(MICHAEL, "#4")
+    sprig.challenge(MICHAEL, "#2")
 
     time_passes()
 
     sprig.answer(
         "#4",
-        "Diego",
+        DIEGO,
         "XO.|XXO|X.." + ctx,
         "XXO|XXO|..." + ctx,
         "X..|XXO|O.X" + ctx,
         "X..|XXO|XO." + ctx,
         "X..|XXO|X.O" + ctx,
     )
-    sprig.answer(
-        ROOT_HASH,
-        "Patrick",
-        "O..|XXX|..." + ctx,
-        ".O.|XXX|..." + ctx,
-        "..O|XXX|..." + ctx,
-        "X..|XXO|..." + ctx,
-        "...|XXX|O.." + ctx,
-        "...|XXX|.O." + ctx,
-        "...|XXX|..O" + ctx,
-    )
 
     time_passes()
+    sprig.answer_low_level("#2", DIEGO, "-2")
 
-    sprig.challenge("Michael", "#9")
+    time_passes()
+    sprig.challenge(MICHAEL, "#9")
 
     time_passes()
 
     sprig.answer(
         "#4",
-        "Clément",
+        CLEMENT,
         "XO.|XXO|X.." + ctx,
         "X.O|XXO|X.." + ctx,
         "X..|XXO|O.X" + ctx,
