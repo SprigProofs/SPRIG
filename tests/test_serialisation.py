@@ -1,7 +1,6 @@
 import pytest
 
 from sprig import *
-from languages import TicTacToe
 from tests import exemples
 
 

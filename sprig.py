@@ -14,7 +14,7 @@ try:
     # Simplifies stuff for the web interface,
     # but if the api is not wanted, work without.
     # from pydantic.dataclasses import dataclasss
-    from dataclasses import dataclass
+    from pydantic.dataclasses import dataclass
 except ImportError:
     from dataclasses import dataclass
 
@@ -675,60 +675,45 @@ def main():
         "...|XXX|..O" + ctx,
     )
 
-    if False:
-        print(sprig)
-        time_passes()
-
-        sprig.challenge(MICHAEL, "#4")
-        sprig.challenge(MICHAEL, "#2")
-
-        time_passes()
-
-        sprig.answer(
-            "#4",
-            DIEGO,
-            "XO.|XXO|X.." + ctx,
-            "XXO|XXO|..." + ctx,
-            "X..|XXO|O.X" + ctx,
-            "X..|XXO|XO." + ctx,
-            "X..|XXO|X.O" + ctx,
-        )
-
-        time_passes()
-        sprig.answer_low_level("#2", DIEGO, "-2")
-
-        time_passes()
-        sprig.challenge(MICHAEL, "#9")
-
-        time_passes()
-
-        sprig.answer(
-            "#4",
-            CLEMENT,
-            "XO.|XXO|X.." + ctx,
-            "X.O|XXO|X.." + ctx,
-            "X..|XXO|O.X" + ctx,
-            "X..|XXO|XO." + ctx,
-            "X..|XXO|X.O" + ctx,
-        )
-
-        time_passes()
-        time_passes()
-        time_passes()
-
-    # pprint(sprig.dumps())
-    # pprint(json.loads(sprig.dumps()))
-    # new = Sprig.loads(sprig.dumps())
     print(sprig)
-    s = sprig.dumps()
-    print(s)
-    # d = Sprig.loads_to_dict(sprig.dumps())
-    # from pprint import pprint
-    #
-    # pprint(d)
-    # print(d["language"].__class__)
-    # print(new.claims[ROOT_HASH].status.__class__)
-    # print(new.language)
+    time_passes()
+
+    sprig.challenge(MICHAEL, "#4")
+    sprig.challenge(MICHAEL, "#2")
+
+    time_passes()
+
+    sprig.answer(
+        "#4",
+        DIEGO,
+        "XO.|XXO|X.." + ctx,
+        "XXO|XXO|..." + ctx,
+        "X..|XXO|O.X" + ctx,
+        "X..|XXO|XO." + ctx,
+        "X..|XXO|X.O" + ctx,
+    )
+
+    time_passes()
+    sprig.answer_low_level("#2", DIEGO, "-2")
+
+    time_passes()
+    sprig.challenge(MICHAEL, "#9")
+
+    time_passes()
+
+    sprig.answer(
+        "#4",
+        CLEMENT,
+        "XO.|XXO|X.." + ctx,
+        "X.O|XXO|X.." + ctx,
+        "X..|XXO|O.X" + ctx,
+        "X..|XXO|XO." + ctx,
+        "X..|XXO|X.O" + ctx,
+    )
+
+    time_passes()
+    time_passes()
+    time_passes()
 
 
 if __name__ == "__main__":
