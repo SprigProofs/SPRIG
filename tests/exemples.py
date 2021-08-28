@@ -6,18 +6,7 @@ DIEGO = Address("Diego")
 CLEMENT = Address("Clément")
 
 
-def time_passes(amount=1):
-    now(amount)
-    sprig.distribute_all_bets()
-    print(sprig)
-
-    padding = max(map(len, BANK))
-    for address, balance in BANK.items():
-        balance = f"{balance} ₽"
-        print(f"{address.ljust(padding)} ({fmt(balance, ORANGE)})")
-    print()
-
-
+# Until I have a way to handle the context...
 ctx = " O plays X wins"
 
 
@@ -35,7 +24,7 @@ def sprig_started():
     )
 
     return Sprig.start(
-        TicTacToe(),
+        TicTacToe().dump(),
         recommended_constraints,
         Address("Diego"),
         "...|XX.|... O plays X wins",
@@ -53,8 +42,8 @@ def sprig_challenged():
     sprig = sprig_started()
     now(1)
 
-    sprig.challenge(MICHAEL, "#4")
-    sprig.challenge(MICHAEL, "#2")
+    sprig.challenge(MICHAEL, "4")
+    sprig.challenge(MICHAEL, "2")
 
     sprig.distribute_all_bets()
     return sprig
@@ -65,7 +54,7 @@ def sprig_answer():
     now(1)
 
     sprig.answer(
-        "#4",
+        "4",
         DIEGO,
         "XO.|XXO|X.." + ctx,
         "XXO|XXO|..." + ctx,
@@ -76,7 +65,7 @@ def sprig_answer():
     sprig.distribute_all_bets()
     now(1)
 
-    sprig.answer_low_level("#2", DIEGO, "-2")
+    sprig.answer_low_level("2", DIEGO, "-2")
     sprig.distribute_all_bets()
     return sprig
 
@@ -85,12 +74,12 @@ def sprig_challenged_2():
     sprig = sprig_answer()
     now(1)
 
-    sprig.challenge(MICHAEL, "#9")
+    sprig.challenge(MICHAEL, "9")
     now(1)
     sprig.distribute_all_bets()
 
     sprig.answer(
-        "#4",
+        "4",
         CLEMENT,
         "XO.|XXO|X.." + ctx,
         "X.O|XXO|X.." + ctx,

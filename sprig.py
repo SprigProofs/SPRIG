@@ -16,6 +16,7 @@ try:
     # from pydantic.dataclasses import dataclasss
     from pydantic.dataclasses import dataclass
 except ImportError:
+    print("No support for the web API.")
     from dataclasses import dataclass
 
 # A type alias to know when a str is the address of someone.
@@ -24,7 +25,7 @@ Address = NewType("Address", str)
 # A Type alias to identify claims
 Hash = NewType("Hash", str)
 
-ROOT_HASH = Hash("#root")
+ROOT_HASH = Hash("0")
 SPRIG_ADDRESS = Address("@SPRIG")
 BANK = defaultdict(int)
 
@@ -267,7 +268,7 @@ class Claim:
     # if set, to the person asking the initial question.
     # The case of the root claim must always be treated separately.
     # TODO: Add logic to handle initial questions.
-    skeptic: Address
+    skeptic: Optional[Address]
     challenged_time: Optional[int]
 
     # For debugging purposes
@@ -302,7 +303,7 @@ class Claim:
         skeptic = f" skeptic: {self.skeptic}" if self.skeptic is not None else ""
         money = f" {self.money_held}{CURRENCY}" if self.money_held else ""
         return (
-            f"{self.hash} - "
+            f"#{self.hash} - "
             + fmt(self.statement, fg=self.status.color())
             + f" ({self.status}){skeptic}"
             + money
@@ -316,7 +317,7 @@ class Claim:
         self.challenged_time = now()
 
 
-@dataclass()
+@dataclass
 class ProofAttempt:
     claimer: Address
     claims: List[Hash]
@@ -335,51 +336,20 @@ class ProofAttempt:
         self.time = time if time is not None else now()
         self.money_held = money_held
 
-    # def status(self, claims_register: Dict[Hash, Claim]):
-    #     """Compute the status of a proof attempt based on its claims."""
-    #
-    #     def any_status_is(status, op=any):
-    #         return op(claims_register[h].status is status for h in self.claims)
-    #
-    #     if any_status_is(Status.REJECTED):
-    #         return Status.REJECTED
-    #     if any_status_is(Status.VALIDATED, all):
-    #         return Status.VALIDATED
-    #     if any_status_is(Status.CHALLENGED):
-    #         return Status.CHALLENGED
-    #     return Status.UNCHALLENGED
-    #
-    #     cannot_be_decided = False
-    #     for h in self.claims:
-    #         status = claims_register[h].status
-    #         if status is Status.REJECTED:
-    #             # If any claim is false, the proof attempt is instantly rejected.
-    #             return Status.REJECTED
-    #         elif not status.decided():
-    #             cannot_be_decided = True
-    #
-    #     # There is a claim that is either UNCHALLENGED or CHALLENGED,
-    #     # so the proof attempt cannot be closed thus stays CHALLENGED
-    #     if cannot_be_decided:
-    #         return Status.CHALLENGED
-    #
-    #     # All claims are VALIDATED, so this one too.
-    #     return Status.VALIDATED
-
 
 @dataclass
 class Sprig:
     """An instance of the SPRIG protocol"""
 
     constraints: Constraints
-    language: Language
+    language_data: dict
     claims: Dict[Hash, Claim]
     proof_attempts: Dict[Hash, List[ProofAttempt]]
 
     @classmethod
     def start(
         cls,
-        language: Language,
+        language_data: dict,
         constraints: Constraints,
         claimer: Address,
         claim: str,
@@ -395,7 +365,7 @@ class Sprig:
             challenged_time=now(),
         )
 
-        self = cls(constraints, language, {ROOT_HASH: root_claim}, {})
+        self = cls(constraints, language_data, {ROOT_HASH: root_claim}, {})
 
         self.language.validate_top_level(root_claim.statement)
         # TODO: Do we need to pay at the root ?
@@ -417,9 +387,9 @@ class Sprig:
                 status = claim.status.name.title()
                 money = f" ({fmt_money(claim.money_held)})" if claim.money_held else ""
                 if claim.skeptic is not None:
-                    ret = f"{claim_s} ({status} by {claim.skeptic}) {claim_hash}{money}\n"
+                    ret = f"{claim_s} ({status} by {claim.skeptic}) #{claim_hash}{money}\n"
                 else:
-                    ret = f"{claim_s} ({status}) {claim_hash}{money}\n"
+                    ret = f"{claim_s} ({status}) #{claim_hash}{money}\n"
 
             attempt: ProofAttempt
             for i, attempt in enumerate(self.proof_attempts.get(claim_hash, [])):
@@ -442,6 +412,10 @@ SPRIG instance:
 {indent(claim_str(ROOT_HASH), "   ")}"""
 
     @property
+    def language(self) -> Language:
+        return Language.load(**self.language_data)
+
+    @property
     def open_challenge_count(self):
         """Number of claim that are challenged and not resolved yet"""
         return sum(1 for claim in self.claims.values() if claim.status is Status.CHALLENGED)
@@ -456,7 +430,7 @@ SPRIG instance:
 
         assert height >= 0
 
-        hash_ = Hash("#" + str(len(self.claims)))
+        hash_ = Hash(str(len(self.claims)))
         assert hash_ not in self.claims  # Should never happen, it would be a bug
 
         self.claims[hash_] = Claim(statement, height, hash_)
@@ -596,7 +570,6 @@ SPRIG instance:
 
     def dumps(self):
         base = dataclasses.asdict(self)
-        base["language"] = self.language.dump()
         return json.dumps(base)
 
     @staticmethod
@@ -607,11 +580,11 @@ SPRIG instance:
                 if klass == "Status":
                     return Status[dct["name"]]
 
-                lang = get(all_subclasses(Language), __name__=klass)
-                if lang is None:
-                    assert False, f"No language found for the name {klass}"
-
-                return lang(**dct)
+                # lang = get(all_subclasses(Language), __name__=klass)
+                # if lang is None:
+                #     assert False, f"No language found for the name {klass}"
+                #
+                # return lang(**dct)
 
             return dct
 
@@ -619,7 +592,8 @@ SPRIG instance:
 
     @classmethod
     def loads(cls, s: str):
-        data = cls.loads_to_dict(s)
+        # data = cls.loads_to_dict(s)
+        return cls(**json.loads(s))
 
         constraints = Constraints(**data["constraints"])
         claims = {h: Claim(**claim) for h, claim in data["claims"].items()}
@@ -662,7 +636,7 @@ def main():
 
     ctx = " O plays X wins"
     sprig = Sprig.start(
-        TicTacToe(),
+        TicTacToe().dump(),
         recommended_constraints,
         Address("Diego"),
         "...|XX.|... O plays X wins",
@@ -678,13 +652,13 @@ def main():
     print(sprig)
     time_passes()
 
-    sprig.challenge(MICHAEL, "#4")
-    sprig.challenge(MICHAEL, "#2")
+    sprig.challenge(MICHAEL, "4")
+    sprig.challenge(MICHAEL, "2")
 
     time_passes()
 
     sprig.answer(
-        "#4",
+        "4",
         DIEGO,
         "XO.|XXO|X.." + ctx,
         "XXO|XXO|..." + ctx,
@@ -694,15 +668,15 @@ def main():
     )
 
     time_passes()
-    sprig.answer_low_level("#2", DIEGO, "-2")
+    sprig.answer_low_level("2", DIEGO, "-2")
 
     time_passes()
-    sprig.challenge(MICHAEL, "#9")
+    sprig.challenge(MICHAEL, "9")
 
     time_passes()
 
     sprig.answer(
-        "#4",
+        "4",
         CLEMENT,
         "XO.|XXO|X.." + ctx,
         "X.O|XXO|X.." + ctx,

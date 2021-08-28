@@ -123,19 +123,20 @@ def add_new_instance(new_instance: SprigInitData):
     save(instance, new_hash())
 
 
-@api.get("/{instance_hash}")
+@api.get("/users")
+def get_users():
+    """Return a mapping User -> Account Balance."""
+    with load_users() as users:
+        return users
+
+
+@api.get("/{instance_hash}", response_model=sprig.Sprig)
 def get_instance(instance_hash: str):
     """All the metadata of one SPRIG instance."""
     return json.loads(path_from_hash(instance_hash).read_text())
 
 
-@api.get("/{instance_hash}/tree")
-def get_instance_tree():
-    """Tree of claims of one instance."""
-    ...
-
-
-@api.get("/{instance_hash}/{claim_hash}", response_model=sprig.Claim)
+@api.get("/{instance_hash}/{claim_hash}")
 def get_claim(claim_hash: str, instance: sprig.Sprig = Depends(load)):
     """Return all the details about one claim."""
     return instance.claims[claim_hash]
@@ -153,7 +154,7 @@ def new_challenge_claim(
         users[skeptic] = utils.get(skeptic, 100) - 1
 
 
-@api.get("/{instance_hash}/{claim_hash}/proof_attempts", response_model=List[sprig.Hash])
+@api.get("/{instance_hash}/{claim_hash}/proof_attempts")
 def get_proof_attempts(claim_hash: str, instance: sprig.Sprig = Depends(load)):
     """Return a list of all proof attempts for a claim.
     A proof attempt is a list of the hashes of the claims that make up the proof."""
@@ -172,13 +173,6 @@ def add_proof_attempt(
     """Create a new proof attempt of a challenged claim."""
     claims = [sprig.Claim(attempt.claimer, claim) for claim in attempt.claims]
     instance.answer(claim_hash, "Diego", *claims)
-
-
-@api.get("/users")
-def get_users():
-    """Return a mapping User -> Account Balance."""
-    with load_users() as users:
-        return users
 
 
 if __name__ == "__main__":
