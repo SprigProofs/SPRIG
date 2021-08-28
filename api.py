@@ -158,7 +158,7 @@ def new_challenge_claim(
 def get_proof_attempts(claim_hash: str, instance: sprig.Sprig = Depends(load)):
     """Return a list of all proof attempts for a claim.
     A proof attempt is a list of the hashes of the claims that make up the proof."""
-    return instance.proof_attempts[claim_hash]
+    return instance.proof_attempts.get(claim_hash, [])
 
 
 class NewProofAttempt(BaseModel):
