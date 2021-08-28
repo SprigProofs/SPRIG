@@ -1,6 +1,6 @@
 import re
 
-from sprig import Claim, Language
+from languages.base import Language
 
 
 class TicTacToe(Language):

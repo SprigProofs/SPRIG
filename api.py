@@ -8,6 +8,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.params import Depends
 from pydantic import BaseModel
 
+import languages.base
 import sprig
 import utils
 
@@ -105,7 +106,7 @@ def add_new_instance(new_instance: SprigInitData):
     """
 
     try:
-        language = sprig.Language.load(**new_instance.language)
+        language = languages.base.Language.load(**new_instance.language)
         constraints = sprig.AbstractConstraints.load(**new_instance.constraints)
         instance = sprig.Sprig.start(
             language,
@@ -152,9 +153,7 @@ def new_challenge_claim(
         users[skeptic] = utils.get(skeptic, 100) - 1
 
 
-@api.get(
-    "/{instance_hash}/{claim_hash}/proof_attempts", response_model=List[sprig.Hash]
-)
+@api.get("/{instance_hash}/{claim_hash}/proof_attempts", response_model=List[sprig.Hash])
 def get_proof_attempts(claim_hash: str, instance: sprig.Sprig = Depends(load)):
     """Return a list of all proof attempts for a claim.
     A proof attempt is a list of the hashes of the claims that make up the proof."""

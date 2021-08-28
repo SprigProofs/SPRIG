@@ -13,6 +13,8 @@
     pythonEnv = python38.withPackages(ps: with ps; [
       fastapi
       uvicorn
+      pytest
+      pip
     ]);
   in
   {

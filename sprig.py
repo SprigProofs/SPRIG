@@ -7,12 +7,14 @@ from collections import defaultdict
 from enum import Enum
 from typing import Dict, List, NewType, Optional
 
+from languages.base import Language
 from utils import *
 
 try:
     # Simplifies stuff for the web interface,
     # but if the api is not wanted, work without.
-    from pydantic.dataclasses import dataclass
+    # from pydantic.dataclasses import dataclasss
+    from dataclasses import dataclass
 except ImportError:
     from dataclasses import dataclass
 
@@ -67,6 +69,15 @@ class Status(str, Enum):
             Status.UNCHALLENGED: (255, 255, 0),
             Status.CHALLENGED: (0, 165, 255),
         }[self]
+
+    @classmethod
+    def load(cls, value, default=None):
+        if value is None:
+            return default or cls.UNCHALLENGED
+        elif isinstance(value, str):
+            # For deserialisation
+            return cls(value.lower())
+        return value
 
 
 class AbstractConstraints:
@@ -277,13 +288,7 @@ class Claim:
         self.height = height
         self.hash = hash
         self.statement = statement
-        if status is None:
-            self.status = Status.UNCHALLENGED
-        elif isinstance(status, str):
-            # For deserialisation
-            self.status = Status(status.lower())
-        else:
-            self.status = status
+        self.status = Status.load(status)
 
         if skeptic is not None:
             assert challenged_time is not None
@@ -326,7 +331,7 @@ class ProofAttempt:
         self.claimer = claimer
         self.claims = claims
         self.height = height
-        self.status = status or Status.UNCHALLENGED
+        self.status = Status.load(status)
         self.time = time if time is not None else now()
         self.money_held = money_held
 
@@ -360,63 +365,6 @@ class ProofAttempt:
     #
     #     # All claims are VALIDATED, so this one too.
     #     return Status.VALIDATED
-
-
-class Language(str):
-    """
-    The base class for all languages.
-
-    Languages and be loaded via Language.load automaticaly,
-    as long as they are loaded in the interpreter (imported).
-
-    Languages are supposed to be very lght classes containing almost no data,
-    but describe the rules of a specific game. Those rules are implemented
-    in three methods:
-        - validate_top_level: validate the initial claim.
-        - validate_subclaims: verify the coherence of proof attempts.
-        - judge_low_level: machine level verification of a claim.
-
-    A Language is identified with its class name.
-    """
-
-    REGISTER = {}
-
-    def __str__(self):
-        return self.name
-
-    def judge_low_level(self, statement: str, machine_proof: str) -> bool:
-        """Perform the machine level verification.
-        :param machine_proof:
-        """
-        raise NotImplementedError
-
-    def validate_subclaims(self, root_statement: str, *sub_claim_statements: str):
-        """Check that a proof attempt is coherent."""
-        raise NotImplementedError
-
-    def validate_top_level(self, initial_claim: str):
-        """Check that an initial claim is valid."""
-        raise NotImplementedError
-
-    # Serialisation
-
-    def __init_subclass__(cls, **kwargs):
-        """Registers the subclasses in REGISTER with their class name as key."""
-
-        # Note: This code is duplicated with AbstractConstraints
-        id_ = cls.__name__
-        cls.name = cls.__name__
-        assert id_ not in Language.REGISTER
-        Language.REGISTER[id_] = cls
-
-    @staticmethod
-    def load(**data):
-        id_ = data.pop("type")
-        cls = Language.REGISTER[id_]
-        return cls(**data)
-
-    def dump(self):
-        return {"__class__": self.name, **self.__dict__}
 
 
 @dataclass
@@ -648,30 +596,8 @@ SPRIG instance:
 
     def dumps(self):
         base = dataclasses.asdict(self)
-
-        # return {
-        #     "language": self.language.__class__.__name__,
-        #     "constraints": dataclasses.asdict(self.constraints),
-        #     "claims": {
-        #         h: dataclasses.asdict(claim)
-        #         for h, claim in self.claims.items()
-        #     },
-        #     "proof_attempts": self.proof_attempts,
-        #     "challenges": {
-        #         h: dataclasses.asdict(challenge)
-        #         for h, challenge in self.challenges.items()
-        #     }
-        # }
-
-        class CustomEncoder(json.JSONEncoder):
-            def default(self, o):
-                if isinstance(o, Status):
-                    return {"name": o.name, "__class__": "Status"}
-                if isinstance(o, Language):
-                    return {"__class__": o.__class__.__name__}
-                return o
-
-        return json.dumps(base, cls=CustomEncoder)
+        base["language"] = self.language.dump()
+        return json.dumps(base)
 
     @staticmethod
     def loads_to_dict(s):
@@ -697,9 +623,11 @@ SPRIG instance:
 
         constraints = Constraints(**data["constraints"])
         claims = {h: Claim(**claim) for h, claim in data["claims"].items()}
-        challenges = {h: Challenge(**challenge) for h, challenge in data["challenges"].items()}
+        attempts = {
+            h: [ProofAttempt(**a) for a in attempt] for h, attempt in data["proof_attempts"].items()
+        }
 
-        return cls(constraints, data["language"], claims, data["proof_attempts"], challenges)
+        return cls(constraints, data["language"], claims, attempts)
 
 
 def main():
@@ -747,50 +675,60 @@ def main():
         "...|XXX|..O" + ctx,
     )
 
-    print(sprig)
-    time_passes()
+    if False:
+        print(sprig)
+        time_passes()
 
-    sprig.challenge(MICHAEL, "#4")
-    sprig.challenge(MICHAEL, "#2")
+        sprig.challenge(MICHAEL, "#4")
+        sprig.challenge(MICHAEL, "#2")
 
-    time_passes()
+        time_passes()
 
-    sprig.answer(
-        "#4",
-        DIEGO,
-        "XO.|XXO|X.." + ctx,
-        "XXO|XXO|..." + ctx,
-        "X..|XXO|O.X" + ctx,
-        "X..|XXO|XO." + ctx,
-        "X..|XXO|X.O" + ctx,
-    )
+        sprig.answer(
+            "#4",
+            DIEGO,
+            "XO.|XXO|X.." + ctx,
+            "XXO|XXO|..." + ctx,
+            "X..|XXO|O.X" + ctx,
+            "X..|XXO|XO." + ctx,
+            "X..|XXO|X.O" + ctx,
+        )
 
-    time_passes()
-    sprig.answer_low_level("#2", DIEGO, "-2")
+        time_passes()
+        sprig.answer_low_level("#2", DIEGO, "-2")
 
-    time_passes()
-    sprig.challenge(MICHAEL, "#9")
+        time_passes()
+        sprig.challenge(MICHAEL, "#9")
 
-    time_passes()
+        time_passes()
 
-    sprig.answer(
-        "#4",
-        CLEMENT,
-        "XO.|XXO|X.." + ctx,
-        "X.O|XXO|X.." + ctx,
-        "X..|XXO|O.X" + ctx,
-        "X..|XXO|XO." + ctx,
-        "X..|XXO|X.O" + ctx,
-    )
+        sprig.answer(
+            "#4",
+            CLEMENT,
+            "XO.|XXO|X.." + ctx,
+            "X.O|XXO|X.." + ctx,
+            "X..|XXO|O.X" + ctx,
+            "X..|XXO|XO." + ctx,
+            "X..|XXO|X.O" + ctx,
+        )
 
-    time_passes()
-    time_passes()
-    time_passes()
+        time_passes()
+        time_passes()
+        time_passes()
 
     # pprint(sprig.dumps())
     # pprint(json.loads(sprig.dumps()))
     # new = Sprig.loads(sprig.dumps())
+    print(sprig)
+    s = sprig.dumps()
+    print(s)
+    # d = Sprig.loads_to_dict(sprig.dumps())
+    # from pprint import pprint
+    #
+    # pprint(d)
+    # print(d["language"].__class__)
     # print(new.claims[ROOT_HASH].status.__class__)
+    # print(new.language)
 
 
 if __name__ == "__main__":
