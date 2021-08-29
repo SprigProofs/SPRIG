@@ -7,6 +7,7 @@ from typing import List
 from fastapi import FastAPI, HTTPException
 from fastapi.params import Depends
 from pydantic import BaseModel
+from fastapi.middleware.cors import CORSMiddleware
 
 import languages.base
 import sprig
@@ -18,6 +19,13 @@ USERS = DATA / "users.json"
 USERS.touch()
 
 api = FastAPI()
+api.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    # allow_credentials=True,
+    allow_methods=["*"],
+    # allow_headers=["*"],
+)
 
 
 def all_instances_filenames():

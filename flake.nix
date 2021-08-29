@@ -20,8 +20,8 @@
   {
     devShell.${system} = mkShell {
       buildInputs = [
-#        nodejs
-#        nodePackages.npm
+        nodejs
+        nodePackages.npm
         pythonEnv
       ];
 
