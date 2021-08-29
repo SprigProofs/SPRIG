@@ -1,5 +1,5 @@
 <template>
-  <div class="hello">
+  <div class="text-pink-400">
     <h1></h1>
     <ul>
       <li v-for="sprig in instances" :key="sprig">
