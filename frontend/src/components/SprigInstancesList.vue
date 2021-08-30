@@ -1,6 +1,5 @@
 <template>
-  <div class="text-pink-400">
-    <h1></h1>
+  <div class="p-4">
     <ul>
       <li v-for="sprig in instances" :key="sprig">
         <sprig-summary-card :instance="sprig"></sprig-summary-card>
@@ -10,30 +9,29 @@
 </template>
 
 <script lang="ts">
-import {defineComponent} from "vue";
-import {api, SprigSummary} from "@/sprig";
+import { defineComponent } from "vue";
+import { api, SprigSummary } from "@/sprig";
 import SprigSummaryCard from "@/components/SprigSummaryCard.vue";
 
 export default defineComponent({
   name: "SprigInstancesList",
-  components: {SprigSummaryCard},
+  components: { SprigSummaryCard },
   props: {
     msg: String,
   },
   data(): {
-    instances: SprigSummary[]
+    instances: SprigSummary[];
   } {
     return {
-      instances: []
-    }
+      instances: [],
+    };
   },
   methods: {},
 
   mounted() {
-    api.fetchInstanceList(data => {
-      this.instances = data
-    })
-  }
-
+    api.fetchInstanceList((data) => {
+      this.instances = data;
+    });
+  },
 });
 </script>

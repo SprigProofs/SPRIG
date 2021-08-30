@@ -415,15 +415,9 @@ SPRIG instance:
     def language(self) -> Language:
         return Language.load(**self.language_data)
 
-    @property
-    def open_challenge_count(self):
-        """Number of claim that are challenged and not resolved yet"""
-        return sum(1 for claim in self.claims.values() if claim.status is Status.CHALLENGED)
-
-    @property
-    def unchallenged_claim_count(self):
-        """Numper of claim that are unchallenged."""
-        return sum(1 for claim in self.claims.values() if claim.status is Status.UNCHALLENGED)
+    def status_count(self, status: Status):
+        """Count the number of claims of a given status."""
+        return sum(1 for claim in self.claims.values() if claim.status is status)
 
     def _add_claim(self, statement: str, height: int) -> Hash:
         """Add a claim to the dictionnary of claims, returning the generated hash."""

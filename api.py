@@ -94,9 +94,7 @@ def get_instances_list():
             "constraints": data.constraints,
             "language": data.language.name,
             "root_claim": data.claims[sprig.ROOT_HASH],
-            "claim_count": len(data.claims),
-            "challenge_count": data.open_challenge_count,
-            "unchallenged_count": data.unchallenged_claim_count,
+            "counts": {status: data.status_count(status) for status in sprig.Status},
         }
 
     return instances

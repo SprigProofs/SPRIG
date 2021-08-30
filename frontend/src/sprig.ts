@@ -20,12 +20,18 @@ interface Claim {
     challenged_time: number
 }
 
+interface StatusCounts {
+    challenged: number
+    unchallenged: number
+    validated: number
+    rejected: number
+}
+
 interface SprigSummary {
-    claim_count: number
-    challenge_count: number
-    unchallenged_count: number
-    root_claim: Claim
     language: string
+    root_claim: Claim
+    claim_count: number
+    counts: StatusCounts
 }
 
 interface Sprig {
@@ -54,4 +60,4 @@ const api = {
 
 }
 
-export {api, Claim, SprigSummary, Sprig, Status};
+export {api, Claim, SprigSummary, Sprig, Status, StatusCounts};
