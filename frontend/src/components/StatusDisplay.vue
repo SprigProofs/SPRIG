@@ -1,26 +1,24 @@
 <template>
-  <span :class="[color, 'space-x-1']">
+  <div :class="[color,  bg_color]"
+        class="
+        inline-flex items-center
+        text-sm font-semibold space-x-1 rounded-full py-1 pr-3 pl-1.5">
     ️<CheckIcon
       v-if="status === Status.VALIDATED"
-      class="inline h-5 text-green-500"
+      class="inline h-5"
     />️<QuestionMarkCircleIcon
       v-if="status === Status.UNCHALLENGED"
-      class="inline h-5 text-blue-500"
+      class="inline h-5"
     />️<ExclamationIcon
       v-if="status === Status.CHALLENGED"
-      class="inline h-5 text-yellow-500"
+      class="inline h-5"
     />️<XIcon
       v-if="status === Status.REJECTED"
-      class="inline h-6 text-red-500"
+      class="inline h-6"
     />
-    <span v-if="!only_icon">
-      <span v-if="status === Status.VALIDATED">Validated</span>
-      <span v-if="status === Status.UNCHALLENGED">Unchallenged</span>
-      <span v-if="status === Status.CHALLENGED">Challenged</span>
-      <span v-if="status === Status.REJECTED">Rejected</span>
-    </span>
-    <span v-if="count !== undefined" class="text-black">{{ count }}</span>
-  </span>
+    <span v-if="!only_icon">{{ status[0].toUpperCase() + status.slice(1) }}</span>
+    <span v-if="count !== undefined" class="text-gray-700">{{ count }}</span>
+  </div>
 </template>
 
 <script lang="ts">
@@ -53,6 +51,10 @@ export default defineComponent({
       type: Boolean,
       default: false,
     },
+    gray: {
+      type: Boolean,
+      default: false,
+    },
     count: Number,
   },
   data() {
@@ -60,14 +62,31 @@ export default defineComponent({
   },
   computed: {
     color(): string {
+      if (this.gray) {
+        return "text-gray-500";
+      }
+
       let map: Record<string, string> = {
-        validated: "text-green-500",
-        rejected: "text-red-500",
-        challenged: "text-yellow-500",
-        unchallenged: "text-blue-500",
+        validated: "text-green-700",
+        rejected: "text-red-700",
+        challenged: "text-yellow-700",
+        unchallenged: "text-blue-700",
       };
       return map[this.status];
     },
+    bg_color(): string {
+      if (this.gray) {
+        return "text-gray-500";
+      }
+
+      let map: Record<string, string> = {
+        validated: "bg-green-200",
+        rejected: "bg-red-200",
+        challenged: "bg-yellow-200",
+        unchallenged: "bg-blue-200",
+      };
+      return map[this.status];
+    }
   },
   components: { CheckIcon, QuestionMarkCircleIcon, ExclamationIcon, XIcon },
 });
