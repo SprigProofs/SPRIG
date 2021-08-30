@@ -1,5 +1,5 @@
 <template>
-  <div class="w-64 bg-green-50 rounded-lg shadow p-4 text-center flex flex-col space-y-4">
+  <router-link :to="'/instance/' + hash" class="w-64 bg-green-50 rounded-lg shadow p-4 text-center flex flex-col space-y-4">
     <h2 class="text-xl font-bold">
       {{ instance.language }}
     </h2>
@@ -14,10 +14,7 @@
       {{ instance.counts.rejected }}
       ️<XIcon class="h-6 text-red-500 -ml-1" />
     </div>
-  </div>
-  <p class="text-sm">
-    {{ instance }}
-  </p>
+  </router-link>
 </template>
 
 <script>
@@ -33,6 +30,7 @@ export default {
   name: "SprigSummaryCard",
   props: {
     instance: SprigSummary,
+    hash: String,
   },
   components: { CheckIcon, XIcon, ExclamationIcon, QuestionMarkCircleIcon },
 };

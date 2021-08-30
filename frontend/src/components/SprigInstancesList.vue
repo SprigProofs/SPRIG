@@ -1,11 +1,12 @@
 <template>
   <div class="p-4">
     <ul>
-      <li v-for="sprig in instances" :key="sprig">
-        <sprig-summary-card :instance="sprig"></sprig-summary-card>
+      <li v-for="(sprig, hash) in instances" :key="sprig">
+        <sprig-summary-card :instance="sprig" :hash="hash"></sprig-summary-card>
       </li>
     </ul>
   </div>
+  {{ instances }}
 </template>
 
 <script lang="ts">
@@ -20,10 +21,10 @@ export default defineComponent({
     msg: String,
   },
   data(): {
-    instances: SprigSummary[];
+    instances: Record<string, SprigSummary>;
   } {
     return {
-      instances: [],
+      instances: {},
     };
   },
   methods: {},

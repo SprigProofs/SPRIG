@@ -51,7 +51,7 @@ const api = {
             }
         })
     },
-    fetchInstanceList(callback: FetchCallback<SprigSummary[]>) {
+    fetchInstanceList(callback: FetchCallback<Record<string, SprigSummary>>) {
         this.get(["instances"], callback)
     },
     fetchInstance(hash: string, callback: FetchCallback<Sprig>) {
