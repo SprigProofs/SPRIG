@@ -35,6 +35,6 @@ export default defineComponent({
     instance: SprigSummary,
     hash: String,
   },
-  components: { StatementDisplayShort, CheckIcon, XIcon, ExclamationIcon, QuestionMarkCircleIcon },
+  components: { StatementDisplayShort, CheckIcon, XIcon, ExclamationIcon, QuestionMarkCircleIcon, },
 });
 </script>

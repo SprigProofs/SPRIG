@@ -10,6 +10,7 @@ enum Status {
     VALIDATED = "validated",
     REJECTED = "rejected",
 }
+const STATUSES = [Status.VALIDATED, Status.REJECTED, Status.CHALLENGED, Status.UNCHALLENGED];
 
 interface Claim {
     statement: string
@@ -71,4 +72,4 @@ const api = {
 
 }
 
-export {api, Claim, SprigSummary, Sprig, Status, StatusCounts, ProofAttempt};
+export {api, STATUSES, Claim, SprigSummary, Sprig, Status, StatusCounts, ProofAttempt};

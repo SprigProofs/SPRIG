@@ -1,59 +1,89 @@
 <template>
-  <div
-    @click="collapsed = !collapsed"
-    class="shadow rounded-lg bg-white w-auto flex justify-between"
-  >
-    <div class="flex items-center p-4">
-      <div v-if="sprig.proof_attempts[start]" class="pr-2 text-gray-500">
-        <ChevronRightIcon v-if="collapsed" class="h-5" />
-        <ChevronDownIcon v-else class="h-5" />
-      </div>
-      <p class="pr-4">
-        <StatementDisplayShort :statement="claim.statement" />
-      </p>
-      <StatusDisplay :status="claim.status" />
-    </div>
-
-    <div class="grid grid-cols-2 items-center pr-2 rounded-r-lg">
-      <StatusDisplay
-        v-for="status in ['validated', 'rejected', 'challenged', 'unchallenged']"
-        count="7" only_icon gray :status="status"
-        :key="status"
-        class="p-2 flex items-center h-full"
-      />
-    </div>
-  </div>
-
-  <ol
-    v-if="
-      !collapsed &&
-      sprig.proof_attempts[start] &&
-      sprig.proof_attempts[start].length
-    "
-  >
-    <li
-      v-for="(attempt, key) in sprig.proof_attempts[start]"
-      :key="key"
-      class="ml-4 border-l-4 pl-4"
+  <div>
+    <div
+      @click="collapsed = !collapsed"
+      class="
+      max-w-sm
+        shadow
+        p-4
+        rounded-lg
+        bg-white
+        w-auto
+        flex
+        justify-between
+        items-center
+      " :class="bg_color"
     >
-      <p class="text-gray-500 py-2">
-        Attempt by {{ attempt.claimer }} at {{ attempt.time }}
-        <span v-if="attempt.height === 0"> - Machine level proof </span>
-        <StatusDisplay :status="attempt.status" />
-      </p>
-      <ol class="space-y-2">
-        <li v-for="claim_hash in attempt.claims" :key="claim_hash">
-          <RecursiveClaimList :sprig="sprig" :hash="hash" :start="claim_hash" />
-        </li>
-      </ol>
-    </li>
-  </ol>
+      <div class="flex items-center">
+        <div v-if="sprig.proof_attempts[start]" class="pr-2 text-gray-500">
+          <ChevronRightIcon v-if="collapsed" class="h-5" />
+          <ChevronDownIcon v-else class="h-5" />
+        </div>
+        <p class="pr-4">
+          <StatementDisplayShort :statement="claim.statement" />
+        </p>
+        <StatusDisplay :status="claim.status" />
+      </div>
+
+      <div class="grid grid-cols-2 items-center rounded-r-lg">
+        <StatusDisplay
+          v-for="status in [
+            'validated',
+            'rejected',
+            'challenged',
+            'unchallenged',
+          ]"
+          :count="countStatus(sprig, status, start)"
+          only_icon
+          gray
+          :status="status"
+          :key="status"
+          class="p-2 flex items-center h-full"
+        />
+      </div>
+    </div>
+
+    <ol
+      v-if="
+        !collapsed &&
+        sprig.proof_attempts[start] &&
+        sprig.proof_attempts[start].length
+      "
+    >
+      <li
+        v-for="(attempt, key) in sprig.proof_attempts[start]"
+        :key="key"
+        class="ml-4 border-l-4 pl-4"
+      >
+        <p class="text-gray-500 py-2">
+          Attempt by {{ attempt.claimer }} at {{ attempt.time }}
+          <span v-if="attempt.height === 0"> - Machine level proof </span>
+          <!--        <StatusDisplay :status="attempt.status" />-->
+        </p>
+        <ol class="space-y-2">
+          <li v-for="claim_hash in attempt.claims" :key="claim_hash">
+            <RecursiveClaimList
+              :sprig="sprig"
+              :hash="hash"
+              :start="claim_hash"
+            />
+          </li>
+        </ol>
+      </li>
+    </ol>
+  </div>
 </template>
 
 <script lang="ts">
-import { Claim, Sprig } from "@/sprig";
+import { Claim, Sprig, Status, STATUSES } from "@/sprig";
 import StatusDisplay from "@/components/StatusDisplay.vue";
-import { ChevronDownIcon, ChevronRightIcon } from "@heroicons/vue/outline";
+import {
+  ChevronDownIcon,
+  ChevronRightIcon,
+  TranslateIcon,
+  UserCircleIcon,
+  ClockIcon,
+} from "@heroicons/vue/outline";
 import StatementDisplayShort from "@/components/languages/TicTacToe/StatementDisplayShort.vue";
 
 import { defineComponent } from "vue";
@@ -86,7 +116,26 @@ export default defineComponent({
       return map[this.claim.status];
     },
   },
-  components: { StatusDisplay, ChevronDownIcon, ChevronRightIcon, StatementDisplayShort },
+  methods: {
+    countStatus(sprig: Sprig, status: Status, start = "0"): number {
+      let count = sprig.claims[start].status === status ? 1 : 0;
+      if (!sprig.proof_attempts[start]) {
+        return count;
+      }
+      for (let attempt of sprig.proof_attempts[start]) {
+        for (let claim of attempt.claims) {
+          count += this.countStatus(sprig, status, claim);
+        }
+      }
+      return count;
+    },
+  },
+  components: {
+    StatusDisplay,
+    ChevronDownIcon,
+    ChevronRightIcon,
+    StatementDisplayShort,
+  },
 });
 </script>
 
