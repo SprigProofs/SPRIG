@@ -34,8 +34,19 @@ interface SprigSummary {
     counts: StatusCounts
 }
 
+interface ProofAttempt {
+    claimer: string
+    claims: string[]
+    height: number
+    time: number
+    status: Status
+}
+
 interface Sprig {
-    claims: Claim[]
+    claims: Record<string, Claim>
+    language_data: Record<string, any> & {__class__: string}
+    proof_attempts: Record<string, ProofAttempt[]>
+    constraints: Record<string, any>
 }
 
 const API_BASE = "http://localhost:8600/"
@@ -60,4 +71,4 @@ const api = {
 
 }
 
-export {api, Claim, SprigSummary, Sprig, Status, StatusCounts};
+export {api, Claim, SprigSummary, Sprig, Status, StatusCounts, ProofAttempt};

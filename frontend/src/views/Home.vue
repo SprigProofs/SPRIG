@@ -1,7 +1,5 @@
 <template>
-  <div>
-    <SprigInstanceList msg="Welcome to Your Vue.js + TypeScript App" />
-  </div>
+  <SprigInstanceList />
 </template>
 
 <script lang="ts">

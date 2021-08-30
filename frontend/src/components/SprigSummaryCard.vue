@@ -1,7 +1,8 @@
 <template>
   <router-link :to="'/instance/' + hash" class="w-64 bg-green-50 rounded-lg shadow p-4 text-center flex flex-col space-y-4">
-    <h2 class="text-xl font-bold">
-      {{ instance.language }}
+    <h2>
+      <span class="text-xl font-bold pr-1">{{ instance.language }}</span>
+      <span class="text-gray-500">#{{ hash }}</span>
     </h2>
     <p>{{ instance.root_claim.statement }}</p>
     <div class="flex justify-center items-center">
@@ -26,12 +27,13 @@ import {
   QuestionMarkCircleIcon,
 } from "@heroicons/vue/outline";
 
-export default {
+import { defineComponent } from "vue";
+export default defineComponent({
   name: "SprigSummaryCard",
   props: {
     instance: SprigSummary,
     hash: String,
   },
   components: { CheckIcon, XIcon, ExclamationIcon, QuestionMarkCircleIcon },
-};
+});
 </script>
