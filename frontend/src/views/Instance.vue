@@ -23,7 +23,9 @@
     </div>
 
     <div class="flex">
-      <RecursiveClaimList class="mx-auto my-4" :sprig="sprig" :hash="hash" />
+      <div class="bg-grid w-full flex justify-around">
+        <RecursiveClaimList class="m-4" :sprig="sprig" :hash="hash" />
+      </div>
       <aside class="max-w-lg w-full p-6 bg-white shadow space-y-6">
         <h2 class="text-2xl font-black text-gray-700">Challenged claims</h2>
         <ul class="space-y-2">
@@ -99,3 +101,11 @@ export default defineComponent({
   },
 });
 </script>
+
+<style scoped>
+.bg-grid {
+  background-image: linear-gradient(#e6e6e6 1px, transparent 1px), linear-gradient(90deg, #e6e6e6 1px, transparent 1px);
+  background-size: 1em 1em;
+  background-repeat: repeat;
+}
+</style>

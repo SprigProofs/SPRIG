@@ -1,55 +1,45 @@
 <template>
-  <div>
-    <div
-      @click="collapsed = !collapsed"
-      class="
-      max-w-sm
-        shadow
-        p-4
-        rounded-lg
-        bg-white
-        w-auto
-        flex
-        justify-between
-        items-center
-      " :class="bg_color"
-    >
-      <div class="flex items-center">
-        <div v-if="sprig.proof_attempts[start]" class="pr-2 text-gray-500">
-          <ChevronRightIcon v-if="collapsed" class="h-5" />
-          <ChevronDownIcon v-else class="h-5" />
-        </div>
-        <p class="pr-4">
+  <div class="flex">
+    <div class="flex flex-col"
+         @click="collapsed = !collapsed">
+      <!-- This div is to allow the click to happen on possibly large blank space before the next claim. -->
+      <div
+        class="w-72 shadow p-4 rounded-lg bg-white w-auto flex justify-between items-center"
+        :class="bg_color"
+      >
+        <div class="flex items-center">
+          <div
+            v-if="false && sprig.proof_attempts[start]"
+            class="pr-2 text-gray-500">
+            <ChevronRightIcon v-if="collapsed" class="h-5" />
+            <ChevronDownIcon v-else class="h-5" />
+          </div>
           <StatementDisplayShort :statement="claim.statement" />
-        </p>
-        <StatusDisplay :status="claim.status" />
-      </div>
-
-      <div class="grid grid-cols-2 items-center rounded-r-lg">
-        <StatusDisplay
-          v-for="status in [
-            'validated',
-            'rejected',
-            'challenged',
-            'unchallenged',
-          ]"
-          :count="countStatus(sprig, status, start)"
-          only_icon
-          gray
-          :status="status"
-          :key="status"
-          class="p-2 flex items-center h-full"
-        />
+        </div>
+        <!-- Right -->
+        <div class="flex flex-col items-center space-y-2">
+          <StatusDisplay :status="claim.status" />
+          <div v-if="statusCountsToDisplay.length"
+              class="flex items-center rounded-r-lg">
+            <StatusDisplay
+              v-for="data in statusCountsToDisplay"
+              :count="data.count"
+              only_icon
+              gray
+              :status="data.status"
+              :key="data.status"
+              class="flex items-center h-full"
+            />
+          </div>
+        </div>
       </div>
     </div>
 
-    <ol
-      v-if="
+    <ol v-if="
         !collapsed &&
         sprig.proof_attempts[start] &&
         sprig.proof_attempts[start].length
-      "
-    >
+      ">
       <li
         v-for="(attempt, key) in sprig.proof_attempts[start]"
         :key="key"
@@ -115,6 +105,14 @@ export default defineComponent({
       };
       return map[this.claim.status];
     },
+    statusCountsToDisplay() {
+      return ["validated", "rejected", "challenged", "unchallenged"]
+        .map((status) => ({
+          status,
+          count: this.countStatus(this.sprig, status, this.start) - (status == this.claim.status ? 1 : 0),
+        }))
+        .filter((data) => data.count > 0);
+    },
   },
   methods: {
     countStatus(sprig: Sprig, status: Status, start = "0"): number {
@@ -139,4 +137,3 @@ export default defineComponent({
 });
 </script>
 
-<style scoped></style>
