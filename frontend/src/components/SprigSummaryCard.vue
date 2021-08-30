@@ -1,10 +1,10 @@
 <template>
-  <router-link :to="'/instance/' + hash" class="w-64 bg-green-50 rounded-lg shadow p-4 text-center flex flex-col space-y-4">
+  <router-link :to="'/instance/' + hash" class="w-64 bg-white rounded-lg shadow p-4 flex flex-col items-center space-y-4">
     <h2>
       <span class="text-xl font-bold pr-1">{{ instance.language }}</span>
       <span class="text-gray-500">#{{ hash }}</span>
     </h2>
-    <p>{{ instance.root_claim.statement }}</p>
+    <StatementDisplayShort :statement="instance.root_claim.statement"/>
     <div class="flex justify-center items-center">
       {{ instance.counts.validated }}
       ️<CheckIcon class="h-5 text-green-500 pr-1 -ml-1" />
@@ -20,6 +20,7 @@
 
 <script>
 import { SprigSummary } from "@/sprig";
+import StatementDisplayShort from "@/components/languages/TicTacToe/StatementDisplayShort";
 import {
   CheckIcon,
   XIcon,
@@ -34,6 +35,6 @@ export default defineComponent({
     instance: SprigSummary,
     hash: String,
   },
-  components: { CheckIcon, XIcon, ExclamationIcon, QuestionMarkCircleIcon },
+  components: { StatementDisplayShort, CheckIcon, XIcon, ExclamationIcon, QuestionMarkCircleIcon },
 });
 </script>

@@ -9,9 +9,7 @@
         <ChevronDownIcon v-else class="h-5" />
       </div>
       <p class="pr-4">
-        {{ claim.statement }} <br />
-        {{ claim.statement }} <br />
-        {{ claim.statement }}
+        <StatementDisplayShort :statement="claim.statement" />
       </p>
       <StatusDisplay :status="claim.status" />
     </div>
@@ -56,6 +54,7 @@
 import { Claim, Sprig } from "@/sprig";
 import StatusDisplay from "@/components/StatusDisplay.vue";
 import { ChevronDownIcon, ChevronRightIcon } from "@heroicons/vue/outline";
+import StatementDisplayShort from "@/components/languages/TicTacToe/StatementDisplayShort.vue";
 
 import { defineComponent } from "vue";
 export default defineComponent({
@@ -87,7 +86,7 @@ export default defineComponent({
       return map[this.claim.status];
     },
   },
-  components: { StatusDisplay, ChevronDownIcon, ChevronRightIcon },
+  components: { StatusDisplay, ChevronDownIcon, ChevronRightIcon, StatementDisplayShort },
 });
 </script>
 

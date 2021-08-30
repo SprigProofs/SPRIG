@@ -2,10 +2,9 @@
   <div v-if="loading" class="text-center m-auto">loading...</div>
   <div v-else>
     <div class="bg-white shadow p-4">
-      <h1 class="text-lg font-bold">Instance #{{ hash }}</h1>
+      <h1 class="text-lg font-bold">Instance #{{ hash }} <StatusDisplay :status="sprig.claims[0].status" /> <br /></h1>
       Language: {{ sprig.language_data.__class__ }} <br />
       Claimer: {{ sprig.proof_attempts[0][0].claimer }} <br />
-      Status: <StatusDisplay :status="sprig.claims[0].status" /> <br />
       Started at: {{ sprig.proof_attempts[0][0].time }}
     </div>
 
