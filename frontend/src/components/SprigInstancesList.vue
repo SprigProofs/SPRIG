@@ -1,11 +1,9 @@
 <template>
-  <div class="p-4">
-    <ul>
-      <li v-for="(sprig, hash) in instances" :key="sprig">
-        <sprig-summary-card :instance="sprig" :hash="hash"></sprig-summary-card>
-      </li>
-    </ul>
-  </div>
+  <ul class="p-4 flex flex-wrap">
+    <li v-for="(sprig, hash) in instances" :key="sprig" class="m-2">
+      <sprig-summary-card :instance="sprig" :hash="hash"></sprig-summary-card>
+    </li>
+  </ul>
 </template>
 
 <script lang="ts">

@@ -83,10 +83,6 @@ class SprigInitData(BaseModel):
     sub_claims: List[str]
 
 
-class Balance(BaseModel):
-    balance: int
-
-
 @api.get("/instances")
 def get_instances_list():
     """Return a dictionnary of all the SPRIG instances along with short details."""
@@ -152,7 +148,12 @@ def get_claim(claim_hash: str, instance: sprig.Sprig = Depends(load)):
     return instance.claims[claim_hash]
 
 
-@api.post("/{instance_hash}/{claim_hash}/challenge", response_model=Balance)
+class ChallengeRecord(BaseModel):
+    balance: int
+    claim: sprig.Claim
+
+
+@api.post("/{instance_hash}/{claim_hash}/challenge")
 def new_challenge(skeptic: sprig.Address, claim_hash: str, instance_hash: str):
     """Challenge a claim that isn't yet challenged and still active."""
 
@@ -166,7 +167,7 @@ def new_challenge(skeptic: sprig.Address, claim_hash: str, instance_hash: str):
 
         save(instance, instance_hash)
 
-        return Balance(balance=users[skeptic])
+        return ChallengeRecord(balance=users[skeptic], claim=instance.claims[claim_hash])
 
 
 @api.get("/{instance_hash}/{claim_hash}/proof_attempts")

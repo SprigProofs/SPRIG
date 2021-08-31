@@ -10,24 +10,33 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, PropType } from "vue";
-import {api, Claim} from "@/sprig";
+import { defineComponent } from "vue";
+import { Claim } from "@/sprig";
 import StatementDisplayShort from "@/components/languages/TicTacToe/StatementDisplayShort.vue";
 import ButtonPrimary from "@/components/ButtonPrimary.vue";
+import { store } from "@/store";
 
 export default defineComponent({
   name: "ClaimDisplay",
   props: {
-    claim: {
-      type: Object as PropType<Claim>,
+    instance: {
+      type: String,
       required: true,
+    },
+    hash: {
+      type: String,
+      required: true,
+    },
+  },
+  computed: {
+    claim(): Claim | undefined {
+      return store.claim(this.instance, this.hash);
     },
   },
   methods: {
     challenge(): void {
-      api.challenge("00001", this.claim.hash, "Diego", (balance) => {
-        console.log("Claim challenge. Balance left:", balance);
-      });
+      if (!this.claim) return;
+      store.challenge(this.instance, this.hash, "Diego");
     },
   },
   components: { StatementDisplayShort, ButtonPrimary },
