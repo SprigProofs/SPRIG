@@ -6,18 +6,26 @@
     </p>
     <ButtonPrimary v-if="claim.status === 'challenged'" @click="submitProof">Submit proof</ButtonPrimary>
     <ButtonPrimary v-if="claim.status === 'unchallenged'" @click="challenge">Challenge</ButtonPrimary>
+    <TailwindUIModal :open="proofModalOpen" title="New proof attempt" @closed="proofModalOpen = false">
+      <NewProofModal></NewProofModal>
+    </TailwindUIModal>
   </div>
 </template>
 
 <script lang="ts">
 import { defineComponent } from "vue";
 import { Claim } from "@/sprig";
+import { store } from "@/store";
 import StatementDisplayShort from "@/components/languages/TicTacToe/StatementDisplayShort.vue";
 import ButtonPrimary from "@/components/ButtonPrimary.vue";
-import { store } from "@/store";
+import NewProofModal from "@/components/NewProof.vue";
+import TailwindUIModal from "@/components/TailwindUIModal.vue";
 
 export default defineComponent({
   name: "ClaimDisplay",
+  data() {
+    return { proofModalOpen: false }
+  },
   props: {
     instance: {
       type: String,
@@ -38,7 +46,10 @@ export default defineComponent({
       if (!this.claim) return;
       store.challenge(this.instance, this.hash, "Diego");
     },
+    submitProof(): void {
+      this.proofModalOpen = true;
+    },
   },
-  components: { StatementDisplayShort, ButtonPrimary },
+  components: { TailwindUIModal, NewProofModal, StatementDisplayShort, ButtonPrimary },
 });
 </script>
