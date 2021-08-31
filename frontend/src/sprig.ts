@@ -10,6 +10,7 @@ enum Status {
     VALIDATED = "validated",
     REJECTED = "rejected",
 }
+
 const STATUSES = [Status.VALIDATED, Status.REJECTED, Status.CHALLENGED, Status.UNCHALLENGED];
 
 interface Claim {
@@ -45,9 +46,13 @@ interface ProofAttempt {
 
 interface Sprig {
     claims: Record<string, Claim>
-    language_data: Record<string, any> & {__class__: string}
+    language_data: Record<string, any> & { __class__: string }
     proof_attempts: Record<string, ProofAttempt[]>
     constraints: Record<string, any>
+}
+
+interface Balance {
+    balance: number
 }
 
 const API_BASE = "http://localhost:8600/"
@@ -63,11 +68,24 @@ const api = {
             }
         })
     },
+    post(path: string[], query: Record<string, string>, body: any, callback: FetchCallback<any>) {
+        const url = new URL(API_BASE + path.join("/"))
+        for (const key of Object.keys(query)) {
+            url.searchParams.append(key, query[key])
+        }
+        fetch(url.toString(), {
+            method: "POST",
+            body: body ? "" : JSON.stringify(body),
+        })
+    },
     fetchInstanceList(callback: FetchCallback<Record<string, SprigSummary>>) {
         this.get(["instances"], callback)
     },
     fetchInstance(hash: string, callback: FetchCallback<Sprig>) {
         this.get([hash], callback)
+    },
+    challenge(instance: string, claim: string, skeptic: string, callback: FetchCallback<Balance>) {
+        this.post([instance, claim, "challenge"], {skeptic: skeptic}, null, callback)
     }
 
 }

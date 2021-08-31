@@ -83,6 +83,10 @@ class SprigInitData(BaseModel):
     sub_claims: List[str]
 
 
+class Balance(BaseModel):
+    balance: int
+
+
 @api.get("/instances")
 def get_instances_list():
     """Return a dictionnary of all the SPRIG instances along with short details."""
@@ -148,16 +152,21 @@ def get_claim(claim_hash: str, instance: sprig.Sprig = Depends(load)):
     return instance.claims[claim_hash]
 
 
-@api.post("/{instance_hash}/{claim_hash}/challenge")
-def new_challenge_claim(
-    skeptic: sprig.Address, claim_hash: str, instance: sprig.Sprig = Depends(load)
-):
+@api.post("/{instance_hash}/{claim_hash}/challenge", response_model=Balance)
+def new_challenge(skeptic: sprig.Address, claim_hash: str, instance_hash: str):
     """Challenge a claim that isn't yet challenged and still active."""
 
+    instance = load(instance_hash)
     with load_users() as users:
         instance.challenge(skeptic, claim_hash)
+        instance.distribute_all_bets()
+        sprig.now(1)
         # TODO: payment in Sprig, not just a default of 1
-        users[skeptic] = utils.get(skeptic, 100) - 1
+        users[skeptic] = users.get(skeptic, 100) - 1
+
+        save(instance, instance_hash)
+
+        return Balance(balance=users[skeptic])
 
 
 @api.get("/{instance_hash}/{claim_hash}/proof_attempts")

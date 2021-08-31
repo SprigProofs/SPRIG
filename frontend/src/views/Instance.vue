@@ -22,8 +22,8 @@
       </ul>
     </div>
 
-    <div class="flex">
-      <div class="bg-grid w-full flex justify-around">
+    <div class="flex w-full">
+      <div class="bg-grid flex justify-around w-full">
         <RecursiveClaimList class="m-4" :sprig="sprig" :hash="hash" />
       </div>
       <aside class="max-w-lg w-full p-6 bg-white shadow space-y-6">
@@ -74,9 +74,12 @@ export default defineComponent({
       proof_attempts: {},
       language_data: { __class__: "none" },
     };
+    // Fix type check: instance can be a list of string, even if it should not.
+    const instance = this.$route.params.instance;
+    const hash = Array.isArray(instance) ? instance[0] : instance;
     return {
       sprig: s,
-      hash: this.$route.params.instance,
+      hash,
       loading: false,
     };
   },

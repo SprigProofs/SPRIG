@@ -12,7 +12,10 @@ import TicTacToe from "@/components/languages/TicTacToe/TicTacToe.vue";
 export default defineComponent({
   name: "StatementDisplayShort",
   props: {
-    statement: String,
+    statement: {
+      type: String,
+      required: true,
+    },
   },
   computed: {
     grid() {

@@ -65,23 +65,24 @@
 </template>
 
 <script lang="ts">
-import { Claim, Sprig, Status, STATUSES } from "@/sprig";
+import {Claim, Sprig, Status} from "@/sprig";
 import StatusDisplay from "@/components/StatusDisplay.vue";
-import {
-  ChevronDownIcon,
-  ChevronRightIcon,
-  TranslateIcon,
-  UserCircleIcon,
-  ClockIcon,
-} from "@heroicons/vue/outline";
+import {ChevronDownIcon, ChevronRightIcon,} from "@heroicons/vue/outline";
 import StatementDisplayShort from "@/components/languages/TicTacToe/StatementDisplayShort.vue";
 
-import { defineComponent } from "vue";
+import {defineComponent, PropType} from "vue";
+
 export default defineComponent({
   name: "RecursiveClaimList",
   props: {
-    sprig: Sprig,
-    hash: String,
+    sprig: {
+      type: Object as PropType<Sprig>,
+      required: true,
+    },
+    hash: {
+      type: String,
+      required: true,
+    },
     start: {
       type: String,
       default: "0",
@@ -106,7 +107,7 @@ export default defineComponent({
       return map[this.claim.status];
     },
     statusCountsToDisplay() {
-      return ["validated", "rejected", "challenged", "unchallenged"]
+      return [Status.VALIDATED, Status.REJECTED, Status.CHALLENGED, Status.UNCHALLENGED]
         .map((status) => ({
           status,
           count: this.countStatus(this.sprig, status, this.start) - (status == this.claim.status ? 1 : 0),

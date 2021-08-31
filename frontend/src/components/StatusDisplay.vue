@@ -4,16 +4,16 @@
         inline-flex items-center
         text-sm font-semibold space-x-1 rounded-full py-1 pr-3 pl-1.5">
     ️<CheckIcon
-      v-if="status === Status.VALIDATED"
+      v-if="status === 'validated'"
       class="inline h-5"
     />️<QuestionMarkCircleIcon
-      v-if="status === Status.UNCHALLENGED"
+      v-if="status === 'unchallenged'"
       class="inline h-5"
     />️<ExclamationIcon
-      v-if="status === Status.CHALLENGED"
+      v-if="status === 'challenged'"
       class="inline h-5"
     />️<XIcon
-      v-if="status === Status.REJECTED"
+      v-if="status === 'rejected'"
       class="inline h-6"
     />
     <span v-if="!only_icon">{{ status[0].toUpperCase() + status.slice(1) }}</span>
@@ -30,15 +30,15 @@ import {
   XIcon,
 } from "@heroicons/vue/outline";
 
-import { defineComponent } from "vue";
+import { defineComponent, PropType } from "vue";
 
 export default defineComponent({
   name: "StatusDisplay",
   props: {
     status: {
-      type: String,
+      type: String as PropType<Status>,
       required: true,
-      validator(value) {
+      validator(value: Status) {
         return [
           Status.VALIDATED,
           Status.UNCHALLENGED,
@@ -57,9 +57,9 @@ export default defineComponent({
     },
     count: Number,
   },
-  data() {
-    return { Status };
-  },
+  // data() {
+  //   return { Status };
+  // },
   computed: {
     color(): string {
       if (this.gray) {
@@ -86,7 +86,7 @@ export default defineComponent({
         unchallenged: "bg-blue-200",
       };
       return map[this.status];
-    }
+    },
   },
   components: { CheckIcon, QuestionMarkCircleIcon, ExclamationIcon, XIcon },
 });
