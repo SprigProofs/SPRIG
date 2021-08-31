@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col items-center">
     <TicTacToe :grid="grid" :highlight="highlight" />
-    <p class="text-sm mt-1 -mb-1 text-gray-700">{{ statement.slice(12, 30) }}</p>
+    <p class="text-sm mt-1 -mb-1 text-gray-700 whitespace-nowrap">{{ statement.slice(12, 30) }}</p>
   </div>
 </template>
 

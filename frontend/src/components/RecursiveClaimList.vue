@@ -1,7 +1,7 @@
 <template>
   <div class="flex">
     <div
-      class="flex flex-col"
+      class="flex flex-col w-72"
       :class="{ 'cursor-pointer': sprig?.proof_attempts[start]?.length }"
       @click="collapsed = !collapsed"
     >

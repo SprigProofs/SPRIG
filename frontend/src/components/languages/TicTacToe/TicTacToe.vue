@@ -1,10 +1,11 @@
 <template>
   <table>
     <tr v-for="(row, r) in grid" :key="row">
-      <td v-for="(play, c) in row" :key="play" class="border text-center w-6 h-5" :class="{'bg-blue-300': is_highlighted(r, c)}">
-        <div v-if="play !== '.'">
+      <td v-for="(play, c) in row" :key="play" class="border text-center" :class="{'bg-blue-300': is_highlighted(r, c)}">
+        <div v-if="play !== '.'" class="w-5 h-5">
           {{ play }}
         </div>
+        <div v-else class="w-5 h-5"></div>
       </td>
     </tr>
   </table>

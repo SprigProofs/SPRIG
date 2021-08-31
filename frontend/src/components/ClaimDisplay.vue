@@ -6,8 +6,8 @@
     </p>
     <ButtonPrimary v-if="claim.status === 'challenged'" @click="submitProof">Submit proof</ButtonPrimary>
     <ButtonPrimary v-if="claim.status === 'unchallenged'" @click="challenge">Challenge</ButtonPrimary>
-    <TailwindUIModal :open="proofModalOpen" title="New proof attempt" @closed="proofModalOpen = false">
-      <NewProofModal></NewProofModal>
+    <TailwindUIModal :open="proofModalOpen" title="New proof attempt" main-button="Submit" @closed="proofModalOpen = false">
+      <NewProofModal :parent-claim="claim"></NewProofModal>
     </TailwindUIModal>
   </div>
 </template>

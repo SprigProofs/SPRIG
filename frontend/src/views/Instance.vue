@@ -41,7 +41,7 @@
           </ul>
         </section>
       </aside>
-      <div class="bg-grid flex justify-around w-full">
+      <div class="bg-grid w-full overflow-auto">
         <RecursiveClaimList class="m-4" :instance="hash" start="0"/>
       </div>
     </div>
