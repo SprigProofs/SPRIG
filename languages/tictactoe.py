@@ -44,20 +44,23 @@ class TicTacToe(Language):
 
     def _winner(self, grid: str, to_check="."):
         lines = (
-            [self._all_same(grid[i::3]) for i in range(3)]
-            + [self._all_same(grid[3 * i : 3 * i + 3]) for i in range(3)]
-            + [self._all_same(grid[::4]), self._all_same(grid[2::2])]
+            [(grid[i::4]) for i in range(3)]
+            + [(grid[4 * i : 4 * i + 3]) for i in range(3)]
+            + [(grid[::5]), (grid[2::3])]
         )
 
-        for result in lines:
+        for l in lines:
+            assert len(l) == 3
+            result = self._all_same(l)
             if result != ".":
                 if to_check == ".":
                     return False
-                else:
-                    return result == to_check
+                elif to_check == result:
+                    return True
 
         if to_check == ".":
             return True
+        return False
 
     def judge_low_level(self, statement: str, machine_proof: str) -> bool:
         if not self.RE_MACHINE_LEVEL.match(machine_proof):
