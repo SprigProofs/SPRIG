@@ -2,12 +2,12 @@
   <div class="flex">
     <div
       class="flex flex-col w-72"
-      :class="{ 'cursor-pointer': sprig?.proof_attempts[start]?.length }"
-      @click="collapsed = !collapsed"
     >
       <!-- This extra div in the hierarchy allow the click to happen on possibly large blank space before the next claim. -->
       <div class="w-72 shadow p-4 rounded-lg bg-white w-auto flex justify-between items-center"
-        :class="bg_color">
+           @click.prevent="collapsed = !collapsed"
+          :class="{ 'cursor-pointer': sprig?.proof_attempts[start]?.length, [bg_color]: true }"
+          >
         <div class="flex items-center">
           <div v-if="false && sprig.proof_attempts[start]"
             class="pr-2 text-gray-500">
