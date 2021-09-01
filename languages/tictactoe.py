@@ -43,14 +43,14 @@ class TicTacToe(Language):
             return "."
 
     def _winner(self, grid: str, to_check="."):
+        assert len(grid) == 9
         lines = (
-            [(grid[i::4]) for i in range(3)]
-            + [(grid[4 * i : 4 * i + 3]) for i in range(3)]
-            + [(grid[::5]), (grid[2::3])]
+            [(grid[i::3]) for i in range(3)]
+            + [(grid[3 * i : 3 * i + 3]) for i in range(3)]
+            + [(grid[::4]), (grid[2:7:2])]
         )
 
         for l in lines:
-            assert len(l) == 3
             result = self._all_same(l)
             if result != ".":
                 if to_check == ".":

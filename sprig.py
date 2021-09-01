@@ -5,6 +5,7 @@ import dataclasses
 import json
 from collections import defaultdict
 from enum import Enum
+from pathlib import Path
 from typing import Dict, List, NewType, Optional
 
 from languages.base import Language
@@ -29,13 +30,18 @@ ROOT_HASH = Hash("0")
 SPRIG_ADDRESS = Address("@SPRIG")
 BANK = defaultdict(int)
 
+TIME_FILE = Path(__file__).parent / "data" / "time"
+TIME_FILE.touch()
 
 # noinspection PyDefaultArgument
-def now(increment=0, __now=[0]):
+def now(increment=0):
     """Own time function for testing purpose"""
-    __now[0] += increment
 
-    return __now[0]
+    time = int(TIME_FILE.read_text() or "0")
+    time += increment
+    TIME_FILE.write_text(str(time))
+
+    return time
 
 
 def transfer_money(from_, to, amount, msg=""):
