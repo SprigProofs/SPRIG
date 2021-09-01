@@ -120,8 +120,8 @@ export default defineComponent({
             boundsPadding: 1,
             bounds: true,
           });
+          stop();
         });
-        stop();
       }
     });
   },
