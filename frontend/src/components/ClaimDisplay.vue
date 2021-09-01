@@ -4,10 +4,10 @@
     <p v-if="claim.challenged_time !== null">
       Challenged at {{ claim.challenged_time }}
     </p>
-    <ButtonPrimary v-if="claim.status === 'challenged'" @click="submitProof">Submit proof</ButtonPrimary>
+    <ButtonPrimary v-if="claim.status === 'challenged'" @click="openProofModal">Submit proof</ButtonPrimary>
     <ButtonPrimary v-if="claim.status === 'unchallenged'" @click="challenge">Challenge</ButtonPrimary>
-    <TailwindUIModal :open="proofModalOpen" title="New proof attempt" main-button="Submit" @closed="proofModalOpen = false">
-      <NewProofModal :parent-claim="claim"></NewProofModal>
+    <TailwindUIModal :open="proofModalOpen" title="New proof attempt" main-button="Submit" @closed="proofModalOpen = false" @submit="submitProof">
+      <ProofInput :parent-claim="claim" @input="proof = $event" />
     </TailwindUIModal>
   </div>
 </template>
@@ -18,13 +18,17 @@ import { Claim } from "@/sprig";
 import { store } from "@/store";
 import StatementDisplayShort from "@/components/languages/TicTacToe/StatementDisplayShort.vue";
 import ButtonPrimary from "@/components/ButtonPrimary.vue";
-import NewProofModal from "@/components/NewProof.vue";
+import ProofInput from "@/components/ProofInput.vue";
 import TailwindUIModal from "@/components/TailwindUIModal.vue";
 
 export default defineComponent({
   name: "ClaimDisplay",
+  emits: ["input"],
   data() {
-    return { proofModalOpen: false }
+    return {
+      proofModalOpen: false,
+      proof: { machineLevel: false, statements: [""], machineProof: "" },
+    };
   },
   props: {
     instance: {
@@ -46,10 +50,27 @@ export default defineComponent({
       if (!this.claim) return;
       store.challenge(this.instance, this.hash, "Diego");
     },
-    submitProof(): void {
+    openProofModal(): void {
       this.proofModalOpen = true;
     },
+    submitProof(): void {
+      if (this.proof.machineLevel) {
+        store.answerLowLevel(
+          this.instance,
+          this.hash,
+          "Diego",
+          this.proof.machineProof
+        );
+      } else {
+        store.answer(this.instance, this.hash, "Diego", this.proof.statements);
+      }
+    },
   },
-  components: { TailwindUIModal, NewProofModal, StatementDisplayShort, ButtonPrimary },
+  components: {
+    TailwindUIModal,
+    ProofInput,
+    StatementDisplayShort,
+    ButtonPrimary,
+  },
 });
 </script>

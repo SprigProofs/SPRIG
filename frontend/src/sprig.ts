@@ -56,6 +56,10 @@ interface ChallengeRecord {
     claim: Claim
 }
 
+interface AnswerRecord {
+    balance: number
+}
+
 const API_BASE = "http://localhost:8600/"
 
 const api = {
@@ -74,9 +78,10 @@ const api = {
         for (const key of Object.keys(query)) {
             url.searchParams.append(key, query[key])
         }
+        console.log("post url", url, "body", body)
         fetch(url.toString(), {
             method: "POST",
-            body: body ? "" : JSON.stringify(body),
+            body: body ? JSON.stringify(body) : "",
         }).then(resp => {
             if (resp.ok) {
                 resp.json().then(data => {
@@ -93,7 +98,13 @@ const api = {
     },
     challenge(instance: string, claim: string, skeptic: string, callback: FetchCallback<ChallengeRecord>) {
         this.post([instance, claim, "challenge"], {skeptic: skeptic}, null, callback)
+    },
+    answer(instance: string, claim: string, claimer: string, claims: string[], lowLevel: boolean, callback: FetchCallback<AnswerRecord>) {
+        this.post([instance, claim, "proof_attempts"], {}, {
+            claimer, claims, machine_level: lowLevel
+        }, callback)
     }
+
 
 }
 

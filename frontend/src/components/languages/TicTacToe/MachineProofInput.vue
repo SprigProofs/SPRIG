@@ -3,7 +3,7 @@
     aria-label="TicTacToe machine proof"
     type="text"
     v-model="statement"
-    class="border-b"
+    class="border-b pl-1 font-mono"
     placeholder="...|XO.|O.X"
     pattern="[.\\/]|[-|][123]|"
     @input="$emit('input', statement)"

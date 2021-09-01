@@ -180,15 +180,31 @@ def get_proof_attempts(claim_hash: str, instance: sprig.Sprig = Depends(load)):
 class NewProofAttempt(BaseModel):
     claimer: sprig.Address
     claims: List[str]
+    machine_level: bool = False
+
+
+class AnswerRecord(BaseModel):
+    balance: int
+    attempt: sprig.ProofAttempt
 
 
 @api.post("/{instance_hash}/{claim_hash}/proof_attempts")
-def add_proof_attempt(
-    attempt: NewProofAttempt, claim_hash: str, instance: sprig.Sprig = Depends(load)
-):
+def add_proof_attempt(attempt: NewProofAttempt, claim_hash: str, instance_hash: str):
     """Create a new proof attempt of a challenged claim."""
-    claims = [sprig.Claim(attempt.claimer, claim) for claim in attempt.claims]
-    instance.answer(claim_hash, "Diego", *claims)
+
+    instance = load(instance_hash)
+
+    if attempt.machine_level:
+        assert len(attempt.claims) == 1
+        instance.answer_low_level(claim_hash, attempt.claimer, *attempt.claims)
+    else:
+        instance.answer(claim_hash, attempt.claimer, *attempt.claims)
+
+    instance.distribute_all_bets()
+    sprig.now(1)
+    save(instance, instance_hash)
+
+    return AnswerRecord(balance=42, attempt=instance.proof_attempts[claim_hash][-1])
 
 
 if __name__ == "__main__":
