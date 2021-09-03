@@ -21,7 +21,7 @@
           <StatusDisplay :status="claim.status" />
           <div
             v-if="statusCountsToDisplay.length"
-            class="flex items-center rounded-r-lg"
+            class="flex items-center justify-around px-4 rounded-r-lg flex-wrap"
           >
             <StatusDisplay
               v-for="data in statusCountsToDisplay"

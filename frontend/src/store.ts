@@ -14,7 +14,7 @@ const store = {
         if (this.debug){ console.log(msg) }
     },
     fetchInstance(hash: string): void {
-        this.debugLog(`Get instance ${hash}`)
+        this.debugLog(`Store: fetch instance ${hash}`)
         api.fetchInstance(hash, (sprig) => this.state.instances[hash] = sprig);
     },
     instance(hash: string): Sprig | undefined {
@@ -22,11 +22,9 @@ const store = {
             this.fetchInstance(hash)
             return undefined
         }
-        this.debugLog(`Return cached instance ${hash}`)
         return this.state.instances[hash];
     },
     claim(instance_hash: string, claim_hash: string): Claim | undefined {
-        this.debugLog(`Get claim ${claim_hash} on instance ${instance_hash}.`)
         const sprig = this.instance(instance_hash)
         if (!sprig) return undefined;
         return sprig.claims[claim_hash]

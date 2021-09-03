@@ -20,7 +20,7 @@
           <div class="text-yellow-700 text-xs font-semibold">Submit cost</div>
           <span v-if="machineLevel">-101$</span><span v-else>-100$</span>
         </li>
-        <li class="bg-blue-100 p-2">
+        <li class="bg-blue-100 py-2">
           <div class="text-blue-700 text-xs font-semibold">First Validated</div>
           +200$
         </li>

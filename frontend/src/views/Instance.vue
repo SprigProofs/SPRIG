@@ -125,13 +125,6 @@ export default defineComponent({
       }
     });
   },
-  // created(): void {
-  //   this.loading = true;
-  //   api.fetchInstance(this.hash, (data) => {
-  //     this.sprig = data;
-  //     this.loading = false;
-  //   });
-  // },
 });
 </script>
 
