@@ -10,7 +10,7 @@ export default defineComponent({
   props: {
     grid: {
       type: Array as PropType<string[][]>,
-      required: true,
+      default: () => ["...", "...", "..."],
       validator(value: Array<Array<string>>): boolean {
         if (value.length != 3) {
           return false;
@@ -42,8 +42,8 @@ export default defineComponent({
   methods: {
     caseCenter(x: number, y: number) {
       return [
-        (x + 0.5) * this.$el.width / 3,
-        (y + 0.5) * this.$el.height / 3
+        ((x + 0.5) * this.$el.width) / 3,
+        ((y + 0.5) * this.$el.height) / 3,
       ];
     },
     redraw(): void {
@@ -55,15 +55,15 @@ export default defineComponent({
 
       // Draw the grid
       ctx.beginPath();
-      ctx.strokeStyle = '#888'
+      ctx.strokeStyle = "#888";
       for (const i of [1, 2]) {
-        ctx.moveTo(w * i / 3, 0);
-        ctx.lineTo(w * i / 3, h);
-        ctx.moveTo(0, h * i / 3);
-        ctx.lineTo(w, h * i /  3);
+        ctx.moveTo((w * i) / 3, 0);
+        ctx.lineTo((w * i) / 3, h);
+        ctx.moveTo(0, (h * i) / 3);
+        ctx.lineTo(w, (h * i) / 3);
       }
       ctx.stroke();
-      ctx.strokeStyle = 'black'
+      ctx.strokeStyle = "black";
 
       // Draw Xs and Os
       for (const x of [0, 1, 2]) {
@@ -89,7 +89,12 @@ export default defineComponent({
         return;
       }
       if (this.highlight === ".") {
-        // TODO: How to visualise a draw ?
+        ctx.fillStyle = "#2d92ff";
+        ctx.textAlign = "center";
+        ctx.font = `bold ${h / 4}px  Nunito, sans-serif`;
+        ctx.fillText("Draw", ...this.caseCenter(1, 1.25));
+        ctx.stroke();
+        return;
       }
       ctx.beginPath();
       ctx.strokeStyle = "red";
@@ -111,7 +116,6 @@ export default defineComponent({
         ctx.lineTo(...this.caseCenter(2, row));
       }
       ctx.stroke();
-
     },
     // is_highlighted(row: number, col: number): boolean {
     //   if (!this.highlight) {
