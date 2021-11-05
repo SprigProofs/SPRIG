@@ -51,9 +51,9 @@ class Language:
 
     @staticmethod
     def load(**data):
-        id_ = data.pop("__class__")
+        id_ = data.pop("type")
         cls = Language.REGISTER[id_]
         return cls(**data)
 
     def dump(self):
-        return {"__class__": self.name, **self.__dict__}
+        return {"type": self.name, **self.__dict__}

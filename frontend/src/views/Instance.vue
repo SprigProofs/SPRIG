@@ -11,7 +11,7 @@
         <ul class="flex space-x-4 mt-1 text-gray-700">
           <li class="flex items-center">
             <TranslateIcon class="h-5 text-gray-500" />
-            <span class="ml-2"> {{ sprig.language_data.__class__ }} </span>
+            <span class="ml-2"> {{ sprig.language_data.type }} </span>
           </li>
           <li class="flex items-center">
             <UserCircleIcon class="h-5 text-gray-500" />

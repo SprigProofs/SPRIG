@@ -6,7 +6,7 @@ run:
 	cd frontend && PORT=$(BACKEND_PORT) npm run serve
 
 dev:
-	DEV=true poetry run uvicorn api:api --port $(PORT) &
+	DEV=true poetry run uvicorn api:api --port $(PORT) --reload &
 	cd frontend && PORT=$(BACKEND_PORT) npm run serve
 
 install:

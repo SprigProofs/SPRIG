@@ -31,7 +31,8 @@ export default defineComponent({
     highlight: {
       type: String,
       validator(value: string): boolean {
-        return /^[/\\.]|[-|][123]$/.test(value);
+        // either /, \, |X, -X, or the empty string
+        return /^([/\\.]|([-|][123]))?$/.test(value);
       },
     },
     size: {

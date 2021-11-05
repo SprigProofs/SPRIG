@@ -1,7 +1,7 @@
 <template>
   <ul class="p-4 flex flex-wrap">
-    <li v-for="(sprig, hash) in instances" :key="sprig" class="m-2">
-      <sprig-summary-card :instance="sprig" :hash="hash"></sprig-summary-card>
+    <li v-for="hashAndInstance in sortedInstances" :key="hashAndInstance[0]" class="m-2">
+      <sprig-summary-card :instance="hashAndInstance[1]" :hash="hashAndInstance[0]"></sprig-summary-card>
     </li>
   </ul>
 </template>
@@ -18,14 +18,18 @@ export default defineComponent({
     msg: String,
   },
   data(): {
-    instances: Record<string, SprigSummary>;
+    instances: { [key: string]: SprigSummary }
   } {
     return {
       instances: {},
     };
   },
   methods: {},
-
+  computed: {
+    sortedInstances() {
+      return Array.from(Object.entries(this.instances)).sort();
+    }
+  },
   mounted() {
     api.fetchInstanceList((data) => {
       this.instances = data;

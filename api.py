@@ -112,21 +112,20 @@ def add_new_instance(new_instance: SprigInitData):
     """
 
     try:
-        language = languages.base.Language.load(**new_instance.language)
         constraints = sprig.AbstractConstraints.load(**new_instance.constraints)
         instance = sprig.Sprig.start(
-            language,
+            new_instance.language,
             constraints,
-            sprig.Claim(new_instance.claimer, new_instance.root_claim),
-            *[
-                sprig.Claim(new_instance.claimer, sub_claim)
-                for sub_claim in new_instance.sub_claims
-            ],
+            new_instance.claimer,
+            new_instance.root_claim,
+            *new_instance.sub_claims,
         )
     except AssertionError as e:
         raise HTTPException(400, e.args)
 
     save(instance, new_hash())
+
+    return instance
 
 
 @api.get("/users")

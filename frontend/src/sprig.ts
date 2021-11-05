@@ -46,7 +46,7 @@ interface ProofAttempt {
 
 interface Sprig {
     claims: Record<string, Claim>
-    language_data: Record<string, any> & { __class__: string }
+    language_data: Record<string, any> & { type: string }
     proof_attempts: Record<string, ProofAttempt[]>
     constraints: Record<string, any>
 }

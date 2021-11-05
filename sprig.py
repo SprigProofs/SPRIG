@@ -98,6 +98,8 @@ class AbstractConstraints:
     ID = None
     REGISTER = {}
 
+    root_height: int
+
     def __init_subclass__(cls, **kwargs):
         """Registers the subclasses in REGISTER with their class name as key or ID if defined."""
 
@@ -108,6 +110,9 @@ class AbstractConstraints:
 
     @staticmethod
     def load(**data):
+        assert (
+            "type" in data
+        ), f"Cannot load constraints with no 'type' key. Valid keys are {', '.join(AbstractConstraints.REGISTER)}."
         id_ = data.pop("type")
         cls = AbstractConstraints.REGISTER[id_]
         return cls(**data)
@@ -162,7 +167,10 @@ class Constraints(AbstractConstraints):
     def pay_to_challenge(self, skeptic: Address, claim: Claim):
         amount = self.question_bounties[claim.height]
         transfer_money(
-            skeptic, SPRIG_ADDRESS, amount, f"challenge {claim.hash}",
+            skeptic,
+            SPRIG_ADDRESS,
+            amount,
+            f"challenge {claim.hash}",
         )
         claim.money_held += amount
 
@@ -174,7 +182,10 @@ class Constraints(AbstractConstraints):
         if attempt.height < self.root_height - 1:
             amount += self.upstakes[attempt.height]
         transfer_money(
-            attempt.claimer, SPRIG_ADDRESS, amount, f"new proof attempt - ⛰️{attempt.height}",
+            attempt.claimer,
+            SPRIG_ADDRESS,
+            amount,
+            f"new proof attempt - ⛰️{attempt.height}",
         )
         attempt.money_held += amount
 
@@ -182,7 +193,10 @@ class Constraints(AbstractConstraints):
         assert attempt.height == 0
         amount = self.verification_cost + self.upstakes[attempt.height]
         transfer_money(
-            attempt.claimer, SPRIG_ADDRESS, amount, f"machine verification {attempt.claims[0]}",
+            attempt.claimer,
+            SPRIG_ADDRESS,
+            amount,
+            f"machine verification {attempt.claims[0]}",
         )
         attempt.money_held += amount
 
@@ -205,7 +219,10 @@ class Constraints(AbstractConstraints):
             # the rejecting claim is a wrong machine proof
             amount = self.downstakes[attempt.height]
             transfer_money(
-                SPRIG_ADDRESS, rejecting.skeptic, amount, f"downstakes to {rejecting.hash}",
+                SPRIG_ADDRESS,
+                rejecting.skeptic,
+                amount,
+                f"downstakes to {rejecting.hash}",
             )
             attempt.money_held -= amount
 
@@ -213,7 +230,10 @@ class Constraints(AbstractConstraints):
             # Always but at the root
             amount = self.upstakes[attempt.height]
             transfer_money(
-                SPRIG_ADDRESS, parent.skeptic, amount, f"upstakes to {parent.hash}",
+                SPRIG_ADDRESS,
+                parent.skeptic,
+                amount,
+                f"upstakes to {parent.hash}",
             )
             attempt.money_held -= amount
 
@@ -227,7 +247,10 @@ class Constraints(AbstractConstraints):
 
         amount = self.question_bounties[challenged_claim.height]
         transfer_money(
-            SPRIG_ADDRESS, destination, amount, f"challenge {challenged_claim.hash} answered",
+            SPRIG_ADDRESS,
+            destination,
+            amount,
+            f"challenge {challenged_claim.hash} answered",
         )
         challenged_claim.money_held -= amount
 
@@ -260,6 +283,21 @@ class Constraints(AbstractConstraints):
 
     def can_answer(self, claim: Claim) -> bool:
         return now() < claim.time + self.time_for_answers
+
+
+@dataclass
+class DefaultConstraints(Constraints):
+    def __init__(self, root_height=6):
+        super().__init__(
+            root_height=root_height,
+            max_length=1000,
+            time_for_questions=3,
+            time_for_answers=3,
+            upstakes=[1] * root_height,
+            downstakes=[1] * root_height,
+            question_bounties=[1] * root_height,
+            verification_cost=1,
+        )
 
 
 @dataclass
@@ -371,6 +409,7 @@ class Sprig:
             challenged_time=now(),
         )
 
+        print(cls.__init__, constraints, language_data, type(language_data))
         self = cls(constraints, language_data, {ROOT_HASH: root_claim}, {})
 
         self.language.validate_top_level(root_claim.statement)
@@ -508,7 +547,11 @@ SPRIG instance:
             self.constraints.pay_attempt_rejected(attempt, rejecting_claim, parent)
 
     def update_claim_status(
-        self, hash: Hash, parent_claim_hash: Hash, parent_attempt: ProofAttempt, now: int,
+        self,
+        hash: Hash,
+        parent_claim_hash: Hash,
+        parent_attempt: ProofAttempt,
+        now: int,
     ):
         """This method updates the status of one claim and distribute its question bounty if needed."""
         if hash == ROOT_HASH:
@@ -640,13 +683,13 @@ def main():
         recommended_constraints,
         Address("Diego"),
         "...|XX.|... O plays X wins",
-        "O..|XXX|..." + ctx,
-        ".O.|XXX|..." + ctx,
-        "..O|XXX|..." + ctx,
-        "X..|XXO|..." + ctx,
-        "...|XXX|O.." + ctx,
-        "...|XXX|.O." + ctx,
-        "...|XXX|..O" + ctx,
+        "O..|XXX|... O plays X wins",
+        ".O.|XXX|... O plays X wins",
+        "..O|XXX|... O plays X wins",
+        "X..|XXO|... O plays X wins",
+        "...|XXX|O.. O plays X wins",
+        "...|XXX|.O. O plays X wins",
+        "...|XXX|..O O plays X wins",
     )
 
     print(sprig)
