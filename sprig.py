@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-# Drop in replacement for dataclass that works better with fastapi
 import dataclasses
 import json
 from collections import defaultdict
@@ -33,9 +32,9 @@ BANK = defaultdict(int)
 TIME_FILE = Path(__file__).parent / "data" / "time"
 TIME_FILE.touch()
 
-# noinspection PyDefaultArgument
+
 def now(increment=0):
-    """Own time function for testing purpose"""
+    """Own time function for testing purpose."""
 
     time = int(TIME_FILE.read_text() or "0")
     time += increment
@@ -315,7 +314,7 @@ class Claim:
     skeptic: Optional[Address]
     challenged_time: Optional[int]
 
-    # For debugging purposes
+    # For debugging purposes: those don't need to be stored on the blockchain
     money_held: int
     hash: Hash
 
