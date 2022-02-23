@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import dataclasses
+import itertools
 from dataclasses import dataclass
 import json
 from collections import defaultdict
@@ -26,14 +27,14 @@ TIME_FILE = Path(__file__).parent / "data" / "time"
 TIME_FILE.touch()
 
 
-def now(increment=0):
+def now(increment=0) -> Time:
     """Own time function for testing purpose."""
 
     time = int(TIME_FILE.read_text() or "0")
     time += increment
     TIME_FILE.write_text(str(time))
 
-    return time
+    return Time(time)
 
 
 def transfer_money(from_, to, amount, msg="") -> bool:
@@ -94,7 +95,7 @@ class AbstractParameters:
         """Initial height of the protocol."""
         raise NotImplementedError
 
-    def deadline(self, claim: Claim, sprig: Sprig) -> Time:
+    def deadline(self, claim: Claim) -> Optional[Time]:
         """Compute the time at which a non-decided claim becomes decided, if no actions are taken.
 
         If the claim is UNCHALLENGED, it is the time to ask questions.
@@ -168,8 +169,13 @@ class Parameters(AbstractParameters):
     def protocol_height(self) -> int:
         return self.root_height
 
-    def deadline(self, claim: Claim, sprig: Sprig) -> Time:
-        pass
+    def deadline(self, claim: Claim) -> Optional[Time]:
+        if claim.status is Status.UNCHALLENGED:
+            return Time(claim.last_modification + self.time_for_questions)
+        elif claim.status is Status.CHALLENGED:
+            return Time(claim.last_modification + self.time_for_answers)
+        else:
+            return None
 
     def claim_passes_constraints(self, claim: Claim) -> bool:
         return len(claim.statement) < self.max_length
@@ -290,31 +296,34 @@ class Claim:
     # The case of the root claim must always be treated separately.
     # TODO: Add logic to handle initial questions.
     skeptic: Optional[Address]
+    last_modification: Time
     # open_until is the time until which actions can be made on this
     # claim. If the claim is UNCHALLENGED, it is the last time to challenge it,
     # if the claim is CHALLENGED, it is the last time to add proofs attempts.
     # this field is not used on other states.
-    open_until: Optional[int]
+    open_until: Optional[Time]
 
     # For debugging purposes: those don't need to be stored on the blockchain
     money_held: int
     hash: Hash
 
     def __init__(
-            self,
-            statement,
-            height,
-            hash,
-            open_until,
-            parent,
-            status=None,
-            skeptic=None,
-            money_held=0,
+        self,
+        statement,
+        height,
+        hash,
+        parent,
+        last_modification,
+        open_until=None,
+        status=None,
+        skeptic=None,
+        money_held=0,
     ):
         self.parent = parent
         self.height = height
         self.hash = hash
         self.statement = statement
+        self.last_modification = last_modification
         self.open_until = open_until
 
         self.status = Status.load(status)
@@ -324,33 +333,36 @@ class Claim:
 
     @classmethod
     def new(
-            cls, statement: str, parent: Optional[Claim], hash: Hash, params: Parameters
+        cls,
+        statement: str,
+        parent: Optional[Claim],
+        hash: Hash,
+        params: Parameters,
+        low_level=False,
     ):
         """Simplified constructor for uses other than serialisation."""
-        height = 0 if params is None else parent.height + 1
+
+        if low_level:  # machine
+            height = 0
+        elif parent:
+            height = parent.height - 1
+        else:  # root
+            height = params.protocol_height()
+
         status = Status.CHALLENGED if parent is None else Status.UNCHALLENGED
-        cls(statement, height, hash, 0, parent.hash, status)
-        params.time_for_answers
+        claim = cls(statement, height, hash, parent.hash, now(), status)
+        claim.open_until = params.deadline(claim)
+        return claim
 
     def __str__(self):
         skeptic = f" skeptic: {self.skeptic}" if self.skeptic is not None else ""
         money = f" {self.money_held}{CURRENCY}" if self.money_held else ""
         return (
-                f"#{self.hash} - "
-                + fmt(self.statement, fg=self.status.color())
-                + f" ({self.status}){skeptic}"
-                + money
+            f"#{self.hash} - "
+            + fmt(self.statement, fg=self.status.color())
+            + f" ({self.status}){skeptic}"
+            + money
         )
-
-    def challenge(self, skeptic: Address):
-        assert self.skeptic is None
-        assert self.status is Status.UNCHALLENGED
-
-        self.status = Status.CHALLENGED
-        self.skeptic = skeptic
-        # FIXME: replace challenged_time by open_until, but we need the constraints for that.
-        self.challenged_time = now()
-        self.open_until = ...
 
 
 @dataclass
@@ -371,7 +383,6 @@ class ProofAttempt:
         self.claims = claims
         self.height = height
         self.status = Status.load(status)
-        # self.time = time if time is not None else now()
         self.money_held = money_held
 
 
@@ -393,32 +404,25 @@ class Sprig:
     # when we reached timeouts.
     future_actions: List[(int, Hash)]
 
+    HASHES = map(lambda x: Hash(str(x)), itertools.count())
+
     @classmethod
     def start(
-            cls,
-            language_type: str,
-            params: Parameters,
-            claimer: Address,
-            claim: str,
-            *proof_attempt: str,
+        cls,
+        language_type: str,
+        params: Parameters,
+        claimer: Address,
+        claim: str,
+        *proof_attempt: str,
     ):
         """Start a new instance of the SPRIG protocol, originating from a claim."""
 
-        root_claim = Claim(
-            claim,
-            params.root_height,
-            ROOT_HASH,
-            status=Status.CHALLENGED,
-        )
-
-        print(cls.__init__, params, language_type)
-        self = cls(
-            Language.load(language_type), params, {ROOT_HASH: root_claim}, {}, []
-        )
+        root_claim = Claim.new(claim, None, ROOT_HASH, params)
+        language = Language.load(language_type)
+        self = cls(language, params, {ROOT_HASH: root_claim}, {}, [])
 
         self.language.validate_top_level(root_claim.statement)
-        # TODO: Do we need to pay at the root ?
-        # self.constraints.pay_to_answer(root_claim)
+        params.pay_new_instance(self)
 
         self.answer(ROOT_HASH, claimer, *proof_attempt)
 
@@ -442,16 +446,14 @@ class Sprig:
 
             attempt: ProofAttempt
             for i, attempt in enumerate(self.proof_attempts.get(claim_hash, [])):
-                money = (
-                    f" ({fmt_money(attempt.money_held)})" if attempt.money_held else ""
-                )
+                money = f" ({fmt_money(attempt.money_held)})" if attempt.money_held else ""
                 ret += (
-                        fmt(f"Attempt {i + 1} by {attempt.claimer}", attempt.status.color())
-                        + f" at {attempt.time}⌛{money}:\n"
+                    fmt(f"Attempt {i + 1} by {attempt.claimer}", attempt.status.color())
+                    + f" at {attempt.time}⌛{money}:\n"
                 )
                 for claim in attempt.claims:
                     claim_s = indent(claim_str(claim), INDENT)
-                    ret += "  - " + claim_s[len(INDENT):]
+                    ret += "  - " + claim_s[len(INDENT) :]
 
             return ret
 
@@ -462,74 +464,63 @@ SPRIG instance:
  - Claim: {fmt(root_claim.statement, root_claim.status.color())} ({fmt_money(root_claim.money_held)})
 {indent(claim_str(ROOT_HASH), "   ")}"""
 
-    @property
-    def language(self) -> Language:
-        return Language.load(**self.language_type)
-
     def status_count(self, status: Status):
         """Count the number of claims of a given status."""
         return sum(1 for claim in self.claims.values() if claim.status is status)
-
-    def _add_claim(self, statement: str, height: int) -> Hash:
-        """Add a claim to the dictionnary of claims, returning the generated hash."""
-
-        assert height >= 0
-
-        hash_ = Hash(str(len(self.claims)))
-        assert hash_ not in self.claims  # Should never happen, it would be a bug
-
-        self.claims[hash_] = Claim(statement, height, hash_)
-        return hash_
 
     # Public interface to add claims/challenges
 
     def challenge(self, skeptic: Address, claim_hash: Hash):
         assert claim_hash in self.claims, "The claim hash is not valid."
         claim = self.claims[claim_hash]
-        assert (
-                claim.status == Status.UNCHALLENGED
-        ), "This claim cannot be challenged anymore."
         assert claim.height > 0, "A machine level claim cannot be challenged."
-        assert self.params.can_challenge(claim)  # Checks for the time and such
+        assert claim.status is Status.UNCHALLENGED, "This claim cannot be challenged anymore."
 
-        self.params.pay_to_challenge(skeptic, claim)
-        claim.challenge(skeptic)
+        self.params.pay_new_challenge(skeptic, claim)
+
+        claim.status = Status.CHALLENGED
+        claim.skeptic = skeptic
+        claim.last_modification = now()
+        claim.open_until = self.params.deadline(claim)
 
         self.fixup(claim)
 
     def answer(self, challenged_claim: Hash, claimer: Address, *sub_statements: str):
-        assert challenged_claim in self.claims, "No such claim."
+        """Answer a challenge with a (non-machine) proof."""
+        assert challenged_claim in self.claims, "The claim hash is not valid."
         claim = self.claims[challenged_claim]
-        assert claim.status is Status.CHALLENGED
+        assert claim.status is Status.CHALLENGED, "There is no open challenge for this claim."
         assert claim.height > 1, "Use answer_low_level instead"
-        assert self.params.can_answer(claim)
 
         self.language.validate_subclaims(claim.statement, *sub_statements)
 
-        hashes = [
-            self._add_claim(statement, claim.height - 1) for statement in sub_statements
+        claims = [
+            Claim.new(statement, claim, next(self.HASHES), self.params)
+            for statement in sub_statements
         ]
-        attempt = ProofAttempt(challenged_claim, claimer, hashes, claim.height - 1)
+        attempt = ProofAttempt(
+            challenged_claim, claimer, [c.hash for c in claims], claim.height - 1
+        )
 
         self.params.pay_new_proof_attempt(attempt)
+
+        self.claims.update({c.hash: c for c in claims})
         # Create the list of proof attempts if it doesn't exist yet and add the attempt.
         self.proof_attempts.setdefault(challenged_claim, []).append(attempt)
 
-        self.fixup()
+        self.fixup(claim)
 
-    def answer_low_level(
-            self, challenged_claim: Hash, claimer: Address, machine_proof: str
-    ):
+    def answer_low_level(self, challenged_claim: Hash, claimer: Address, machine_proof: str):
         assert challenged_claim in self.claims, "No such claim."
         claim = self.claims[challenged_claim]
-        assert claim.status is Status.CHALLENGED
-        assert claim.height >= 0
-        assert self.params.can_answer(claim)
+        assert claim.status is Status.CHALLENGED, "There is no open challenge for this claim."
+        assert claim.height >= 0  # Should not happen
 
-        h = self._add_claim(machine_proof, 0)
-        attempt = ProofAttempt(challenged_claim, claimer, [h], 0)
+        proof = Claim.new(machine_proof, claim, next(self.HASHES), self.params, True)
+        attempt = ProofAttempt(challenged_claim, claimer, [proof.hash], 0)
 
-        self.params.pay_for_machine_verification(attempt)
+        self.params.pay_new_proof_attempt(attempt)
+        self.claims[proof.hash] = proof
         # Create the list of proof attempts if it doesn't exist yet and add the attempt.
         self.proof_attempts.setdefault(challenged_claim, []).append(attempt)
 
@@ -566,20 +557,18 @@ SPRIG instance:
             return
 
         # If any claim is rejected, the attempt is rejected.
-        rejecting_claim = get(
-            (self.claims[h] for h in attempt.claims), status=Status.REJECTED
-        )
+        rejecting_claim = get((self.claims[h] for h in attempt.claims), status=Status.REJECTED)
         if rejecting_claim:
             attempt.status = Status.REJECTED
             parent = self.claims.get(parent_claim)
             self.params.pay_attempt_rejected(attempt, rejecting_claim, parent)
 
     def update_claim_status(
-            self,
-            hash: Hash,
-            parent_claim_hash: Hash,
-            parent_attempt: ProofAttempt,
-            now: int,
+        self,
+        hash: Hash,
+        parent_claim_hash: Hash,
+        parent_attempt: ProofAttempt,
+        now: int,
     ):
         """This method updates the status of one claim and distribute its question bounty if needed."""
         if hash == ROOT_HASH:
@@ -634,6 +623,18 @@ SPRIG instance:
                 yield from self._dfs(hash)
         yield _start
 
+    def _add_claim(self, statement: str, parent: Hash, height: int) -> Hash:
+        """Add a claim to the dictionary of claims, returning the generated hash."""
+
+        parent = self.claims[parent]
+        assert height >= 0
+
+        hash_ = Hash(str(len(self.claims)))
+        assert hash_ not in self.claims  # Should never happen, it would be a bug
+
+        self.claims[hash_] = Claim.new(statement, parent, height, hash_)
+        return hash_
+
     # Serialisation
 
     def dump_as_dict(self):
@@ -669,8 +670,7 @@ SPRIG instance:
         constraints = Parameters(**data["constraints"])
         claims = {h: Claim(**claim) for h, claim in data["claims"].items()}
         attempts = {
-            h: [ProofAttempt(**a) for a in attempt]
-            for h, attempt in data["proof_attempts"].items()
+            h: [ProofAttempt(**a) for a in attempt] for h, attempt in data["proof_attempts"].items()
         }
 
         return cls(constraints, data["language"], claims, attempts)
