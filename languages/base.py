@@ -9,7 +9,7 @@ class Language:
     Languages and be loaded via Language.load automaticaly,
     as long as they are loaded in the interpreter (imported).
 
-    Languages are supposed to be very lght classes containing almost no data,
+    Languages are supposed to be very light classes containing no data,
     but describe the rules of a specific game. Those rules are implemented
     in three methods:
         - validate_top_level: validate the initial claim.
@@ -19,6 +19,7 @@ class Language:
     A Language is identified with its class name.
     """
 
+    # Stores all languages known to the interpreter.
     REGISTER = {}
 
     def __str__(self):
@@ -50,10 +51,9 @@ class Language:
         Language.REGISTER[id_] = cls
 
     @staticmethod
-    def load(**data):
-        id_ = data.pop("type")
-        cls = Language.REGISTER[id_]
-        return cls(**data)
+    def load(language_type: str):
+        cls = Language.REGISTER[language_type]
+        return cls()
 
-    def dump(self):
-        return {"type": self.name, **self.__dict__}
+    def dump(self) -> str:
+        return self.name

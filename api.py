@@ -91,7 +91,7 @@ def get_instances_list():
     for file in all_instances_filenames():
         data = sprig.Sprig.loads(file.read_text())
         instances[file.stem] = {
-            "constraints": data.constraints,
+            "constraints": data.params,
             "language": data.language.name,
             "root_claim": data.claims[sprig.ROOT_HASH],
             "counts": {status: data.status_count(status) for status in sprig.Status},
