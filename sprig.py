@@ -23,7 +23,9 @@ ROOT_HASH = Hash("0")
 SPRIG_ADDRESS = Address("@SPRIG")
 BANK = defaultdict(int)
 
-TIME_FILE = Path(__file__).parent / "data" / "time"
+DATA = Path(__file__).parent / "data"
+DATA.mkdir(exist_ok=True)
+TIME_FILE = DATA / "time"
 TIME_FILE.touch()
 
 INDENT = " " * 4  # For pretty printing
