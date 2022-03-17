@@ -450,12 +450,11 @@ class Sprig:
             for i, attempt in enumerate(self.proof_attempts.get(claim_hash, [])):
                 money = f" ({fmt_money(attempt.money_held)})" if attempt.money_held else ""
                 ret += (
-                    fmt(f"Attempt {i + 1} by {attempt.claimer}", attempt.status.color())
-                    + f" {money}:\n"
+                    fmt(f"Attempt {i + 1} by {attempt.claimer}", attempt.status.color()) + f" {money}:\n"
                 )
                 for claim in attempt.claims:
                     claim_s = indent(claim_str(claim), INDENT)
-                    ret += "  - " + claim_s[len(INDENT) :]
+                    ret += "  - " + claim_s[len(INDENT):]
 
             return ret
 
@@ -603,7 +602,7 @@ SPRIG instance:
             self.params.pay_attempt_accepted(attempt, self)
 
             # If the claim that the attempt proves was not validated before, collect the bounty
-            if parent.status is Status.CHALLENGED:
+            if parent.status is Status.CHALLENGED and parent.hash != ROOT_HASH:
                 self.params.pay_challenge_answered(parent, attempt)
 
         # The attempt is rejected iff the claim is rejected, as all other claims
@@ -613,12 +612,10 @@ SPRIG instance:
             attempt.status = Status.REJECTED
             self.params.pay_attempt_rejected(attempt, start, self)
 
-        self.fixup(parent)
-
     def distribute_all_bets(self):
         for h in self._dfs():
             claim = self.claims[h]
-            if not claim.status.decided() and now() > claim.open_until:
+            if not claim.status.decided():
                 self.fixup(claim)
 
     def _dfs(self, _start=ROOT_HASH) -> Iterator[Hash]:
@@ -717,6 +714,7 @@ def main():
         recommended_constraints,
         Address("Diego"),
         "...|XX.|... O plays X wins",
+
         "O..|XXX|... O plays X wins",
         ".O.|XXX|... O plays X wins",
         "..O|XXX|... O plays X wins",
