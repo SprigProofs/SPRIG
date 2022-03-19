@@ -1,12 +1,14 @@
 <script setup>
 import { reactive } from 'vue';
 import StatusTag from './StatusTag.vue';
+import { Status, STATUSES, NOW, decided } from '../sprig'
+import ClaimMd from './ClaimMd.vue';
 
 const statuses = reactive({
-    "Challenged": true,
-    "Unchallenged": true,
-    "Validated": false,
-    "Rejected": false,
+    [Status.CHALLENGED]: true,
+    [Status.UNCHALLENGED]: true,
+    [Status.VALIDATED]: false,
+    [Status.REJECTED]: false
 });
 
 const REWARD = "Reward";
@@ -19,33 +21,32 @@ const types = reactive({
     "Proof attempts": false,
 })
 
-const NOW = 13
 const claims = [
     {
         hash: "aaaaaa",
-        statement: "theorem infinity_of_primes [grosse formule] := [nice proof]",
-        status: "Challenged",
+        statement: "theorem infinitude_of_primes: set.infinite { p | nat.prime p } := [big proof]",
+        status: Status.CHALLENGED,
         parent: "a884ff2",
         last_modification: 12,
         open_until: 20
     }, {
         hash: "bbbbbb",
-        statement: "theorem infinity_of_primes [grosse formule] := [nice proof]",
-        status: "Unchallenged",
+        statement: "theorem infinitude_of_primes : set.infinite { p | nat.prime p } := [big proof]",
+        status: Status.UNCHALLENGED,
         parent: "a884ff2",
         last_modification: 11,
         open_until: 18
     }, {
         hash: "cccccc",
-        statement: "theorem infinity_of_primes [grosse formule] := [nice proof]",
-        status: "Validated",
+        statement: "theorem infinitude_of_primes : set.infinite { p | nat.prime p } := [big proof]",
+        status: Status.VALIDATED,
         parent: "a884ff2",
         last_modification: 9,
         open_until: 22
     }, {
         hash: "dddddd",
-        statement: "theorem infinity_of_primes [grosse formule] := [nice proof]",
-        status: "Rejected",
+        statement: "theorem infinitude_of_primes : set.infinite { p | nat.prime p } := [big proof]",
+        status: Status.REJECTED,
         parent: "a884ff2",
         last_modification: 7,
         open_until: 14
@@ -53,11 +54,11 @@ const claims = [
 ]
 
 function startDrag(event, method) {
-    console.log(event, method);
     event.dataTransfer.dropEffect = 'move';
     event.dataTransfer.setData("method", method);
     event.target.classList.add("opacity-70")
 }
+
 function endDrag(event, method) {
     event.target.classList.remove("opacity-70")
 }
@@ -75,8 +76,6 @@ function drop(event, droppedMethod) {
     event.target.classList.remove("border-t-4", "border-t-gray-600")
 
     const draggedMethod = event.dataTransfer.getData("method");
-    console.log(event, draggedMethod, droppedMethod);
-
     sort_methods.splice(sort_methods.indexOf(draggedMethod), 1)
     const idx = sort_methods.indexOf(droppedMethod);
     sort_methods.splice(idx, 0, draggedMethod);
@@ -86,7 +85,7 @@ function sort_weight(claim) {
     const weights = {};
     weights[REWARD] = 10;
     weights[NEW] = NOW - claim.last_modification;
-    weights[OPEN_UNTIL] = claim.open_until - NOW
+    weights[OPEN_UNTIL] = decided(claim.status) ? 9999 : claim.open_until - NOW
     weights[RELEVANCE] = 0
 
     var weight = 0;
@@ -149,11 +148,14 @@ function results() {
                 
             </section>
         </div>
-        12 Results
-        <ol>
-            <li v-for="result in results()" :key="result.hash">
-                {{ result }}
+        <h2 class="mt-4 py-4">
+            {{ results().length }} Result{{ results().length != 1 ? 's' : ''}}
+        </h2>
+        <TransitionGroup tag="ol" class="space-y-6">
+            <li v-for="result in results()" :key="result.hash"
+                class="transition">
+                <ClaimMd :claim="result"></ClaimMd>
             </li>
-        </ol>
+        </TransitionGroup>
     </div>
 </template>
