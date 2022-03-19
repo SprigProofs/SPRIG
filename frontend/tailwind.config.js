@@ -1,11 +1,13 @@
 module.exports = {
-  mode: "jit",
-  purge: ["./src/**/*.vue", "./src/*.vue", "./public/index.html"],
-  darkMode: false, // or 'media' or 'class'
+  content: [
+    "index.html",
+    "src/**/*.vue"
+  ],
   theme: {
     extend: {
       fontFamily: {
-        sans: ["Nunito", "sans-serif"],
+        body: ["Nunito", "sans-serif"],
+        title: ["Nunito", "sans-serif"]
       },
     },
   },
@@ -13,4 +15,4 @@ module.exports = {
     extend: {},
   },
   plugins: [],
-};
+}

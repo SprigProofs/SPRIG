@@ -1,0 +1,21 @@
+@font-face {
+    font-family: Nunito;
+    src: url(./assets/Nunito.ttf);
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    /* TODO: style all links of accessibiltiy. */
+    a {
+        
+    }
+}
+
+@layer components {
+    .small-title {
+        @apply font-title font-bold
+    }
+}

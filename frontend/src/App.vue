@@ -1,22 +1,18 @@
+<script setup>
+// This starter template is using Vue 3 <script setup> SFCs
+// Check out https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup
+import HelloWorld from './components/HelloWorld.vue'
+import SearchInput from './components/SearchInput.vue';
+</script>
+
 <template>
-  <div class="h-16 px-4 bg-green-400 flex items-center justify-between shadow z-50">
-    <router-link to="/" class="font-black">Sprig</router-link>
-    <div>
-      <router-link to="/">Home</router-link> |
-      <router-link to="/about">About</router-link>
-    </div>
-  </div>
-  <router-view style="height: calc(100vh - 4rem)" />
+  <SearchInput/>
 </template>
 
-<script lang="ts">
-import { defineComponent } from "vue";
-import { store } from "@/store";
-
-export default defineComponent({
-  name: "App",
-  provide() {
-    return { store };
-  },
-});
-</script>
+<style>
+#app {
+  font-family: Avenir, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+</style>

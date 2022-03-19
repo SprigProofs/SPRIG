@@ -1,41 +1,21 @@
 {
-  "name": "sprig",
-  "version": "0.1.0",
+  "name": "frontend",
   "private": true,
+  "version": "0.0.0",
   "scripts": {
-    "serve": "TAILWIND_MODE=watch vue-cli-service serve",
-    "build": "vue-cli-service build",
-    "test:e2e": "vue-cli-service test:e2e",
-    "lint": "vue-cli-service lint"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
   },
   "dependencies": {
-    "@headlessui/vue": "^1.4.1",
-    "@heroicons/vue": "^1.0.4",
-    "autoprefixer": "^9.8.6",
-    "core-js": "^3.6.5",
-    "panzoom": "^9.4.2",
-    "postcss": "^7.0.36",
-    "tailwindcss": "npm:@tailwindcss/postcss7-compat@^2.2.8",
-    "vue": "^3.0.0",
-    "vue-class-component": "^7.2.6",
-    "vue-router": "^4.0.0-0"
+    "oh-vue-icons": "^1.0.0-rc2",
+    "vue": "^3.2.25"
   },
   "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "^4.18.0",
-    "@typescript-eslint/parser": "^4.18.0",
-    "@vue/cli-plugin-babel": "~4.5.0",
-    "@vue/cli-plugin-e2e-cypress": "~4.5.0",
-    "@vue/cli-plugin-eslint": "~4.5.0",
-    "@vue/cli-plugin-router": "~4.5.0",
-    "@vue/cli-plugin-typescript": "~4.5.0",
-    "@vue/cli-service": "~4.5.0",
-    "@vue/compiler-sfc": "^3.0.0",
-    "@vue/eslint-config-prettier": "^6.0.0",
-    "@vue/eslint-config-typescript": "^7.0.0",
-    "eslint": "^6.7.2",
-    "eslint-plugin-prettier": "^3.3.1",
-    "eslint-plugin-vue": "^7.0.0",
-    "prettier": "^2.2.1",
-    "typescript": "~4.1.5"
+    "@vitejs/plugin-vue": "^2.2.0",
+    "autoprefixer": "^10.4.2",
+    "postcss": "^8.4.7",
+    "tailwindcss": "^3.0.23",
+    "vite": "^2.8.0"
   }
 }
