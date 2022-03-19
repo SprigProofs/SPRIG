@@ -64,21 +64,29 @@ function endDrag(event, method) {
 }
 
 function dragEnter(event, method) {
-    if (method !== event.dataTransfer.getData("method")) {
-        event.target.classList.add("border-t-4", "border-t-gray-600");
+    const dragged = event.dataTransfer.getData("method")
+    if (method !== dragged) {
+        if (sort_methods.indexOf(dragged) > sort_methods.indexOf(method)) {
+            event.target.classList.add("border-t-4", "border-t-gray-600");
+        } else {
+            event.target.classList.add("border-b-4", "border-b-gray-600");
+        }
     }
 }
 function dragExit(event, _) {
-    event.target.classList.remove("border-t-4", "border-t-gray-600")
+    event.target.classList.remove("border-t-4", "border-b-4")
 }
 
 function drop(event, droppedMethod) {
-    event.target.classList.remove("border-t-4", "border-t-gray-600")
+    event.target.classList.remove("border-t-4", "border-b-4")
 
     const draggedMethod = event.dataTransfer.getData("method");
-    sort_methods.splice(sort_methods.indexOf(draggedMethod), 1)
-    const idx = sort_methods.indexOf(droppedMethod);
-    sort_methods.splice(idx, 0, draggedMethod);
+    const idxDropped = sort_methods.indexOf(draggedMethod)
+    const idxCurrent = sort_methods.indexOf(droppedMethod);
+    
+    // Remove the moved method
+    sort_methods.splice(idxDropped, 1)
+    sort_methods.splice(idxCurrent, 0, draggedMethod);
 }
 
 function sort_weight(claim) {
@@ -132,7 +140,7 @@ function results() {
                         @dragexit="dragExit($event, method)"
                         @dragover.prevent @dragenter.prevent
                         class="cursor-move select-none
-                        hover:bg-gray-200 border-l-2 hover:border-gray-600 border-transparent
+                        hover:bg-gray-200 border-l-2 hover:border-l-gray-600 border-l-transparent border-y-gray-600
                         py-2 rounded-sm -ml-4 px-4 w-full transition-all
                         marker:text-gray-600">
                         {{ method }}</li>
