@@ -1,8 +1,13 @@
+"""
+This file contains the code of the API / Server.
+
+It reads and updates the sprig instances in the data/ folder.
+"""
+
 import json
 from collections import defaultdict
 from contextlib import contextmanager
 from pathlib import Path
-from typing import List
 
 from fastapi import FastAPI, HTTPException
 from fastapi.params import Depends
@@ -19,6 +24,8 @@ USERS = DATA / "users.json"
 USERS.touch()
 
 api = FastAPI()
+# This allows cross-origin requests.
+# It is needed in development because the frontend dev server is not the same as the backend.
 api.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -36,51 +43,62 @@ def all_instances_filenames():
 
 
 def new_hash():
+    """Generate a new hash for a new sprig instance."""
     maxi = max((int(p.stem) for p in all_instances_filenames()), default=0) + 1
     return f"{maxi:0>5}"
 
 
-def path_from_hash(hash_):
+def path_from_hash(hash_: str):
+    """Return the path where the sprig instance corresponding to the hash is stored."""
     assert len(hash_) == 5
     assert hash_.isnumeric()
     return DATA / f"{hash_}.json"
 
 
 def save(instance: sprig.Sprig, hash_: str):
+    """Save a SPRIG instance on disk."""
     path_from_hash(hash_).write_text(instance.dumps())
 
 
 def load(instance_hash: str) -> sprig.Sprig:
+    """Load a prig instance from disk."""
     return sprig.Sprig.loads(path_from_hash(instance_hash).read_text())
 
 
 @contextmanager
 def load_users() -> defaultdict:
-    user_dict = json.loads(USERS.read_text() or "{}")
+    data = json.loads(USERS.read_text() or "{}")
+    user_dict = defaultdict(int, data)
     try:
-        yield defaultdict(int, user_dict)
+        yield user_dict
     finally:
-        # Todo: do we really want to always save it on error ?
+        # TODO: do we really want to always save it on error ?
         USERS.write_text(json.dumps(user_dict))
 
 
 def transfer_money(from_, to, amount, msg=""):
-    old_transfer_money(from_, to, amount, msg)
+    result = old_transfer_money(from_, to, amount, msg)
 
     with load_users() as users:
         users[from_] -= amount
         users[to] += amount
 
+    return result
 
+
+# Here we replace the way of transferring money of the library.
+# It is a hack, but seems to work well enough.
 sprig.transfer_money, old_transfer_money = transfer_money, sprig.transfer_money
 
 
 class SprigInitData(BaseModel):
-    language: dict
+    """Test 103294"""
+
+    language_type: str
     constraints: dict
     claimer: sprig.Address
     root_claim: str
-    sub_claims: List[str]
+    sub_claims: list[str]
 
 
 @api.get("/instances")
@@ -105,17 +123,18 @@ def add_new_instance(new_instance: SprigInitData):
     """
     Start a new instance of the sprig protocol.
 
-    The language (resp. constraints) dict must containt the
-    Language (resp. AbstractConstraints) type ID as the "type" key.
+    TODO: misleading docstring!
+    The language (resp. parameters) dict must containt the
+    Language (resp. AbstractParameters) type ID as the "type" key.
     and the other fields are the keyword arguments of the corresponding
     type.
     """
 
     try:
-        constraints = sprig.AbstractConstraints.load(**new_instance.constraints)
+        parameters = sprig.Parameters(**new_instance.constraints)
         instance = sprig.Sprig.start(
-            new_instance.language,
-            constraints,
+            new_instance.language_type,
+            parameters,
             new_instance.claimer,
             new_instance.root_claim,
             *new_instance.sub_claims,
@@ -178,7 +197,7 @@ def get_proof_attempts(claim_hash: str, instance: sprig.Sprig = Depends(load)):
 
 class NewProofAttempt(BaseModel):
     claimer: sprig.Address
-    claims: List[str]
+    claims: list[str]
     machine_level: bool = False
 
 

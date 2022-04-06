@@ -23,14 +23,14 @@ const types = reactive({
 
 const claims = [
     {
-        hash: "aaaaaa",
+        hash: "30fb30",
         statement: "theorem infinitude_of_primes: set.infinite { p | nat.prime p } := [big proof]",
         status: Status.CHALLENGED,
         parent: "a884ff2",
         last_modification: 12,
         open_until: 20
     }, {
-        hash: "bbbbbb",
+        hash: "9f4024",
         statement: "theorem infinitude_of_primes : set.infinite { p | nat.prime p } := [big proof]",
         status: Status.UNCHALLENGED,
         parent: "a884ff2",

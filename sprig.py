@@ -2,12 +2,17 @@ from __future__ import annotations
 
 import dataclasses
 import itertools
-from dataclasses import dataclass
+
+try:
+    from NOPEpydantic.dataclasses import dataclass
+except ImportError:
+    print("No support for the web api. Install the dependancies with poetry install.")
+    from dataclasses import dataclass
 import json
 from collections import defaultdict
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, NewType, Optional
+from typing import NewType, Optional
 
 from languages.base import Language
 from utils import *
@@ -93,7 +98,12 @@ class Status(str, Enum):
 
 
 class AbstractParameters:
-    """Interface that all parametrization of the sprig protocol must follow."""
+    """Interface that all parametrization of the sprig protocol must follow.
+
+    Note: For now, only the Parameter class works in the rest of the code,
+        for simplicity. This class only describes what interface would be needed
+        if we where to extend the kinds of parameters.
+    """
 
     def protocol_height(self) -> int:
         """Initial height of the protocol and height of the root."""
@@ -165,9 +175,9 @@ class Parameters(AbstractParameters):
     max_length: int
     time_for_questions: int
     time_for_answers: int
-    upstakes: List[int]
-    downstakes: List[int]
-    question_bounties: List[int]
+    upstakes: list[int]
+    downstakes: list[int]
+    question_bounties: list[int]
     verification_cost: int
 
     def protocol_height(self) -> int:
@@ -379,7 +389,7 @@ class Claim:
 class ProofAttempt:
     parent: Hash
     claimer: Address
-    claims: List[Hash]
+    claims: list[Hash]
     # Height is the height of the claims it contains, not the height of the claims it answers.
     height: int
     # time: int  # Those may not be needed!
@@ -408,12 +418,12 @@ class Sprig:
     # different stakes models, however it is much harder to design a general interface for all possible
     # types of constraints.
     params: AbstractParameters
-    claims: Dict[Hash, Claim]
-    proof_attempts: Dict[Hash, List[ProofAttempt]]
+    claims: dict[Hash, Claim]
+    proof_attempts: dict[Hash, list[ProofAttempt]]
 
     # Calls to fixup that will need to be done in the future,
     # when we reached timeouts.
-    future_actions: List[(int, Hash)]
+    future_actions: list[tuple[int, Hash]]
 
     HASHES = map(lambda x: Hash(str(x)), itertools.count(1))
 
@@ -551,8 +561,6 @@ SPRIG instance:
 
         # We start by computing the status that the start claim should have,
         # depending on its children statuses / low-level acceptation.
-
-        # TODO: distribute bounties.
 
         if start.status.decided():
             return  # Nothing to do.
