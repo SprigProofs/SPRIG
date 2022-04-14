@@ -1,8 +1,9 @@
 <template>
   
-  <div class="w-full border rounded-sm shadow-sm hover:shadow-md group">
+  <div class="w-full border rounded-sm shadow-sm hover:shadow-md group
+    flex divix">
       <!-- First part of the card -->
-      <div class="p-4">
+      <div class="p-4 flex-grow">
         <!-- First row -->
         <div class="flex flex-row justify-between ">
             <!-- Top left -->
@@ -11,7 +12,7 @@
                 <span class="text-gray-500 italic text-sm font-mono">#{{ claim.hash }}</span>
             </div>
             <!-- Top right -->
-            <div class="leading-none flex items-center">
+            <div v-if="false" class="leading-none flex items-center">
                 <span v-if="!decided(claim.status)"
                     class="text-gray-600 pr-4">
                     <v-icon name="md-keyboarddoublearrowup"/>
@@ -36,8 +37,39 @@
           {{ statement() }}
         </code>
       </div>
+      <!-- Right of the card -->
+      <div 
+        v-if="!decided(claim.status)"
+        class="w-32 bg-slate-100 p-4 flex flex-col text-slate-600 space-y-1">
+          <div class="text-center text-sm text-slate-600">17h 32m left</div>
+          <div 
+            v-if="claim.status == Status.UNCHALLENGED"
+            class="flex justify-between items-center">
+            <v-icon name="md-bolt"/>
+            <Price amount="12.3"/> </div>
+          <div class="flex justify-between items-center">
+            <v-icon name="md-clear-round"/>
+            <Price amount="17.4"/></div>
+          <div class="flex justify-between items-center">
+            <v-icon name="md-keyboarddoublearrowdown"/>
+            <Price amount="51.3"/></div>
+          <div class="flex justify-between items-center">
+            <v-icon name="md-keyboarddoublearrowup"/>
+            <Price amount="2.42"/></div>
+          <div class="flex-grow"></div>
+          <button 
+            v-if="claim.status == Status.UNCHALLENGED"
+            class="bg-gray-400 rounded-sm py-1 text-black
+            shadow-sm group-hover:shadow-md">
+              Challenge</button>
+          <button v-else
+            class="bg-gray-400 rounded-sm py-1 text-black
+            shadow-sm group-hover:shadow-md ">
+              Add proof
+          </button>
+      </div>
       <!-- Bottom of the card, if unchallenged -->
-      <div v-if="claim.status === Status.UNCHALLENGED"
+      <div v-if="false && claim.status === Status.UNCHALLENGED"
         class="border-t grid grid-cols-3 p-4 space-x-2">
         <div class="flex space-x-2">
             <v-icon scale="1.5" class="text-gray-400" name="md-offlinebolt"/> 
@@ -53,11 +85,11 @@
             </div>
         </div>
         <div>
-            <h4 class="text-gray-900 font-bold"><v-icon scale="0.75" name="md-cancel"/> If proved false</h4>
+            <h4 class="text-gray-900 font-bold"><v-icon scale="0.75" name="md-cancel"/> If proven false</h4>
             {{ fmtDate(claim.last_modification) }}
         </div>
         <div>
-            <h4 class="text-gray-900 font-bold"><v-icon scale="0.75" name="md-checkcircle"/> If proved true</h4>
+            <h4 class="text-gray-900 font-bold"><v-icon scale="0.75" name="md-checkcircle"/> If proven true</h4>
             {{ fmtDate(claim.last_modification - 10) }}
         </div>
       </div>
