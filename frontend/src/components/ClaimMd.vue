@@ -1,9 +1,8 @@
 <template>
   
-  <div class="w-full border rounded-sm shadow-sm hover:shadow-md group
-    flex divix">
+  <div class="w-full border rounded-sm shadow-sm hover:shadow-md group flex">
       <!-- First part of the card -->
-      <div class="p-4 flex-grow">
+      <div class="p-4 flex flex-col flex-grow">
         <!-- First row -->
         <div class="flex flex-row justify-between ">
             <!-- Top left -->
@@ -12,6 +11,7 @@
                 <span class="text-gray-500 italic text-sm font-mono">#{{ claim.hash }}</span>
             </div>
             <!-- Top right -->
+
             <div v-if="false" class="leading-none flex items-center">
                 <span v-if="!decided(claim.status)"
                     class="text-gray-600 pr-4">
@@ -33,41 +33,89 @@
             {{ title() }}
             <span class="text-sm text-gray-700">by cozyfractal</span>
             </h3> 
-        <code class="text-sm">
+        <code class="text-sm flex-grow">
           {{ statement() }}
         </code>
+        <!-- Hint display  -->
+        <div v-if="false"
+          class="text-right italic text-sm text-gray-700 w-3/4 self-end">
+          <span v-if="hint == 'time' && claim.status == Status.UNCHALLENGED">
+            If nobody challenges this claim, it will be <StatusTag status="validated"/> in {{ fmtDate(claim.open_until) }}
+          </span>
+          <span v-if="hint == 'time' && claim.status == Status.CHALLENGED">
+            If no proof attempt are made, this claim will be <StatusTag status="rejected"/> in {{ fmtDate(claim.open_until) }}
+          </span>
+          <span v-if="hint == 'challenge-cost'">
+            You can challenge this claim for <Price amount="17.2"/>.
+          </span>
+          <span v-if="hint == 'challenge-success'">
+            If no valid answer to this challenge are given, 
+            and no other challenge defeated the attempt before,
+            the downstake of <Price amount="51.3"/> will
+            be given to the challenger.
+          </span>
+          <span v-if="hint == 'attempt-fail'">
+            Every time a proof attempt is made and does not succeed,
+            the upstake of <Price amount="2.42"/> will be given to the challenger.
+          </span>
+        </div>
       </div>
       <!-- Right of the card -->
       <div 
-        v-if="!decided(claim.status)"
-        class="w-32 bg-slate-100 p-4 flex flex-col text-slate-600 space-y-1">
-          <div class="text-center text-sm text-slate-600">17h 32m left</div>
+        v-if="false && !decided(claim.status)"
+        class="w-32 bg-slate-100 p-4 flex-shrink-0
+          flex flex-col text-slate-600 space-y-1">
+          <div class="text-center text-sm text-slate-600"
+            @mouseover="setHint('time')"
+            >{{ fmtDate(claim.open_until) }} left</div>
           <div 
             v-if="claim.status == Status.UNCHALLENGED"
+            @mouseover="setHint('challenge-cost')"
             class="flex justify-between items-center">
             <v-icon name="md-bolt"/>
             <Price amount="12.3"/> </div>
-          <div class="flex justify-between items-center">
+          <div class="flex justify-between items-center"
+            @mouseover="setHint('challenge-success')">
             <v-icon name="md-clear-round"/>
             <Price amount="17.4"/></div>
-          <div class="flex justify-between items-center">
+          <div class="flex justify-between items-center"
+            @mouseover="setHint('challenge-success')">
             <v-icon name="md-keyboarddoublearrowdown"/>
             <Price amount="51.3"/></div>
-          <div class="flex justify-between items-center">
+          <div class="flex justify-between items-center"
+            @mouseover="setHint('attempt-fail')">
             <v-icon name="md-keyboarddoublearrowup"/>
             <Price amount="2.42"/></div>
           <div class="flex-grow"></div>
           <button 
             v-if="claim.status == Status.UNCHALLENGED"
-            class="bg-gray-400 rounded-sm py-1 text-black
+            class="bg-gray-400 rounded-sm py-1 text-slate-900
             shadow-sm group-hover:shadow-md">
               Challenge</button>
           <button v-else
-            class="bg-gray-400 rounded-sm py-1 text-black
+            class="bg-gray-400 rounded-sm py-1 text-slate-900
             shadow-sm group-hover:shadow-md ">
               Add proof
           </button>
       </div>
+      <div 
+        v-if="!decided(claim.status)"
+        class="w-48 bg-slate-100 p-4 flex-shrink-0
+          flex flex-col space-y-2 items-center">
+        <div class="text-black font-bold rounded-sm mx-auto">
+          Bounty&nbsp;<Price amount="120"/>
+        </div>
+        <div class="text-xs text-slate-700 flex-grow">
+          {{ fmtDate(claim.open_until, false) }} left
+        </div>
+        <button v-if="claim.status == Status.UNCHALLENGED" class="border bg-blue-100 rounded-md py-2 self-stretch shadow">
+          Challenge for <Price amount="12"/>
+        </button>
+        <button v-else class="border bg-blue-100 rounded-md py-2 self-stretch shadow">
+          Add proof for <Price amount="12"/>
+        </button>
+      </div>
+
       <!-- Bottom of the card, if unchallenged -->
       <div v-if="false && claim.status === Status.UNCHALLENGED"
         class="border-t grid grid-cols-3 p-4 space-x-2">
@@ -136,13 +184,18 @@
               >25 <v-icon name="ci-algo"/></button>  
           </div>
       </div>
+      <!-- Bottom of the card, simple -->
   </div>
   
 </template>
 
 <script setup>
+    import { reactive, ref } from 'vue';
     import { NOW, decided, Status } from '../sprig';
     import StatusTag from './StatusTag.vue';
+import Price from './Price.vue';
+
+    const hint = ref("hellooo")
 
     const props = defineProps({
         claim: {
@@ -160,19 +213,19 @@
             .substring(props.claim.statement.indexOf(":") + 1)
     }
 
-    function fmtDate(time) {
+    function fmtDate(time, short=true) {
         const past = time <= NOW
         const dt = Math.abs(time - NOW)
         const hours = Math.floor(dt / 6)
         const minutes = dt % 6 * 9
-        const hour_text = hours > 1 ? "hours" : "hour"
-        const min_text = minutes > 1 ? "mins" : "min"
+        const hour_text = short ? "h" : hours > 1 ? " hours" : " hour"
+        const min_text = short ? "m" : minutes > 1 ? " mins" : " min"
         var parts = ""
         if (hours > 0) {
-            parts += hours + " " + hour_text + " "
+            parts += hours + hour_text + " "
         }
         if (minutes > 0) {
-            parts += minutes + " " + min_text + " "
+            parts += minutes + min_text + " "
         }
 
         if (past) {
@@ -180,7 +233,10 @@
         } else {
             return parts
         }
+    }
 
+    function setHint(kind) {
+        this.hint = kind;
     }
 
 </script>

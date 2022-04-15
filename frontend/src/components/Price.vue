@@ -3,12 +3,12 @@
 defineProps({
     amount: {
         required: true,
-        type: Boolean,
+        type: Number,
     },
 })
 
 </script>
 
 <template>
-    <span>{{ amount }} <Algo/></span>
+    <span>{{ amount }}&nbsp;<Algo/></span>
 </template>
