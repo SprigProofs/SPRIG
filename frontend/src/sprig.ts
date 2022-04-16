@@ -26,6 +26,70 @@ function decided(status: Status) {
     return status === Status.VALIDATED || status === Status.REJECTED;
 }
 
+
+function claimTitle(claim: Claim) {
+    return claim.statement.split(":", 1)[0]
+}
+
+function claimStatement(claim: Claim) {
+    return claim.statement.split(":=", 1)[0]
+        .substring(claim.statement.indexOf(":") + 1)
+}
+
+function fmtDate(time: number, short=true) {
+    const past = time <= NOW
+    const dt = Math.abs(time - NOW)
+    const hours = Math.floor(dt / 6)
+    const minutes = dt % 6 * 9
+    const hour_text = short ? "h" : hours > 1 ? " hours" : " hour"
+    const min_text = short ? "m" : minutes > 1 ? " mins" : " min"
+    var parts = ""
+    if (hours > 0) {
+        parts += hours + hour_text + " "
+    }
+    if (minutes > 0) {
+        parts += minutes + min_text + " "
+    }
+
+    if (past) {
+        return parts + "ago"
+    } else {
+        return parts
+    }
+}
+
+const claims = [
+    {
+        hash: "30fb30",
+        statement: "theorem infinitude_of_primes: set.infinite { p | nat.prime p } := [big proof]",
+        status: Status.CHALLENGED,
+        parent: "a884ff2",
+        last_modification: 12,
+        open_until: 20
+    }, {
+        hash: "9f4024",
+        statement: "theorem infinitude_of_primes : set.infinite { p | nat.prime p } := [big proof]",
+        status: Status.UNCHALLENGED,
+        parent: "a884ff2",
+        last_modification: 11,
+        open_until: 18
+    }, {
+        hash: "cccccc",
+        statement: "theorem infinitude_of_primes : set.infinite { p | nat.prime p } := [big proof]",
+        status: Status.VALIDATED,
+        parent: "a884ff2",
+        last_modification: 9,
+        open_until: 22
+    }, {
+        hash: "dddddd",
+        statement: "theorem infinitude_of_primes : set.infinite { p | nat.prime p } := [big proof]",
+        status: Status.REJECTED,
+        parent: "a884ff2",
+        last_modification: 7,
+        open_until: 14
+    }
+]
+
 interface Claim {
     statement: string
     height: number
@@ -123,4 +187,7 @@ const api = {
 
 }
 
-export {NOW, api, STATUSES, STATUS_DISPLAY_NAME, decided, Claim, SprigSummary, Sprig, Status, StatusCounts, ProofAttempt};
+export {NOW, claimTitle, claimStatement, fmtDate,
+    claims, api, STATUSES, STATUS_DISPLAY_NAME,
+    decided, Claim, SprigSummary, Sprig, Status,
+    StatusCounts, ProofAttempt};

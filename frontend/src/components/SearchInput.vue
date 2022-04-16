@@ -1,7 +1,7 @@
 <script setup>
 import { reactive } from 'vue';
 import StatusTag from './StatusTag.vue';
-import { Status, STATUSES, NOW, decided } from '../sprig'
+import { claims, Status, STATUSES, NOW, decided } from '../sprig'
 import ClaimMd from './ClaimMd.vue';
 
 const statuses = reactive({
@@ -20,38 +20,6 @@ const types = reactive({
     "Claims": true,
     "Proof attempts": false,
 })
-
-const claims = [
-    {
-        hash: "30fb30",
-        statement: "theorem infinitude_of_primes: set.infinite { p | nat.prime p } := [big proof]",
-        status: Status.CHALLENGED,
-        parent: "a884ff2",
-        last_modification: 12,
-        open_until: 20
-    }, {
-        hash: "9f4024",
-        statement: "theorem infinitude_of_primes : set.infinite { p | nat.prime p } := [big proof]",
-        status: Status.UNCHALLENGED,
-        parent: "a884ff2",
-        last_modification: 11,
-        open_until: 18
-    }, {
-        hash: "cccccc",
-        statement: "theorem infinitude_of_primes : set.infinite { p | nat.prime p } := [big proof]",
-        status: Status.VALIDATED,
-        parent: "a884ff2",
-        last_modification: 9,
-        open_until: 22
-    }, {
-        hash: "dddddd",
-        statement: "theorem infinitude_of_primes : set.infinite { p | nat.prime p } := [big proof]",
-        status: Status.REJECTED,
-        parent: "a884ff2",
-        last_modification: 7,
-        open_until: 14
-    }
-]
 
 function startDrag(event, method) {
     event.dataTransfer.dropEffect = 'move';

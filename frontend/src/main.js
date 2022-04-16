@@ -2,6 +2,10 @@ import { createApp } from 'vue'
 import App from './App.vue'
 import './index.css'
 
+// For ready made components from Element Plus: https://element-plus.org/en-US/component/button.html
+import ElementPlus from 'element-plus'
+import 'element-plus/dist/index.css'
+
 import Algo from './components/Algo.vue'
 import Price from './components/Price.vue'
 
@@ -32,4 +36,5 @@ createApp(App)
     .component("v-icon", OhVueIcon)
     .component("Algo", Algo)
     .component("Price", Price)
+    .use(ElementPlus)
     .mount('#app')

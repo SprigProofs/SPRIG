@@ -30,11 +30,11 @@
             </div>
         </div>
         <h3 class="text-lg pt-2">
-            {{ title() }}
+            {{ claimTitle(claim) }}
             <span class="text-sm text-gray-700">by cozyfractal</span>
             </h3> 
         <code class="text-sm flex-grow">
-          {{ statement() }}
+          {{ claimStatement(claim) }}
         </code>
         <!-- Hint display  -->
         <div v-if="false"
@@ -191,9 +191,9 @@
 
 <script setup>
     import { reactive, ref } from 'vue';
-    import { NOW, decided, Status } from '../sprig';
+    import { NOW, decided, Status, claimTitle, claimStatement, fmtDate } from '../sprig';
     import StatusTag from './StatusTag.vue';
-import Price from './Price.vue';
+    import Price from './Price.vue';
 
     const hint = ref("hellooo")
 
@@ -203,37 +203,6 @@ import Price from './Price.vue';
             required: true,
         },
     })
-
-    function title() {
-        return props.claim.statement.split(":", 1)[0]
-    }
-
-    function statement() {
-        return props.claim.statement.split(":=", 1)[0]
-            .substring(props.claim.statement.indexOf(":") + 1)
-    }
-
-    function fmtDate(time, short=true) {
-        const past = time <= NOW
-        const dt = Math.abs(time - NOW)
-        const hours = Math.floor(dt / 6)
-        const minutes = dt % 6 * 9
-        const hour_text = short ? "h" : hours > 1 ? " hours" : " hour"
-        const min_text = short ? "m" : minutes > 1 ? " mins" : " min"
-        var parts = ""
-        if (hours > 0) {
-            parts += hours + hour_text + " "
-        }
-        if (minutes > 0) {
-            parts += minutes + min_text + " "
-        }
-
-        if (past) {
-            return parts + "ago"
-        } else {
-            return parts
-        }
-    }
 
     function setHint(kind) {
         this.hint = kind;
