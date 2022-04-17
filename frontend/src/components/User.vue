@@ -1,4 +1,7 @@
+<!-- TODO: Replace user placeholder stats with real stats. -->
+
 <script setup>
+
 import SimpleStats from "./SimpleStats.vue";
 
 defineProps({

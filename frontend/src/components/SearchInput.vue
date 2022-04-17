@@ -81,7 +81,7 @@ function results() {
 </script>
 
 <template>
-    <div class="w-full p-6">
+    <div class="w-full">
         <input type="text" class="border rounded-sm 
             w-full
             p-2 mb-6" placeholder="Search...">

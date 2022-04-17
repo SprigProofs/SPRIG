@@ -10,6 +10,10 @@
 
         <div class="p-8 max-w-3xl mx-auto flex flex-col space-y-4">
             <section>
+                <h2 class="small-title">Sprig instance parameters</h2>
+                ok
+            </section>
+            <section>
                 <h2 class="small-title pb-2">Summary</h2>
                 <el-descriptions 
                     border="true"
@@ -96,7 +100,7 @@
 
 <script setup>
 
-import {claims, claimTitle} from './../sprig.ts';
+import {claims, claimTitle, params} from './../sprig.ts';
 import { MoreFilled, Plus } from '@element-plus/icons-vue'
 import StatusTag from './StatusTag.vue';
 import Algo from './Algo.vue';

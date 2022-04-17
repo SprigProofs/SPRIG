@@ -1,11 +1,22 @@
 /*
-Interface with the SPRIG server and definition of common types.
- */
+This contains all the logic of sprig, from the communication with the server
+to the processing of the data.
+*/
+
+import * as dayjs from 'dayjs'
+import * as duration from 'dayjs/plugin/duration'
+import * as relativeTime from 'dayjs/plugin/relativeTime'  // for .humanize()
+dayjs.extend(duration)
+dayjs.extend(relativeTime)
 
 // TODO: to be removed
 const NOW = 13;
 
 type FetchCallback<T> = (data: T) => void
+
+/** 
+ * Constants
+*/
 
 enum Status {
     CHALLENGED = "challenged",
@@ -58,35 +69,59 @@ function fmtDate(time: number, short=true) {
     }
 }
 
-const claims = [
+const SECONDS = 1;
+const MINUTES = 60 * SECONDS;
+const HOURS = 60 * MINUTES;
+const DAYS = 24 * HOURS;
+
+const params: Parameters = {
+    root_height: 4,
+    max_length: 2000,
+    time_for_questions: dayjs.duration(5, 'days'),
+    time_for_answers: dayjs.duration(10, 'days'),
+    upstakes: [4, 8, 12, 16],
+    downstakes: [100, 200, 300, 400],
+    question_bounties: [44, 43, 42, 41],
+    verification_cost: 7
+}
+
+const claims: Claim[] = [
     {
         hash: "30fb30",
         statement: "theorem infinitude_of_primes: set.infinite { p | nat.prime p } := [big proof]",
         status: Status.CHALLENGED,
         parent: "a884ff2",
         last_modification: 12,
-        open_until: 20
+        open_until: 20,
+        height: 4,
+        skeptic: null,
     }, {
         hash: "9f4024",
         statement: "theorem infinitude_of_primes : set.infinite { p | nat.prime p } := [big proof]",
         status: Status.UNCHALLENGED,
         parent: "a884ff2",
         last_modification: 11,
-        open_until: 18
+        open_until: 18,
+        height: 4,
+        skeptic: null,
     }, {
         hash: "cccccc",
         statement: "theorem infinitude_of_primes : set.infinite { p | nat.prime p } := [big proof]",
         status: Status.VALIDATED,
         parent: "a884ff2",
         last_modification: 9,
-        open_until: 22
+        open_until: 22,
+        height: 4,
+        skeptic: null,
     }, {
         hash: "dddddd",
         statement: "theorem infinitude_of_primes : set.infinite { p | nat.prime p } := [big proof]",
         status: Status.REJECTED,
         parent: "a884ff2",
         last_modification: 7,
-        open_until: 14
+        open_until: 14,
+        height: 4,
+        skeptic: null,
     }
 ]
 
@@ -139,6 +174,17 @@ interface AnswerRecord {
     balance: number
 }
 
+class Parameters {
+    readonly root_height: number
+    readonly max_length: number
+    readonly time_for_questions: duration.Duration
+    readonly time_for_answers: duration.Duration
+    readonly upstakes: number[]
+    readonly downstakes: number[]
+    readonly question_bounties: number[]
+    readonly verification_cost: number
+}
+
 const API_BASE = "http://localhost:8600/"
 
 const api = {
@@ -188,6 +234,6 @@ const api = {
 }
 
 export {NOW, claimTitle, claimStatement, fmtDate,
-    claims, api, STATUSES, STATUS_DISPLAY_NAME,
+    claims, params, api, STATUSES, STATUS_DISPLAY_NAME,
     decided, Claim, SprigSummary, Sprig, Status,
     StatusCounts, ProofAttempt};
