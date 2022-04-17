@@ -20,7 +20,8 @@
                     <el-descriptions-item label="Downstakes"><Price amount="100"/></el-descriptions-item>
                     <el-descriptions-item label="Upstakes"><Price amount="5"/></el-descriptions-item>
                     <el-descriptions-item label="Challenge cost"><Price amount="37"/></el-descriptions-item>
-                    <el-descriptions-item label="Nb. of claims">7</el-descriptions-item>
+                    <el-descriptions-item label="Depth">3 / 7</el-descriptions-item>
+                    <el-descriptions-item label="Nb. of subclaims">6</el-descriptions-item>
                     <el-descriptions-item label="Proof length">2193</el-descriptions-item>
                 </el-descriptions>
             </section>
@@ -28,6 +29,7 @@
             <section>
                 <h2 class="small-title pb-2">Past changes and possible actions</h2>
                 <el-timeline>
+                    <el-timeline-item type="success" timestamp="15.04.22 20:46"> <User name="cozyfractal"/> posted this proof attempt with a bounty of <Price amount="100"/> </el-timeline-item>
                     <el-timeline-item
                     class="last:pb-0"
                     v-for="(activity, index) in activities"
@@ -113,6 +115,8 @@ import { MoreFilled, Plus } from '@element-plus/icons-vue'
 import StatusTag from './StatusTag.vue';
 import Algo from './Algo.vue';
 import { ref } from 'vue';
+import Price from './Price.vue';
+import User from './User.vue';
 
 
 const claim = claims[0];
@@ -120,12 +124,6 @@ const showPreviousDefinitions = ref(false);
 
 
 const activities = [
-  {
-    content: 'cozyfractal posted this proof attempt with a bounty of 100A',
-    timestamp: '15.04.22 20:46',
-    size: 'large',
-    type: 'success',
-  },
   {
     content: 'Doubtful ? Challenge a claim by locking 37A',
     timestamp: 'Until 27.04.22 12:00',
