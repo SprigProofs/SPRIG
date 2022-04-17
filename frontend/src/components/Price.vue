@@ -10,5 +10,11 @@ defineProps({
 </script>
 
 <template>
-    <span>{{ amount }}&nbsp;<Algo/></span>
+    <el-popover placement="top">
+        Currently {{ (amount * 0.68).toFixed(2) }}$
+
+        <template #reference>
+            <span>{{ amount }}&nbsp;<Algo/></span>
+        </template>
+    </el-popover>
 </template>

@@ -11,8 +11,7 @@ defineProps({
 </script>
 
 <template>
-    <el-popover placement="top" :width="300"
-       >
+    <el-popover placement="top" :width="300">
         <div class="flex flex-col">
             <div class="flex justify-between w-full mb-2 items-baseline">
                 <h3 class="small-title pb-2">@{{ name }}</h3>

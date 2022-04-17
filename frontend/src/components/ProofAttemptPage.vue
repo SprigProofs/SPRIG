@@ -30,19 +30,10 @@
                 <h2 class="small-title pb-2">Past changes and possible actions</h2>
                 <el-timeline>
                     <el-timeline-item type="success" timestamp="15.04.22 20:46"> <User name="cozyfractal"/> posted this proof attempt with a bounty of <Price amount="100"/> </el-timeline-item>
-                    <el-timeline-item
-                    class="last:pb-0"
-                    v-for="(activity, index) in activities"
-                    :key="index"
-                    :icon="activity.icon"
-                    :type="activity.type"
-                    :color="activity.color"
-                    :size="activity.size"
-                    :hollow="activity.hollow"
-                    :timestamp="activity.timestamp"
-                    >
-                    {{ activity.content }}
-                    </el-timeline-item>
+                    <el-timeline-item type="warning" hollow="true" timestamp="Until 27.04.22 12:00"> Doubtful ? Challenge a claim by locking <Price amount="100"/> </el-timeline-item>
+                    <el-timeline-item timestamp="Up to 10 days after each challenge">Proof attempts can be submitted  for <Price amount="42"/> </el-timeline-item>
+                    <el-timeline-item>If some proof attempt is accepted, the first is rewarded with your locked bounty of <Price amount="37"/></el-timeline-item>
+                    <el-timeline-item class="last:b-0">If no proof attempt is valid, you get back your locked <Price amount="37" />. The first challenge to invalidate Cozyfractal's claim get the bounty of <Price amount="100"/></el-timeline-item>
                 </el-timeline>
             </section>
 
@@ -96,11 +87,6 @@
         show p ∨ q, from or.intro_left q hp))</pre>
                 </code>
             </section>
-
-            <el-empty 
-                class=""
-                description="This part of the website has not been done yet." />
-
         </div>
     </div>
     <div class="text-sm text-gray-500">
@@ -121,25 +107,5 @@ import User from './User.vue';
 
 const claim = claims[0];
 const showPreviousDefinitions = ref(false);
-
-
-const activities = [
-  {
-    content: 'Doubtful ? Challenge a claim by locking 37A',
-    timestamp: 'Until 27.04.22 12:00',
-    type: 'warning',
-    hollow: true,
-  },
-  {
-    content: 'Proof attempts can be submitted for 42A',
-    timestamp: 'Up to 10 days after each challenge',
-  },
-  {
-    content: 'If some proof attempt is accepted, the first is rewarded with your locked bounty of 37A',
-  },
-  {
-    content: 'If no proof attempt is valid, you get back  your locked 37A. The first challengeto invalidate Cozyfractal\'s claim get the bounty of 100A.',
-  },
-]
 
 </script>
