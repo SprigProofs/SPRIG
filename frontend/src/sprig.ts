@@ -79,7 +79,7 @@ const params: Parameters = {
     max_length: 2000,
     time_for_questions: dayjs.duration(5, 'days'),
     time_for_answers: dayjs.duration(10, 'days'),
-    upstakes: [4, 8, 12, 16],
+    upstakes: [0, 8, 12, 16],
     downstakes: [100, 200, 300, 400],
     question_bounties: [44, 43, 42, 41],
     verification_cost: 7
