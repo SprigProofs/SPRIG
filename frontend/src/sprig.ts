@@ -47,6 +47,10 @@ function claimStatement(claim: Claim) {
         .substring(claim.statement.indexOf(":") + 1)
 }
 
+function humanize(date: dayjs.Dayjs, suffix=true) {
+    return dayjs.duration(date.diff(dayjs())).humanize(suffix);
+}
+
 function fmtDate(time: number, short=true) {
     const past = time <= NOW
     const dt = Math.abs(time - NOW)
@@ -69,58 +73,57 @@ function fmtDate(time: number, short=true) {
     }
 }
 
-const SECONDS = 1;
-const MINUTES = 60 * SECONDS;
-const HOURS = 60 * MINUTES;
-const DAYS = 24 * HOURS;
-
 const params: Parameters = {
     root_height: 4,
     max_length: 2000,
     time_for_questions: dayjs.duration(5, 'days'),
     time_for_answers: dayjs.duration(10, 'days'),
-    upstakes: [0, 8, 12, 16],
-    downstakes: [100, 200, 300, 400],
-    question_bounties: [44, 43, 42, 41],
+    upstakes: [16, 12, 8, 0],
+    downstakes: [0, 300, 200, 100],
+    question_bounties: [0, 43, 42, 41],
     verification_cost: 7
 }
 
 const claims: Claim[] = [
     {
         hash: "30fb30",
-        statement: "theorem infinitude_of_primes: set.infinite { p | nat.prime p } := [big proof]",
+        statement: "theorem infinitude_of_primes: set.infinite { p | nat.prime p } set.infinite { p | nat.prime p }set.infinite { p | nat.prime p }set.infinite { p | nat.prime p }set.infinite { p | nat.prime p }set.infinite { p | nat.prime p }     := [big proof]",
         status: Status.CHALLENGED,
         parent: "a884ff2",
-        last_modification: 12,
-        open_until: 20,
-        height: 4,
+        last_modification: dayjs().subtract(1, 'day'),
+        created_at: dayjs().subtract(1, 'day'),
+        open_until: dayjs().add(9, 'day'),
+        height: 3,
         skeptic: null,
     }, {
         hash: "9f4024",
         statement: "theorem infinitude_of_primes : set.infinite { p | nat.prime p } := [big proof]",
         status: Status.UNCHALLENGED,
         parent: "a884ff2",
-        last_modification: 11,
-        open_until: 18,
-        height: 4,
+        last_modification: dayjs().subtract(3, 'day'),
+        created_at: dayjs().subtract(3, 'day'),
+        open_until: dayjs().add(7, 'day'),
+        height: 2,
         skeptic: null,
     }, {
         hash: "cccccc",
         statement: "theorem infinitude_of_primes : set.infinite { p | nat.prime p } := [big proof]",
         status: Status.VALIDATED,
         parent: "a884ff2",
-        last_modification: 9,
-        open_until: 22,
-        height: 4,
+        last_modification: dayjs().subtract(2, 'day'),
+        created_at: dayjs().subtract(2, 'day'),
+        open_until: dayjs().add(8, 'day'),
+        height: 3,
         skeptic: null,
     }, {
         hash: "dddddd",
         statement: "theorem infinitude_of_primes : set.infinite { p | nat.prime p } := [big proof]",
         status: Status.REJECTED,
         parent: "a884ff2",
-        last_modification: 7,
-        open_until: 14,
-        height: 4,
+        last_modification: dayjs().subtract(4, 'day'),
+        created_at: dayjs().subtract(4, 'day'),
+        open_until: dayjs().add(7, 'day'),
+        height: 0,
         skeptic: null,
     }
 ]
@@ -131,8 +134,9 @@ interface Claim {
     hash: string
     parent: string
     status: Status
-    open_until: number
-    last_modification: number
+    open_until: dayjs.Dayjs
+    last_modification: dayjs.Dayjs
+    created_at: dayjs.Dayjs
     skeptic: string | null
 }
 
@@ -234,6 +238,7 @@ const api = {
 }
 
 export {NOW, claimTitle, claimStatement, fmtDate,
+    humanize, 
     claims, params, api, STATUSES, STATUS_DISPLAY_NAME,
     decided, Claim, SprigSummary, Sprig, Status,
     StatusCounts, ProofAttempt};

@@ -29,9 +29,9 @@
                 </div> -->
             </div>
         </div>
-        <h3 class="text-lg pt-2">
-            {{ claimTitle(claim) }}
-            <span class="text-sm text-gray-700">by cozyfractal</span>
+        <h3 class="text-lg pt-2  ">
+            <span class="small-title">{{ claimTitle(claim) }}</span>
+            <span class="text-sm text-gray-700"> by cozyfractal</span>
             </h3> 
         <code class="text-sm flex-grow">
           {{ claimStatement(claim) }}
@@ -100,18 +100,18 @@
       </div>
       <div 
         v-if="!decided(claim.status)"
-        class="w-48 bg-slate-100 p-4 flex-shrink-0
-          flex flex-col space-y-2 items-center">
-        <div class="text-black font-bold rounded-sm mx-auto">
-          Bounty&nbsp;<Price amount="120"/>
+        class="w-48  p-4 flex-shrink-0
+          flex flex-col space-y-2 items-end">
+        <div class="text-black font-semibold rounded-sm">
+          Bounty <Price amount="120"/>
         </div>
         <div class="text-xs text-slate-700 flex-grow">
-          {{ fmtDate(claim.open_until, false) }} left
+          {{ humanize(claim.open_until, false) }} left
         </div>
         <button v-if="claim.status == Status.UNCHALLENGED" class="border bg-blue-100 rounded-md py-2 self-stretch shadow">
           Challenge for <Price amount="12"/>
         </button>
-        <button v-else class="border bg-blue-100 rounded-md py-2 self-stretch shadow">
+        <button v-else class="border bg-blue-100 rounded-md py-2 w-full shadow">
           Add proof for <Price amount="12"/>
         </button>
       </div>
@@ -191,7 +191,7 @@
 
 <script setup>
     import { reactive, ref } from 'vue';
-    import { NOW, decided, Status, claimTitle, claimStatement, fmtDate } from '../sprig';
+    import { NOW, decided, Status, claimTitle, claimStatement, fmtDate, humanize} from '../sprig';
     import StatusTag from './StatusTag.vue';
     import Price from './Price.vue';
 

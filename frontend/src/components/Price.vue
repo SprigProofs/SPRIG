@@ -16,7 +16,7 @@ defineProps({
         Currently {{ (amount * ALGO_TO_USD).toFixed(2) }}$
 
         <template #reference>
-            <span>{{ amount }}&nbsp;<Algo></Algo></span>
+            <span>{{ amount }}<Algo class="ml-0.5"></Algo></span>
         </template>
     </el-popover>
 </template>

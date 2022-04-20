@@ -6,7 +6,7 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        body: ["Nunito", "sans-serif"],
+        body: ["Raleway", "sans-serif"],
         title: ["Nunito", "sans-serif"]
       },
     },

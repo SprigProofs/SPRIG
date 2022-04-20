@@ -24,7 +24,7 @@ defineProps({
 
 <template>
     <span :class="grayed ? greyClass: statuses[status]" 
-        class="px-2 pt-[0.3rem] pb-1 rounded-md
+        class="px-2 pt-[0.3rem] pb-1 rounded-md h-min
             font-semibold text-xs transition">
         {{ STATUS_DISPLAY_NAME[status] }}
     </span>

@@ -3,6 +3,12 @@
     src: url(./assets/Nunito.ttf);
 }
 
+@font-face {
+    font-family: Raleway;
+    src: url(./assets/Raleway.ttf);
+}
+
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
