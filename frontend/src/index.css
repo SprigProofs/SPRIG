@@ -8,6 +8,10 @@
     src: url(./assets/Raleway.ttf);
 }
 
+@font-face {
+    font-family: SourceCodePro;
+    src: url(./assets/SourceCodePro.ttf);
+}
 
 @tailwind base;
 @tailwind components;

@@ -39,12 +39,12 @@ function decided(status: Status) {
 
 
 function claimTitle(claim: Claim) {
-    return claim.statement.split(":", 1)[0]
+    return claim.statement.match(/theorem \S+\s/ms)[0];
 }
 
 function claimStatement(claim: Claim) {
-    return claim.statement.split(":=", 1)[0]
-        .substring(claim.statement.indexOf(":") + 1)
+    console.log(claim.statement)
+    return claim.statement.match(/theorem \S+\s(.*):=/ms)[1]
 }
 
 function humanize(date: dayjs.Dayjs, suffix=true) {
@@ -87,7 +87,10 @@ const params: Parameters = {
 const claims: Claim[] = [
     {
         hash: "30fb30",
-        statement: "theorem infinitude_of_primes: set.infinite { p | nat.prime p } set.infinite { p | nat.prime p }set.infinite { p | nat.prime p }set.infinite { p | nat.prime p }set.infinite { p | nat.prime p }set.infinite { p | nat.prime p }     := [big proof]",
+        statement: `theorem euclidean_geometry.dist_sq_eq_dist_sq_add_dist_sq_iff_angle_eq_pi_div_two 
+    {V : Type u_1} {P : Type u_2} [inner_product_space ℝ V] [metric_space P] [normed_add_torsor V P] (p1 p2 p3 : P) :
+    (dist p1 p3) * dist p1 p3 = (dist p1 p2) * dist p1 p2 + (dist p3 p2) * dist p3 p2 ↔ ∠ p1 p2 p3 = real.pi / 2 := 
+    [big proof]`,
         status: Status.CHALLENGED,
         parent: "a884ff2",
         last_modification: dayjs().subtract(1, 'day'),

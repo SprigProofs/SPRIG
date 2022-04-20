@@ -38,7 +38,7 @@
 
         <div class="p-8 flex xl:flex-row-reverse flex-col">
             
-            <section class="max-w-xl">
+            <section class="max-w-">
                 <h2 class="small-title pb-2">Actions log</h2>
                 <el-timeline>
                     <el-timeline-item timestamp="15.04.22 20:46" class="" > 
@@ -63,7 +63,7 @@
                 </el-timeline>
             </section>
 
-            <section class="flex flex-col flex-grow">
+            <section class="flex flex-col flex-grow max-w-prose">
                 <h2 class="small-title ">Proof attempt</h2>
 
                 <button
@@ -94,22 +94,7 @@
                     </button>
                 </div>
 
-                <code class="mt-2"><pre>example : p ∨ q ↔ q ∨ p :=
-    iff.intro
-    (assume h : p ∨ q,
-    show q ∨ p, from 
-    or.elim h
-        (assume hp : p,
-        show q ∨ p, from or.intro_right q hp)
-        (assume hq : q,
-        show q ∨ p, from or.intro_left p hq))
-    (assume h : q ∨ p,
-    show p ∨ q, from 
-    or.elim h
-        (assume hq : q,
-        show p ∨ q, from or.intro_right p hq)
-        (assume hp : p,
-        show p ∨ q, from or.intro_left q hp))</pre>
+                <code class="mt-2"><pre class="overflow-auto">{{ claim.statement }}</pre>
                 </code>
             </section>
         </div>

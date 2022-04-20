@@ -4,11 +4,10 @@ module.exports = {
     "src/**/*.vue"
   ],
   theme: {
-    extend: {
-      fontFamily: {
-        body: ["Raleway", "sans-serif"],
-        title: ["Nunito", "sans-serif"]
-      },
+    fontFamily: {
+      body: ["Raleway", "sans-serif"],
+      title: ["Nunito", "sans-serif"],
+      mono: ["SourceCodePro", "sans-serif"],
     },
   },
   variants: {

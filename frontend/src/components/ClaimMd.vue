@@ -30,11 +30,11 @@
             </div>
         </div>
         <h3 class="text-lg pt-2  ">
-            <span class="small-title">{{ claimTitle(claim) }}</span>
+            <span class="small-title break-all">{{ claimTitle(claim) }}</span>
             <span class="text-sm text-gray-700"> by cozyfractal</span>
             </h3> 
         <code class="text-sm flex-grow">
-          {{ claimStatement(claim) }}
+          <pre class="whitespace-pre-wrap">{{ claimStatement(claim) }}</pre>
         </code>
         <!-- Hint display  -->
         <div v-if="false"
