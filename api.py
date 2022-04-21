@@ -4,6 +4,7 @@ This file contains the code of the API / Server.
 It reads and updates the sprig instances in the data/ folder.
 """
 
+import os
 import json
 from collections import defaultdict
 from contextlib import contextmanager
@@ -14,14 +15,12 @@ from fastapi.params import Depends
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 
+os.environ["BANK_FILE"] = str((Path(__file__).parent / "data" / "api_bank.json").absolute())
+
 import languages.base
 import sprig
 import utils
 
-DATA = Path(__file__).parent / "data"
-DATA.mkdir(exist_ok=True)
-USERS = DATA / "users.json"
-USERS.touch()
 
 api = FastAPI()
 # This allows cross-origin requests.
@@ -37,7 +36,7 @@ api.add_middleware(
 
 def all_instances_filenames():
     """Yield all the filenames of sprig instances stored on disk."""
-    for file in DATA.glob("*.json"):
+    for file in sprig.DATA.glob("*.json"):
         if file.stem != "users":
             yield file
 
@@ -52,7 +51,7 @@ def path_from_hash(hash_: str):
     """Return the path where the sprig instance corresponding to the hash is stored."""
     assert len(hash_) == 5
     assert hash_.isnumeric()
-    return DATA / f"{hash_}.json"
+    return sprig.DATA / f"{hash_}.json"
 
 
 def save(instance: sprig.Sprig, hash_: str):
@@ -65,31 +64,6 @@ def load(instance_hash: str) -> sprig.Sprig:
     return sprig.Sprig.loads(path_from_hash(instance_hash).read_text())
 
 
-@contextmanager
-def load_users() -> defaultdict:
-    data = json.loads(USERS.read_text() or "{}")
-    user_dict = defaultdict(int, data)
-    try:
-        yield user_dict
-    finally:
-        # TODO: do we really want to always save it on error ?
-        USERS.write_text(json.dumps(user_dict))
-
-
-def transfer_money(from_, to, amount, msg=""):
-    result = old_transfer_money(from_, to, amount, msg)
-
-    with load_users() as users:
-        users[from_] -= amount
-        users[to] += amount
-
-    return result
-
-
-# Here we replace the way of transferring money of the library.
-# It is a hack, but seems to work well enough.
-sprig.transfer_money, old_transfer_money = transfer_money, sprig.transfer_money
-
 
 class SprigInitData(BaseModel):
     """Test 103294"""
@@ -100,8 +74,26 @@ class SprigInitData(BaseModel):
     root_claim: str
     sub_claims: list[str]
 
+class ParameterData(BaseModel):
+    root_height: int
+    max_length: int
+    time_for_questions: int
+    time_for_answers: int
+    upstakes: list[int]
+    downstakes: list[int]
+    question_bounties: list[int]
+    verification_cost: int
 
-@api.get("/instances")
+class ClaimData(BaseModel):
+    pass
+
+class SprigData(BaseModel):
+    constraints: ParameterData
+    language: str
+    root_claim: ClaimData
+    counts: CountsData
+
+@api.get("/instances", response_model=)
 def get_instances_list():
     """Return a dictionnary of all the SPRIG instances along with short details."""
     instances = {}
