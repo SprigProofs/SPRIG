@@ -13,6 +13,7 @@ import json
 from collections import defaultdict
 from enum import Enum
 from pathlib import Path
+from time import sleep, time_ns
 from typing import NewType, Optional
 
 from languages.base import Language
@@ -42,15 +43,27 @@ BANK = defaultdict(int, json.loads(BANK_FILE.read_text() or "{}"))
 
 INDENT = " " * 4  # For pretty printing
 
+REAL_TIME = "real"
+DISCRETE_TIME = "discrete"
+TIME_MODE = os.environ.get("TIME_MODE", "real")
 
 def now(increment=0) -> Time:
-    """Own time function for testing purpose."""
+    """Current time. If an increment is given, it is added to the current time.
+    
+    If TIME_MODE is real, the time is the number of miliseconds since the epoch.
+    If TIME_MODE is discrete, the time is a monotonically increasing number (stored in TIME_FILE).
+    """
 
-    time = int(TIME_FILE.read_text() or "0")
-    time += increment
-    TIME_FILE.write_text(str(time))
+    if TIME_MODE == REAL_TIME:
+        if increment > 0:
+            sleep(increment / 1000)
+        return Time(time_ns() // 1_000_000)
+    else:
+        time = int(TIME_FILE.read_text() or "0")
+        time += increment
+        TIME_FILE.write_text(str(time))
 
-    return Time(time)
+        return Time(time)
 
 
 def transfer_money(from_, to, amount, msg="") -> bool:
@@ -924,8 +937,8 @@ def main():
         verification_cost=1,
     )
 
-    # s = play_tictactoe(level, costs, recommended_constraints, MICHAEL, DIEGO, CLEMENT)
-    s = play_lean(level, costs, recommended_constraints, MICHAEL, DIEGO, CLEMENT)
+    s = play_tictactoe(level, costs, recommended_constraints, MICHAEL, DIEGO, CLEMENT)
+    # s = play_lean(level, costs, recommended_constraints, MICHAEL, DIEGO, CLEMENT)
 
     print(s.dumps())
 

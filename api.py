@@ -18,6 +18,7 @@ from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 
 os.environ["BANK_FILE"] = str((Path(__file__).parent / "data" / "api_bank").absolute())
+os.environ["TIME_MODE"] = "real"
 
 import languages.base
 import sprig
