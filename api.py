@@ -104,10 +104,12 @@ class CountsData(BaseModel):
 
 
 class SprigSummaryData(BaseModel):
-    constraints: ParameterData
+    params: ParameterData
     language: str
     root_claim: ClaimData
     counts: CountsData
+    hash: sprig.Hash
+    author: sprig.Address
 
 class ProofAttemptData(BaseModel):
     parent: sprig.Hash
@@ -132,10 +134,12 @@ def get_instances_list():
     for file in all_instances_filenames():
         data = sprig.Sprig.loads(file.read_text())
         instances[file.stem] = {
-            "constraints": data.params,
+            "params": data.params,
             "language": data.language.name,
             "root_claim": data.claims[sprig.ROOT_HASH],
             "counts": {status: data.status_count(status) for status in sprig.Status},
+            "hash": file.stem,
+            "author": data.proof_attempts[sprig.ROOT_HASH][0].claimer,
         }
 
     return instances

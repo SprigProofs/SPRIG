@@ -3,7 +3,7 @@ from fastapi import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from api import all_instances_filenames, api, load, path_from_hash
+from api import ClaimData, all_instances_filenames, api, load, path_from_hash
 import languages
 from sprig import *
 
@@ -26,6 +26,18 @@ def test_all_get_are_success(path):
     response = client.get(path)
     assert response.ok
 
+def test_get_all_instances():
+    response = client.get('/instances')
+    instances = response.json()
+    assert len(instances) == len(list(all_instances_filenames()))
+
+    for instance in instances.values():
+        # If this set has changed, one needs to be sure the JS api is updated as well.
+        assert set(instance.keys()) == {'hash', 'params', 'language', 'root_claim', 'counts', 'author'}
+        assert set(instance['counts'].keys()) == {'unchallenged', 'challenged', 'rejected', 'validated'}
+        assert Parameters(**instance['params'])
+        assert isinstance(instance['language'], str)
+        assert ClaimData(**instance['root_claim'])
 
 @pytest.mark.parametrize("hash", [p.stem for p in all_instances_filenames()])
 def test_instance_get(hash):

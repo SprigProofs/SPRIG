@@ -1,8 +1,10 @@
 <script setup>
-import { reactive } from 'vue';
+import { reactive, ref } from 'vue';
 import StatusTag from './StatusTag.vue';
 import { api, claims, Status, STATUSES, NOW, decided } from '../sprig'
 import ClaimMd from './ClaimMd.vue';
+import { ElNotification } from 'element-plus';
+import InstanceMd from './InstanceMd.vue';
 
 const statuses = reactive({
     [Status.CHALLENGED]: true,
@@ -16,16 +18,13 @@ const OPEN_UNTIL = "Open until";
 const RELEVANCE = "Relevance";
 const NEW = "New";
 const sort_methods = reactive([NEW, REWARD, OPEN_UNTIL])
-const types = reactive({
-    "Claims": true,
-    "Proof attempts": false,
-    "Instances": false,
-    "Users": false
-})
+const types = ["Claims", "Proof Attempts", "Instances", "Users"];
+const selectedType = ref("Instances")
 
-var instances = reactive({});
+var instances = ref({});
 api.fetchInstanceList(l => {
-    instances = l;
+    console.log(l)
+    instances.value = l;
 });
 
 function startDrag(event, method) {
@@ -80,9 +79,22 @@ function sort_weight(claim) {
 }
 
 function results() {
-    return claims
-        .filter(claim => types["Claims"] && statuses[claim.status])
-        .sort((a, b) => sort_weight(a) - sort_weight(b))
+    switch (selectedType.value) {
+        case "Claims":
+            return claims
+                .filter(claim => statuses[claim.status])
+                .sort((a, b) => sort_weight(a) - sort_weight(b))
+        
+        case "Instances":
+            return Object.keys(instances.value)
+                .map(key => instances.value[key])
+                .filter(instance => statuses[instance.root_claim.status])
+                // .sort((a, b) => sort_weight(a) - sort_weight(b))
+            
+        default:
+            console.log(selectedType)
+            return [];
+    }
 }
 
 </script>
@@ -124,11 +136,10 @@ function results() {
             </section>
             <section class="flex flex-col space-y-2">
                 <h2 class="small-title">Type</h2>
-                <label v-for="(v, type) in types" :key="type">
-                    <input type="checkbox" :name="type" :id="type" v-model="types[type]"> 
+                <label v-for="(type) in types" :key="type">
+                    <input type="radio" name="type" :value="type" v-model="selectedType"> 
                     {{ type }}
                 </label>
-                
             </section>
         </div>
         <h2 class="mt-4 py-4">
@@ -137,11 +148,10 @@ function results() {
         <TransitionGroup tag="ol" class="space-y-6">
             <li v-for="result in results()" :key="result.hash"
                 class="transition">
-                <ClaimMd :claim="result"></ClaimMd>
+                <ClaimMd v-if="selectedType=='Claims'" :claim="result"></ClaimMd>
+                <InstanceMd v-else-if="selectedType=='Instances'" :instance="result"></InstanceMd>
+                <div v-else>{{ result }}</div>
             </li>
         </TransitionGroup>
-        <div>
-            {{ instances }}
-        </div>
     </div>
 </template>

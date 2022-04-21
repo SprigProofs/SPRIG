@@ -3,6 +3,7 @@ This contains all the logic of sprig, from the communication with the server
 to the processing of the data.
 */
 
+import * as _ from "lodash";
 import * as dayjs from 'dayjs'
 import * as duration from 'dayjs/plugin/duration'
 import * as relativeTime from 'dayjs/plugin/relativeTime'  // for .humanize()
@@ -41,12 +42,21 @@ function decided(status: Status) {
 
 
 function claimTitle(claim: Claim) {
-    return claim.statement.match(/theorem \S+\s/ms)[0];
+    const m = claim.statement.match(/theorem \S+\s/ms);
+    if (m) {
+        return m[0].trim();
+    } else {
+        return "Unknown title";
+    }
 }
 
 function claimStatement(claim: Claim) {
-    console.log(claim.statement)
-    return claim.statement.match(/theorem \S+\s(.*):=/ms)[1]
+    const m = claim.statement.match(/theorem \S+\s(.*):=/ms);
+    if (m) {
+        return m[1].trim();
+    } else {
+        return "Unknown statement";
+    }
 }
 
 function humanize(date: dayjs.Dayjs, suffix=true) {
@@ -155,8 +165,10 @@ interface StatusCounts {
 interface SprigSummary {
     language: string
     root_claim: Claim
-    claim_count: number
     counts: StatusCounts
+    hash: string
+    params: Parameters
+    author: string
 }
 
 interface ProofAttempt {
@@ -196,6 +208,32 @@ class Parameters {
 
 const API_BASE = "http://localhost:8601/"
 
+const convert = {
+    claim(claim: Record<string, any>): Claim {
+        return {
+            hash: claim.hash,
+            statement: claim.statement,
+            status: claim.status,
+            parent: claim.parent,
+            last_modification: dayjs(claim.last_modification),
+            created_at: dayjs(claim.created_at),
+            open_until: dayjs(claim.open_until),
+            height: claim.height,
+            skeptic: claim.skeptic,
+        }
+    },
+    sprigSummary(summary: Record<string, any>): SprigSummary {
+        return {
+            language: summary.language,
+            params: summary.params,
+            root_claim: convert.claim(summary.root_claim),
+            counts: summary.counts,
+            hash: summary.hash,
+            author: summary.author,
+        }
+    }
+}
+
 const api = {
     get(path: string[], callback: FetchCallback<any>): void {
         const url = API_BASE + path.join("/")
@@ -203,6 +241,16 @@ const api = {
             if (resp.ok) {
                 resp.json().then(data => {
                     callback(data)
+                }).catch(err => {
+                    ElNotification({
+                        title: "Server returned weird json",
+                        message: `${url}\n${err}`,
+                    })
+                })
+            } else {
+                ElNotification.error({
+                    title: "Server returned error",
+                    message: `${url}\n${resp}`
                 })
             }
         }).catch(err => {
@@ -231,7 +279,7 @@ const api = {
         })
     },
     fetchInstanceList(callback: FetchCallback<Record<string, SprigSummary>>) {
-        this.get(["instances"], callback)
+        this.get(["instances"], data => callback(_.mapValues(data, convert.sprigSummary)))
     },
     fetchInstance(hash: string, callback: FetchCallback<Sprig>) {
         this.get([hash], callback)
