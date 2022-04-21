@@ -112,6 +112,7 @@ class SprigSummaryData(BaseModel):
 class ProofAttemptData(BaseModel):
     parent: sprig.Hash
     claimer: sprig.Address
+    claims: list[sprig.Hash]
     height: int
     status: sprig.Status
 

@@ -31,6 +31,18 @@ def all_subclasses(klass: type) -> Iterator[type]:
     yield klass
 
 
+def purge_key(d: dict, key):
+    """Recursively remove a key from a dict. Mutates the dict."""
+    if isinstance(d, dict):
+        if key in d:
+            del d[key]
+        for v in d.values():
+            purge_key(v, key)
+    elif isinstance(d, list):
+        for v in d:
+            purge_key(v, key)
+
+
 def fmt(s, fg=None, bg=None, end=True):
     """
     Add ANSI escape codes to a string.

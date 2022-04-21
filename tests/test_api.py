@@ -4,6 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from api import all_instances_filenames, api, load, path_from_hash
+import languages
 from sprig import *
 
 client = TestClient(api)
@@ -30,10 +31,17 @@ def test_all_get_are_success(path):
 def test_instance_get(hash):
     response = client.get(f"/{hash}")
 
-    sent = Sprig(**response.json())
-    stored = load(hash)
+    data = response.json()
+    assert data['hash'] == hash
+    data.pop('hash')
+    
+    stored = json.loads(path_from_hash(hash).read_text())
 
-    assert stored == sent
+    purge_key(stored, 'money_held')
+    for k in stored.keys():
+        assert stored[k] == data[k]
+    assert stored == data
+
 
 
 def test_post_new_instance():

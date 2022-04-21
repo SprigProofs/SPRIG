@@ -908,8 +908,8 @@ def main():
         verification_cost=1,
     )
 
-    play_tictactoe(level, costs, recommended_constraints, MICHAEL, DIEGO, CLEMENT)
-    # play_lean(level, costs, recommended_constraints, MICHAEL, DIEGO, CLEMENT)
+    # play_tictactoe(level, costs, recommended_constraints, MICHAEL, DIEGO, CLEMENT)
+    play_lean(level, costs, recommended_constraints, MICHAEL, DIEGO, CLEMENT)
 
 if __name__ == "__main__":
     main()
