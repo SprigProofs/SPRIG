@@ -17,6 +17,8 @@ from typing import NewType, Optional
 from languages.base import Language
 from utils import *
 
+from languages import TicTacToe, Lean
+
 # A type alias to know when a str is the address of someone.
 # It is used only for type checking, and does nothing at runtime
 Address = NewType("Address", str)
@@ -307,6 +309,8 @@ class Claim:
     status: Status
     # The parent is None iff it is the root claim.
     parent: Optional[Hash]
+    proof_attempt: Optional[int]
+    claim_nb: Optional[int]
 
     # The skeptic is the one who challenged the claim
     # and not the challenge from which the claim originates,
@@ -332,6 +336,8 @@ class Claim:
         height: int,
         hash: Hash,
         parent: Hash,
+        proof_attempt: int,
+        claim_nb: int,
         last_modification: Time,
         open_until: Time = None,
         status: Status = None,
@@ -339,6 +345,8 @@ class Claim:
         money_held=0,
     ):
         self.parent = parent
+        self.proof_attempt = proof_attempt
+        self.claim_nb = claim_nb
         self.height = height
         self.hash = hash
         self.statement = statement
@@ -355,6 +363,8 @@ class Claim:
         cls,
         statement: str,
         parent: Optional[Claim],
+        proof_attempt: Optional[int],
+        claim_nb: Optional[int],
         hash: Hash,
         params: AbstractParameters,
         low_level=False,
@@ -375,7 +385,7 @@ class Claim:
             status = Status.UNCHALLENGED
             parent_hash = parent.hash
 
-        claim = cls(statement, height, hash, parent_hash, now(), status=status)
+        claim = cls(statement, height, hash, parent_hash, proof_attempt, claim_nb, now(), status=status)
         claim.open_until = params.deadline(claim)
         return claim
 
@@ -443,11 +453,11 @@ class Sprig:
     ):
         """Start a new instance of the SPRIG protocol, originating from a claim."""
 
-        root_claim = Claim.new(claim, None, ROOT_HASH, params)
+        root_claim = Claim.new(claim, None, None, None, ROOT_HASH, params)
         language = Language.load(language_type)
         self = cls(language, params, {ROOT_HASH: root_claim}, {}, [])
 
-        self.language.validate_top_level(root_claim.statement)
+        self.language.validate_top_level(self, root_claim.statement)
 
         self.answer(ROOT_HASH, claimer, *proof_attempt)
 
@@ -467,12 +477,11 @@ class Sprig:
             for i, attempt in enumerate(self.proof_attempts.get(claim_hash, [])):
                 money = f" ({fmt_money(attempt.money_held)})" if attempt.money_held else ""
                 ret += (
-                    fmt(f"Attempt {i + 1} by {attempt.claimer}", attempt.status.color())
-                    + f" {money}:\n"
+                    fmt(f"Attempt {i + 1} by {attempt.claimer}", attempt.status.color()) + f" {money}:\n"
                 )
                 for claim in attempt.claims:
                     claim_s = indent(claim_str(claim), INDENT)
-                    ret += "  - " + claim_s[len(INDENT) :]
+                    ret += "  - " + claim_s[len(INDENT):]
 
             return ret
 
@@ -511,11 +520,11 @@ SPRIG instance:
         assert claim.status is Status.CHALLENGED, f"There is no open challenge for: {claim}"
         assert claim.height > 1, "Use answer_low_level instead"
 
-        self.language.validate_subclaims(claim.statement, *sub_statements)
+        self.language.validate_subclaims(self, claim.statement, *sub_statements)
 
         claims = [
-            Claim.new(statement, claim, next(self.HASHES), self.params)
-            for statement in sub_statements
+            Claim.new(statement, claim, len(self.proof_attempts.get(challenged_claim, [])), i, next(self.HASHES), self.params)
+            for i, statement in enumerate(sub_statements)
         ]
         attempt = ProofAttempt(
             challenged_claim, claimer, [c.hash for c in claims], claim.height - 1
@@ -535,7 +544,7 @@ SPRIG instance:
         assert claim.status is Status.CHALLENGED, "There is no open challenge for this claim."
         assert claim.height >= 0  # Should not happen
 
-        proof = Claim.new(machine_proof, claim, next(self.HASHES), self.params, True)
+        proof = Claim.new(machine_proof, claim, len(self.proof_attempts.get(challenged_claim, [])), 0, next(self.HASHES), self.params, True)
         attempt = ProofAttempt(challenged_claim, claimer, [proof.hash], 0)
 
         assert self.params.pay_new_proof_attempt(attempt)
@@ -561,6 +570,17 @@ SPRIG instance:
         if start.parent:
             self.extend_deadlines(self.claims[start.parent])
 
+    def gather_claims(self, start: Claim):
+        """Retrieve statements that may be used as hypothesis to prove a claim"""
+        if not start.parent:
+            return []
+        
+        claims = self.gather_claims(self.claims[start.parent])
+        for claim_index in range(start.claim_nb):
+            claims.append(self.claims[self.proof_attempts[start.parent][start.proof_attempt].claims[claim_index]].statement)
+        
+        return claims
+
     def fixup(self, start: Claim):
         """Propagate changes upwards when a claim/challenge is modified."""
 
@@ -571,7 +591,7 @@ SPRIG instance:
             return  # Nothing to do.
 
         elif start.height == 0:
-            if self.language.judge_low_level(self.claims[start.parent].statement, start.statement):
+            if self.language.judge_low_level(self, self.claims[start.parent].statement, self.gather_claims(start) + [start.statement]):
                 start.status = Status.VALIDATED
             else:
                 start.status = Status.REJECTED
@@ -618,7 +638,7 @@ SPRIG instance:
             self.params.pay_attempt_accepted(attempt, self)
 
             # If the claim that the attempt proves was not validated before, collect the bounty
-            if parent.status is Status.CHALLENGED:
+            if parent.status is Status.CHALLENGED and parent.hash != ROOT_HASH:
                 self.params.pay_challenge_answered(parent, attempt)
 
         # The attempt is rejected iff the claim is rejected, as all other claims
@@ -628,12 +648,10 @@ SPRIG instance:
             attempt.status = Status.REJECTED
             self.params.pay_attempt_rejected(attempt, start, self)
 
-        self.fixup(parent)
-
     def distribute_all_bets(self):
         for h in self._dfs():
             claim = self.claims[h]
-            if not claim.status.decided() and now() > claim.open_until:
+            if not claim.status.decided():
                 self.fixup(claim)
 
     def _dfs(self, _start=ROOT_HASH) -> Iterator[Hash]:
@@ -686,28 +704,168 @@ SPRIG instance:
 
         return cls(constraints, data["language"], claims, attempts)
 
+def time_passes(sprig, amount=1):
+    sprig.distribute_all_bets()
+    print("Time is", fmt(now(), ORANGE))
+    print(sprig)
+
+    now(amount)
+
+    sprig.distribute_all_bets()
+    print("Time is", fmt(now(), ORANGE))
+    print(sprig)
+
+    padding = max(map(len, BANK))
+    for address, balance in BANK.items():
+        balance = f"{balance} ₽"
+        print(f"{address.ljust(padding)} ({fmt(balance, ORANGE)})")
+    print()
+
+def play_tictactoe(
+    level: int,
+    costs: List[int],
+    recommended_constraints: Parameters,
+    MICHAEL, DIEGO, CLEMENT
+):
+    ctx = " O plays X wins"
+    sprig = Sprig.start(
+        TicTacToe().dump(),
+        recommended_constraints,
+        Address("Diego"),
+        "...|XX.|... O plays X wins",
+
+        "O..|XXX|... O plays X wins",
+        ".O.|XXX|... O plays X wins",
+        "..O|XXX|... O plays X wins",
+        "X..|XXO|... O plays X wins",
+        "...|XXX|O.. O plays X wins",
+        "...|XXX|.O. O plays X wins",
+        "...|XXX|..O O plays X wins",
+    )
+
+    time_passes(sprig)
+
+    sprig.challenge(MICHAEL, "4")
+    sprig.challenge(MICHAEL, "2")
+
+    time_passes(sprig)
+
+    sprig.answer(
+        "4",
+        DIEGO,
+        "XO.|XXO|X.." + ctx,
+        "XXO|XXO|..." + ctx,
+        "X..|XXO|O.X" + ctx,
+        "X..|XXO|XO." + ctx,
+        "X..|XXO|X.O" + ctx,
+    )
+
+    time_passes(sprig)
+    sprig.answer_low_level("2", DIEGO, "-2")
+
+    time_passes(sprig)
+    sprig.challenge(MICHAEL, "9")
+
+    time_passes(sprig)
+
+    sprig.answer(
+        "4",
+        CLEMENT,
+        "XO.|XXO|X.." + ctx,
+        "X.O|XXO|X.." + ctx,
+        "X..|XXO|O.X" + ctx,
+        "X..|XXO|XO." + ctx,
+        "X..|XXO|X.O" + ctx,
+    )
+
+    time_passes(sprig)
+    time_passes(sprig)
+    time_passes(sprig)
+
+    print(sprig.gather_claims(sprig.claims['4']))
+
+def play_lean(
+    level: int,
+    costs: List[int],
+    recommended_constraints: Parameters,
+    MICHAEL, DIEGO, CLEMENT
+):
+    sprig = Sprig.start(
+        Lean().dump(),
+        recommended_constraints,
+        Address("Diego"),
+        "add_comm (a b : nat) : a + b = b + a",
+
+        """lemma z_add (n : nat) : 0 + n = n :=
+        begin
+            sorry
+        end
+        """,
+        """lemma add_succ (a b : nat) : a + nat.succ(b) = nat.succ(a + b) :=
+        begin
+            sorry
+        end
+        """,
+        """lemma add_comm (a b : nat) : a + b = b + a :=
+        begin
+            sorry
+        end
+        """
+    )
+
+    time_passes(sprig)
+
+    sprig.challenge(MICHAEL, "3")
+
+    time_passes(sprig)
+
+    sprig.answer(
+        "3",
+        DIEGO,
+        """false claim""",
+        """false claim => add_comm"""
+    )
+    
+    time_passes(sprig)
+
+    sprig.challenge(MICHAEL, "4")
+    sprig.answer(
+        "3",
+        CLEMENT,
+        """lemma succ_add (a b : nat) : nat.succ a + b = nat.succ (a + b) :=
+        begin
+            sorry
+        end
+        """,
+        """lemma add_comm (a b : nat) : a + b = b + a :=
+        begin
+        induction b, rw add_zero, rw z_add, refl,
+        rw succ_add, rw add_succ, rw b_ih, refl,
+        end
+        """
+    )
+
+    time_passes(sprig)
+
+    sprig.challenge(MICHAEL, "6")
+
+    time_passes(sprig)
+
+    sprig.answer_low_level(
+        "6",
+        DIEGO,
+        """lemma succ_add (a b : nat) : nat.succ a + b = nat.succ (a + b) :=
+        begin
+            induction b, rw add_zero, rw add_zero,
+            rw add_succ, rw b_ih,
+        end
+        """
+    )
+
+    time_passes(sprig)
 
 def main():
-    from languages import TicTacToe
-
     now(-now())  # reset the time to 0
-
-    def time_passes(amount=1):
-        sprig.distribute_all_bets()
-        print("Time is", fmt(now(), ORANGE))
-        print(sprig)
-
-        now(amount)
-
-        sprig.distribute_all_bets()
-        print("Time is", fmt(now(), ORANGE))
-        print(sprig)
-
-        padding = max(map(len, BANK))
-        for address, balance in BANK.items():
-            balance = f"{balance} ₽"
-            print(f"{address.ljust(padding)} ({fmt(balance, ORANGE)})")
-        print()
 
     MICHAEL = Address("Michael")
     DIEGO = Address("Diego")
@@ -726,60 +884,8 @@ def main():
         verification_cost=1,
     )
 
-    ctx = " O plays X wins"
-    sprig = Sprig.start(
-        TicTacToe().dump(),
-        recommended_constraints,
-        Address("Diego"),
-        "...|XX.|... O plays X wins",
-        "O..|XXX|... O plays X wins",
-        ".O.|XXX|... O plays X wins",
-        "..O|XXX|... O plays X wins",
-        "X..|XXO|... O plays X wins",
-        "...|XXX|O.. O plays X wins",
-        "...|XXX|.O. O plays X wins",
-        "...|XXX|..O O plays X wins",
-    )
-
-    time_passes()
-
-    sprig.challenge(MICHAEL, "4")
-    sprig.challenge(MICHAEL, "2")
-
-    time_passes()
-
-    sprig.answer(
-        "4",
-        DIEGO,
-        "XO.|XXO|X.." + ctx,
-        "XXO|XXO|..." + ctx,
-        "X..|XXO|O.X" + ctx,
-        "X..|XXO|XO." + ctx,
-        "X..|XXO|X.O" + ctx,
-    )
-
-    time_passes()
-    sprig.answer_low_level("2", DIEGO, "-2")
-
-    time_passes()
-    sprig.challenge(MICHAEL, "9")
-
-    time_passes()
-
-    sprig.answer(
-        "4",
-        CLEMENT,
-        "XO.|XXO|X.." + ctx,
-        "X.O|XXO|X.." + ctx,
-        "X..|XXO|O.X" + ctx,
-        "X..|XXO|XO." + ctx,
-        "X..|XXO|X.O" + ctx,
-    )
-
-    time_passes()
-    time_passes()
-    time_passes()
-
+    #play_tictactoe(level, costs, recommended_constraints, MICHAEL, DIEGO, CLEMENT)
+    play_lean(level, costs, recommended_constraints, MICHAEL, DIEGO, CLEMENT)
 
 if __name__ == "__main__":
     main()

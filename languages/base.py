@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Dict, List, NewType, Optional
 
 
 @dataclass
@@ -25,7 +26,7 @@ class Language:
     def __str__(self):
         return self.name
 
-    def judge_low_level(self, statement: str, machine_proof: str) -> bool:
+    def judge_low_level(self, statement: str, machine_proof: List[str]) -> bool:
         """Perform the machine level verification.
         :param machine_proof:
         """
