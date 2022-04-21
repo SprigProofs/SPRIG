@@ -19,14 +19,20 @@
           <pre class="whitespace-pre-wrap">{{ claimStatement(claim) }}</pre>
         </code>
         
-        <div class="flex space-x-6">
-          <LabeledData
-            v-for="(count, status) in instance.counts"
-            :label="status"
-            :key="status"
-            >{{ count }}</LabeledData>
-        </div>
-        
+        <ul class="grid grid-cols-4 gap-4 pt-4 max-w-md"
+          >
+            <li class="bg-slate-100 rounded p-2 flex flex-col items-center space-y-2"
+              v-for="(count, status) in instance.counts"
+              :key="status"
+              >
+              <div class="text-xs text-gray-500 capitalize">{{ status }}</div>
+              <div class="flex items-center font-semibold">
+                <StatusIcon :status="status" class="mr-2" />
+                <div>{{ count }}</div>
+              </div>
+            </li>
+          </ul>
+      
         
       </div>
       <!-- Right of the card -->
@@ -57,6 +63,7 @@
     import { computed } from '@vue/reactivity';
     import LabeledData from './LabeledData.vue';
     import User from './User.vue';
+import StatusIcon from './StatusIcon.vue';
 
     const props = defineProps({
         instance: {

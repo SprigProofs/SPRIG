@@ -10,7 +10,7 @@ import Algo from './components/Algo.vue'
 import Price from './components/Price.vue'
 
 import { OhVueIcon, addIcons } from "oh-vue-icons";
-import { MdClearRound, MdCheckRound, MdMenu, MdModeedit, MdCancel, MdCheckcircle, MdOfflineboltSharp, MdKeyboarddoublearrowdown, MdKeyboarddoublearrowup, MdBolt, MdOfflinebolt, MdQuestionmarkRound, MdInfoRound, MdAccesstimeRound, MdPersonRound, FaMountain, MdLockclock, MdLockopenRound } from "oh-vue-icons/icons";
+import { MdClearRound, MdCheckRound, MdMenu, MdModeedit, MdCancel, MdCheckcircle, MdOfflineboltSharp, MdKeyboarddoublearrowdown, MdKeyboarddoublearrowup, MdBolt, MdOfflinebolt, MdQuestionmarkRound, MdInfoRound, MdAccesstimeRound, MdPersonRound, FaMountain, MdLockclock, MdLockopenRound, MdPriorityhighRound, MdCloseRound } from "oh-vue-icons/icons";
 import { PiPikachu } from 'oh-vue-icons/icons' 
 import { CiAlgo } from 'oh-vue-icons/icons' 
 
@@ -37,6 +37,8 @@ addIcons(
     FaMountain,
     MdLockclock,
     MdLockopenRound,
+    MdPriorityhighRound,
+    MdCloseRound,
 );
 
 addIcons({

@@ -21,8 +21,9 @@ const NEW = "New";
 const sort_methods = reactive([NEW, REWARD, OPEN_UNTIL])
 const types = ["Claims", "Proof Attempts", "Instances", "Users"];
 const selectedType = ref("Instances")
+const search = ref("")
 
-var instances = ref({});
+const instances = ref({});
 api.fetchInstanceList(l => {
     console.log(l)
     instances.value = l;
@@ -102,7 +103,8 @@ function results() {
     switch (selectedType.value) {
         case "Claims":
             return claims
-                .filter(claim => statuses[claim.status])
+                .filter(claim => statuses[claim.status]
+                    && claim.statement.toLowerCase().includes(search.value.toLowerCase()))
                 .sort((a, b) => sort_weight(a) - sort_weight(b))
         
         case "Instances":
@@ -120,10 +122,11 @@ function results() {
 </script>
 
 <template>
-    <div class="w-full">
-        <input type="text" class="border rounded-sm 
-            w-full
-            p-2 mb-6" placeholder="Search...">
+    <div class="max-w-5xl mx-auto">
+        <input type="text" 
+            v-model="search"
+            class="border rounded-sm w-full p-2 mb-6"
+            placeholder="Search...">
         <div class="bg-gray-100 rounded-sm border
             p-4
             grid grid-cols-3">
@@ -172,6 +175,7 @@ function results() {
                 <InstanceMd v-else-if="selectedType=='Instances'" :instance="result"></InstanceMd>
                 <div v-else>{{ result }}</div>
             </li>
+            <li key="nothing there! It just allows to have hover effect on the last item :shrug:"></li>
         </TransitionGroup>
     </div>
 </template>
