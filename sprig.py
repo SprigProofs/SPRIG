@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import dataclasses
 import itertools
+import os
 
 try:
     from pydantic.dataclasses import dataclass
@@ -33,7 +34,7 @@ DATA = Path(__file__).parent / "data"
 DATA.mkdir(exist_ok=True)
 TIME_FILE = DATA / "time"
 TIME_FILE.touch()
-BANK_FILE = DATA / "bank"
+BANK_FILE = Path(os.environ.get("BANK_FILE", DATA / "bank"))
 BANK_FILE.touch()
 
 BANK = defaultdict(int, json.loads(BANK_FILE.read_text() or "{}"))
@@ -863,9 +864,12 @@ def play_lean(
     )
 
     time_passes(sprig)
+    time_passes(sprig)
+    time_passes(sprig)
 
 def main():
     now(-now())  # reset the time to 0
+    BANK.clear()  # reset the bank
 
     MICHAEL = Address("Michael")
     DIEGO = Address("Diego")
