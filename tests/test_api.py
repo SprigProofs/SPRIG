@@ -79,4 +79,3 @@ def test_post_new_instance():
     assert data['claims']['0']['statement'] == creation_data['root_claim']
     for i, claim in enumerate(creation_data['sub_claims']):
         assert data['claims'][str(i + 1)]['statement'] == claim
-    

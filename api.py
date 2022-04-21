@@ -171,48 +171,41 @@ def add_new_instance(new_instance: SprigInitData):
         "proof_attempts": instance.proof_attempts,
     }
 
+@api.get("/users", response_model=dict[sprig.Address, int])
+def get_users():
+    """Return a mapping User -> Account Balance."""
+    return sprig.BANK
+
+@api.get("/{instance_hash}", response_model=SprigData)
+def get_instance(instance_hash: str):
+    """All the data of one SPRIG instance."""
+    data = json.loads(path_from_hash(instance_hash).read_text())
+    data['hash'] = instance_hash
+    return data
+
+
+@api.get("/{instance_hash}/{claim_hash}", response_model=ClaimData)
+def get_claim(claim_hash: str, instance: sprig.Sprig = Depends(load)):
+    """Return all the details about one claim."""
+    return instance.claims[claim_hash]
+
+class ChallengeCreatedData(BaseModel):
+    balance: int
+    claim: sprig.Claim
+
 if False:
-
-    @api.get("/users")
-    def get_users():
-        """Return a mapping User -> Account Balance."""
-        with load_users() as users:
-            return users
-
-
-    @api.get("/{instance_hash}", response_model=sprig.Sprig)
-    def get_instance(instance_hash: str):
-        """All the metadata of one SPRIG instance."""
-        return json.loads(path_from_hash(instance_hash).read_text())
-
-
-    @api.get("/{instance_hash}/{claim_hash}")
-    def get_claim(claim_hash: str, instance: sprig.Sprig = Depends(load)):
-        """Return all the details about one claim."""
-        return instance.claims[claim_hash]
-
-
-    class ChallengeRecord(BaseModel):
-        balance: int
-        claim: sprig.Claim
-
 
     @api.post("/{instance_hash}/{claim_hash}/challenge")
     def new_challenge(skeptic: sprig.Address, claim_hash: str, instance_hash: str):
         """Challenge a claim that isn't yet challenged and still active."""
 
         instance = load(instance_hash)
-        with load_users() as users:
-            instance.challenge(skeptic, claim_hash)
-            instance.distribute_all_bets()
-            sprig.now(1)
-            # TODO: payment in Sprig, not just a default of 1
-            users[skeptic] = users.get(skeptic, 100) - 1
 
-            save(instance, instance_hash)
+        instance.challenge(skeptic, claim_hash)
+        
+        save(instance, instance_hash)
 
-            return ChallengeRecord(balance=users[skeptic], claim=instance.claims[claim_hash])
-
+        return ChallengeCreatedData(balance=sprig.BANK[skeptic], claim=instance.claims[claim_hash])
 
     @api.get("/{instance_hash}/{claim_hash}/proof_attempts")
     def get_proof_attempts(claim_hash: str, instance: sprig.Sprig = Depends(load)):
