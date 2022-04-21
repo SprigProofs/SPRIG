@@ -5,6 +5,7 @@ import { api, claims, Status, STATUSES, NOW, decided } from '../sprig'
 import ClaimMd from './ClaimMd.vue';
 import { ElNotification } from 'element-plus';
 import InstanceMd from './InstanceMd.vue';
+import * as dayjs from 'dayjs';
 
 const statuses = reactive({
     [Status.CHALLENGED]: true,
@@ -65,6 +66,7 @@ function drop(event, droppedMethod) {
 
 function sort_weight(claim) {
     const weights = {};
+    // TODO: Put the real reward here
     weights[REWARD] = 10;
     weights[NEW] = NOW - claim.last_modification;
     weights[OPEN_UNTIL] = decided(claim.status) ? 9999 : claim.open_until - NOW
@@ -75,6 +77,24 @@ function sort_weight(claim) {
         const method = sort_methods[i];
         weight += weights[method] * 0.3 ** i;
     }
+    return weight;
+}
+
+function sort_weight_instance(instance) {
+    const weights = {};
+    weights[REWARD] = -instance.bounties;
+    weights[NEW] = dayjs().diff(instance.root_claim.last_modification);
+    // TODO: Set the correct value
+    weights[OPEN_UNTIL] = 1
+    weights[RELEVANCE] = 0
+
+
+    var weight = 0;
+    for (let i = 0; i < sort_methods.length; i++) {
+        const method = sort_methods[i];
+        weight += weights[method] * 0.3 ** i;
+    }
+    console.log(instance.hash, weights, weight)
     return weight;
 }
 
@@ -89,7 +109,7 @@ function results() {
             return Object.keys(instances.value)
                 .map(key => instances.value[key])
                 .filter(instance => statuses[instance.root_claim.status])
-                // .sort((a, b) => sort_weight(a) - sort_weight(b))
+                .sort((a, b) => sort_weight_instance(a) - sort_weight_instance(b))
             
         default:
             console.log(selectedType)

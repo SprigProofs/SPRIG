@@ -4,11 +4,11 @@ import dataclasses
 import itertools
 import os
 
-try:
-    from NOPEpydantic.dataclasses import dataclass
-except ImportError:
-    print("No support for the web api. Install the dependancies with poetry install.")
-    from dataclasses import dataclass
+# try:
+#     from NOPEpydantic.dataclasses import dataclass
+# except ImportError:
+#     print("No support for the web api. Install the dependancies with poetry install.")
+from dataclasses import dataclass
 import json
 from collections import defaultdict
 from enum import Enum
@@ -29,6 +29,7 @@ Time = NewType("Time", int)
 
 ROOT_HASH = Hash("0")
 SPRIG_ADDRESS = Address("@SPRIG")
+MACHINE_VERIF = Address("@MACHINE_VERIF")
 
 DATA = Path(__file__).parent / "data"
 DATA.mkdir(exist_ok=True)
@@ -215,7 +216,12 @@ class Parameters(AbstractParameters):
             msg = f"new proof attempt - ⛰️{attempt.height}"
 
         attempt.money_held += amount
-        return transfer_money(attempt.claimer, SPRIG_ADDRESS, amount, msg)
+        success = transfer_money(attempt.claimer, SPRIG_ADDRESS, amount, msg)
+
+        # transfer machine verification cost, which never fails
+        if success and attempt.height == 0:
+            transfer_money(SPRIG_ADDRESS, MACHINE_VERIF, self.verification_cost, f"machine verification of {attempt.claims[0]}")
+        return success
 
     def pay_attempt_accepted(self, attempt: ProofAttempt, sprig: Sprig):
         amount = 0
@@ -500,6 +506,12 @@ SPRIG instance:
         """Count the number of claims of a given status."""
         return sum(1 for claim in self.claims.values() if claim.status is status)
 
+    def total_bounties(self) -> int:
+        """Count the total amount of money held by all attempts and challenges."""
+        return sum(claim.money_held for claim in self.claims.values()) + sum(
+            attempt.money_held for attempts in self.proof_attempts.values() for attempt in attempts
+        )
+
     # Public interface to add claims/challenges
 
     def challenge(self, skeptic: Address, claim_hash: Hash):
@@ -744,7 +756,7 @@ def time_passes(sprig, amount=1):
 
 def play_tictactoe(
     level: int,
-    costs: List[int],
+    costs: list[int],
     recommended_constraints: Parameters,
     MICHAEL, DIEGO, CLEMENT
 ):
@@ -805,9 +817,11 @@ def play_tictactoe(
 
     print(sprig.gather_claims(sprig.claims['4']))
 
+    return sprig
+
 def play_lean(
     level: int,
-    costs: List[int],
+    costs: list[int],
     recommended_constraints: Parameters,
     MICHAEL, DIEGO, CLEMENT
 ):
@@ -887,6 +901,8 @@ def play_lean(
     time_passes(sprig)
     time_passes(sprig)
 
+    return sprig
+
 def main():
     now(-now())  # reset the time to 0
     BANK.clear()  # reset the bank
@@ -908,8 +924,10 @@ def main():
         verification_cost=1,
     )
 
-    # play_tictactoe(level, costs, recommended_constraints, MICHAEL, DIEGO, CLEMENT)
-    play_lean(level, costs, recommended_constraints, MICHAEL, DIEGO, CLEMENT)
+    # s = play_tictactoe(level, costs, recommended_constraints, MICHAEL, DIEGO, CLEMENT)
+    s = play_lean(level, costs, recommended_constraints, MICHAEL, DIEGO, CLEMENT)
+
+    print(s.dumps())
 
 if __name__ == "__main__":
     main()

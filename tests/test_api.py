@@ -32,8 +32,8 @@ def test_get_all_instances():
     assert len(instances) == len(list(all_instances_filenames()))
 
     for instance in instances.values():
-        # If this set has changed, one needs to be sure the JS api is updated as well.
-        assert set(instance.keys()) == {'hash', 'params', 'language', 'root_claim', 'counts', 'author'}
+        # If this set has changed, one needs to be sure the JS api is updated as well in sprig.ts
+        assert set(instance.keys()) == {'hash', 'params', 'language', 'root_claim', 'counts', 'author', 'bounties'}
         assert set(instance['counts'].keys()) == {'unchallenged', 'challenged', 'rejected', 'validated'}
         assert Parameters(**instance['params'])
         assert isinstance(instance['language'], str)

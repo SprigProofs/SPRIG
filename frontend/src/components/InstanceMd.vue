@@ -7,7 +7,7 @@
             <!-- Top left -->
             <div class="space-x-2">
                 <StatusTag class="" :status="instance.root_claim.status" />
-                <el-tag>Lean</el-tag>
+                <el-tag>{{ instance.language }}</el-tag>
                 <span class="text-gray-500 italic text-sm font-mono">#{{ instance.hash }}</span>
             </div>
         </div>
@@ -27,9 +27,7 @@
             >{{ count }}</LabeledData>
         </div>
         
-        <div>
-          {{ instance }}
-        </div>
+        
       </div>
       <!-- Right of the card -->
       <div 
@@ -37,16 +35,13 @@
         class="w-48  p-4 flex-shrink-0
           flex flex-col space-y-2 items-end">
         <div class="text-black font-semibold rounded-sm">
-          Bounty <Price amount="120"/>
+          Bounties total <Price :amount="instance.bounties"/>
         </div>
         <div class="text-xs text-slate-700 flex-grow">
           {{ humanize(claim.open_until, false) }} left
         </div>
         <button v-if="claim.status == Status.UNCHALLENGED" class="border bg-blue-100 rounded-md py-2 self-stretch shadow">
           Challenge for <Price amount="12"/>
-        </button>
-        <button v-else class="border bg-blue-100 rounded-md py-2 w-full shadow">
-          Add proof for <Price amount="12"/>
         </button>
       </div>
 

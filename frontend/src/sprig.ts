@@ -169,6 +169,7 @@ interface SprigSummary {
     hash: string
     params: Parameters
     author: string
+    bounties: number
 }
 
 interface ProofAttempt {
@@ -230,6 +231,7 @@ const convert = {
             counts: summary.counts,
             hash: summary.hash,
             author: summary.author,
+            bounties: summary.bounties,
         }
     }
 }

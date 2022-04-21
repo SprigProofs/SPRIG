@@ -110,6 +110,7 @@ class SprigSummaryData(BaseModel):
     counts: CountsData
     hash: sprig.Hash
     author: sprig.Address
+    bounties: int
 
 class ProofAttemptData(BaseModel):
     parent: sprig.Hash
@@ -140,6 +141,7 @@ def get_instances_list():
             "counts": {status: data.status_count(status) for status in sprig.Status},
             "hash": file.stem,
             "author": data.proof_attempts[sprig.ROOT_HASH][0].claimer,
+            "bounties": data.total_bounties(),
         }
 
     return instances
