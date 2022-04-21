@@ -4,7 +4,7 @@ import dataclasses
 import itertools
 
 try:
-    from NOPEpydantic.dataclasses import dataclass
+    from pydantic.dataclasses import dataclass
 except ImportError:
     print("No support for the web api. Install the dependancies with poetry install.")
     from dataclasses import dataclass
@@ -26,12 +26,15 @@ Time = NewType("Time", int)
 
 ROOT_HASH = Hash("0")
 SPRIG_ADDRESS = Address("@SPRIG")
-BANK = defaultdict(int)
 
 DATA = Path(__file__).parent / "data"
 DATA.mkdir(exist_ok=True)
 TIME_FILE = DATA / "time"
 TIME_FILE.touch()
+BANK_FILE = DATA / "bank"
+BANK_FILE.touch()
+
+BANK = defaultdict(int, json.loads(BANK_FILE.read_text() or "{}"))
 
 INDENT = " " * 4  # For pretty printing
 
@@ -59,6 +62,8 @@ def transfer_money(from_, to, amount, msg="") -> bool:
 
     BANK[to] += amount
     BANK[from_] -= amount
+
+    BANK_FILE.write_text(json.dumps(BANK))
 
     # For now, all transactions are successes, we do not care about non-sufficient balances.
     return True
