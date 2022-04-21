@@ -442,8 +442,6 @@ class Sprig:
     # when we reached timeouts.
     # future_actions: list[tuple[int, Hash]]
 
-    # TODO: this doesn't work between runs
-
     @classmethod
     def start(
         cls,

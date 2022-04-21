@@ -68,10 +68,8 @@ def load(instance_hash: str) -> sprig.Sprig:
 
 
 class SprigInitData(BaseModel):
-    """Test 103294"""
-
-    language_type: str
-    constraints: dict
+    language: str
+    params: dict
     claimer: sprig.Address
     root_claim: str
     sub_claims: list[str]
@@ -89,6 +87,7 @@ class ParameterData(BaseModel):
 class ClaimData(BaseModel):
     statement: str
     status: sprig.Status
+    height: int
     parent: Optional[sprig.Hash]
     proof_attempt: Optional[int]
     claim_nb: Optional[int]
@@ -110,6 +109,20 @@ class SprigSummaryData(BaseModel):
     root_claim: ClaimData
     counts: CountsData
 
+class ProofAttemptData(BaseModel):
+    parent: sprig.Hash
+    claimer: sprig.Address
+    height: int
+    status: sprig.Status
+
+
+class SprigData(BaseModel):
+    hash: sprig.Hash
+    params: ParameterData
+    language: str
+    claims: dict[sprig.Hash, ClaimData]
+    proof_attempts: dict[sprig.Hash, list[ProofAttemptData]]
+
 @api.get("/instances", response_model=dict[sprig.Hash, SprigSummaryData])
 def get_instances_list():
     """Return a dictionnary of all the SPRIG instances along with short details."""
@@ -127,35 +140,38 @@ def get_instances_list():
     return instances
 
 
+@api.post("/instances", response_model=SprigData)
+def add_new_instance(new_instance: SprigInitData):
+    """
+    Start a new instance of the sprig protocol.
+
+    The language is the name of the desired language.
+    """
+
+    try:
+        parameters = sprig.Parameters(**new_instance.params)
+        instance = sprig.Sprig.start(
+            new_instance.language,
+            parameters,
+            new_instance.claimer,
+            new_instance.root_claim,
+            *new_instance.sub_claims,
+        )
+    except AssertionError as e:
+        raise HTTPException(400, e.args)
+
+    h = new_hash()
+    save(instance, h)
+
+    return {
+        "hash": h,
+        "params": instance.params,
+        "language": instance.language.dump(),
+        "claims": instance.claims,
+        "proof_attempts": instance.proof_attempts,
+    }
+
 if False:
-    @api.post("/instances")
-    def add_new_instance(new_instance: SprigInitData):
-        """
-        Start a new instance of the sprig protocol.
-
-        TODO: misleading docstring!
-        The language (resp. parameters) dict must containt the
-        Language (resp. AbstractParameters) type ID as the "type" key.
-        and the other fields are the keyword arguments of the corresponding
-        type.
-        """
-
-        try:
-            parameters = sprig.Parameters(**new_instance.constraints)
-            instance = sprig.Sprig.start(
-                new_instance.language_type,
-                parameters,
-                new_instance.claimer,
-                new_instance.root_claim,
-                *new_instance.sub_claims,
-            )
-        except AssertionError as e:
-            raise HTTPException(400, e.args)
-
-        save(instance, new_hash())
-
-        return instance
-
 
     @api.get("/users")
     def get_users():
