@@ -20,7 +20,7 @@ def test_serialisation(sprig):
     assert new == sprig
 
     d = sprig.dump_as_dict()
-    assert set(d) == {"language_data", "constraints", "claims", "proof_attempts"}
+    assert set(d) == {"language", "params", "claims", "proof_attempts"}
 
 
 @pytest.mark.parametrize(

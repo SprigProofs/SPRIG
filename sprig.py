@@ -5,7 +5,7 @@ import itertools
 import os
 
 try:
-    from pydantic.dataclasses import dataclass
+    from NOPEpydantic.dataclasses import dataclass
 except ImportError:
     print("No support for the web api. Install the dependancies with poetry install.")
     from dataclasses import dataclass
@@ -308,6 +308,7 @@ class DefaultParameters(Parameters):
 class Claim:
     statement: str
     status: Status
+    height: int
     # The parent is None iff it is the root claim.
     parent: Optional[Hash]
     proof_attempt: Optional[int]
@@ -326,8 +327,8 @@ class Claim:
     # if the claim is CHALLENGED, it is the last time to add proofs attempts.
     # this field is undefined on other states.
     open_until: Optional[Time]
-
     # For debugging purposes: those don't need to be stored on the blockchain
+
     money_held: int
     hash: Hash
 
@@ -439,9 +440,9 @@ class Sprig:
 
     # Calls to fixup that will need to be done in the future,
     # when we reached timeouts.
-    future_actions: list[tuple[int, Hash]]
+    # future_actions: list[tuple[int, Hash]]
 
-    HASHES = map(lambda x: Hash(str(x)), itertools.count(1))
+    # TODO: this doesn't work between runs
 
     @classmethod
     def start(
@@ -456,7 +457,7 @@ class Sprig:
 
         root_claim = Claim.new(claim, None, None, None, ROOT_HASH, params)
         language = Language.load(language_type)
-        self = cls(language, params, {ROOT_HASH: root_claim}, {}, [])
+        self = cls(language, params, {ROOT_HASH: root_claim}, {})  #, [])
 
         self.language.validate_top_level(self, root_claim.statement)
 
@@ -493,6 +494,10 @@ SPRIG instance:
  - Claim: {root_claim}
 {indent(claim_str(ROOT_HASH), "   ")}"""
 
+    def next_hash(self, __memory=[0]) -> Hash:
+        """Generate a new hash for a claim. This hash needs to be added to the claims dictionary before other hashes can be generated."""
+        return Hash(str(len(self.claims)))
+
     def status_count(self, status: Status):
         """Count the number of claims of a given status."""
         return sum(1 for claim in self.claims.values() if claim.status is status)
@@ -500,7 +505,7 @@ SPRIG instance:
     # Public interface to add claims/challenges
 
     def challenge(self, skeptic: Address, claim_hash: Hash):
-        assert claim_hash in self.claims, "The claim hash is not valid."
+        assert claim_hash in self.claims, f"The claim hash ({claim_hash}) is not valid. Valid hashes are {list(self.claims.keys())}"
         claim = self.claims[claim_hash]
         assert claim.height > 0, "A machine level claim cannot be challenged."
         assert claim.status is Status.UNCHALLENGED, "This claim cannot be challenged anymore."
@@ -523,17 +528,25 @@ SPRIG instance:
 
         self.language.validate_subclaims(self, claim.statement, *sub_statements)
 
-        claims = [
-            Claim.new(statement, claim, len(self.proof_attempts.get(challenged_claim, [])), i, next(self.HASHES), self.params)
-            for i, statement in enumerate(sub_statements)
-        ]
+        hashes = []
+        for i, statement in enumerate(sub_statements):
+            h = self.next_hash()
+            hashes.append(h)
+            self.claims[h] = Claim.new(
+                statement,
+                claim,
+                len(self.proof_attempts.get(challenged_claim, [])),
+                i, h, self.params,
+            )
         attempt = ProofAttempt(
-            challenged_claim, claimer, [c.hash for c in claims], claim.height - 1
+            challenged_claim, claimer, hashes, claim.height - 1
         )
 
-        self.params.pay_new_proof_attempt(attempt)
+        if not self.params.pay_new_proof_attempt(attempt):
+            for h in hashes:
+                del self.claims[h]
+            return
 
-        self.claims.update({c.hash: c for c in claims})
         # Create the list of proof attempts if it doesn't exist yet and add the attempt.
         self.proof_attempts.setdefault(challenged_claim, []).append(attempt)
 
@@ -545,7 +558,7 @@ SPRIG instance:
         assert claim.status is Status.CHALLENGED, "There is no open challenge for this claim."
         assert claim.height >= 0  # Should not happen
 
-        proof = Claim.new(machine_proof, claim, len(self.proof_attempts.get(challenged_claim, [])), 0, next(self.HASHES), self.params, True)
+        proof = Claim.new(machine_proof, claim, len(self.proof_attempts.get(challenged_claim, [])), 0, self.next_hash(), self.params, True)
         attempt = ProofAttempt(challenged_claim, claimer, [proof.hash], 0)
 
         assert self.params.pay_new_proof_attempt(attempt)
@@ -672,6 +685,7 @@ SPRIG instance:
 
     def dumps(self):
         base = dataclasses.asdict(self)
+        base['language'] = self.language.dump()
         return json.dumps(base)
 
     @staticmethod
@@ -694,16 +708,24 @@ SPRIG instance:
 
     @classmethod
     def loads(cls, s: str):
-        # data = cls.loads_to_dict(s)
-        return cls(**json.loads(s))
+        data = json.loads(s)
+        def mkStatus(d):
+            """Recursivelly convert the status to the correct type."""
+            if 'status' in d:
+                d['status'] = Status(d['status'])
+            for k, v in d.items():
+                if isinstance(v, dict):
+                    mkStatus(v)
+        mkStatus(data)
 
-        constraints = Parameters(**data["constraints"])
+        params = Parameters(**data["params"])
         claims = {h: Claim(**claim) for h, claim in data["claims"].items()}
         attempts = {
             h: [ProofAttempt(**a) for a in attempt] for h, attempt in data["proof_attempts"].items()
         }
+        language = Language.load(data['language'])
 
-        return cls(constraints, data["language"], claims, attempts)
+        return cls(language, params, claims, attempts)
 
 def time_passes(sprig, amount=1):
     sprig.distribute_all_bets()
@@ -888,8 +910,8 @@ def main():
         verification_cost=1,
     )
 
-    #play_tictactoe(level, costs, recommended_constraints, MICHAEL, DIEGO, CLEMENT)
-    play_lean(level, costs, recommended_constraints, MICHAEL, DIEGO, CLEMENT)
+    play_tictactoe(level, costs, recommended_constraints, MICHAEL, DIEGO, CLEMENT)
+    # play_lean(level, costs, recommended_constraints, MICHAEL, DIEGO, CLEMENT)
 
 if __name__ == "__main__":
     main()

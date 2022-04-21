@@ -12,7 +12,7 @@ ctx = " O plays X wins"
 
 def sprig_started():
     level = 6
-    recommended_constraints = Constraints(
+    recommended_constraints = Parameters(
         root_height=level - 1,
         max_length=1000,
         time_for_questions=2,

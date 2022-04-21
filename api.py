@@ -4,18 +4,20 @@ This file contains the code of the API / Server.
 It reads and updates the sprig instances in the data/ folder.
 """
 
+from lib2to3.pgen2.token import OP
 import os
 import json
 from collections import defaultdict
 from contextlib import contextmanager
 from pathlib import Path
+from typing import Optional
 
 from fastapi import FastAPI, HTTPException
 from fastapi.params import Depends
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 
-os.environ["BANK_FILE"] = str((Path(__file__).parent / "data" / "api_bank.json").absolute())
+os.environ["BANK_FILE"] = str((Path(__file__).parent / "data" / "api_bank").absolute())
 
 import languages.base
 import sprig
@@ -85,15 +87,30 @@ class ParameterData(BaseModel):
     verification_cost: int
 
 class ClaimData(BaseModel):
-    pass
+    statement: str
+    status: sprig.Status
+    parent: Optional[sprig.Hash]
+    proof_attempt: Optional[int]
+    claim_nb: Optional[int]
+    skeptic: Optional[sprig.Address]
+    last_modification: sprig.Time
+    open_until: Optional[sprig.Time]
+    hash: sprig.Hash
 
-class SprigData(BaseModel):
+class CountsData(BaseModel):
+    challenged: int
+    unchallenged: int
+    rejected: int
+    validated: int
+
+
+class SprigSummaryData(BaseModel):
     constraints: ParameterData
     language: str
     root_claim: ClaimData
     counts: CountsData
 
-@api.get("/instances", response_model=)
+@api.get("/instances", response_model=dict[sprig.Hash, SprigSummaryData])
 def get_instances_list():
     """Return a dictionnary of all the SPRIG instances along with short details."""
     instances = {}
@@ -110,111 +127,112 @@ def get_instances_list():
     return instances
 
 
-@api.post("/instances")
-def add_new_instance(new_instance: SprigInitData):
-    """
-    Start a new instance of the sprig protocol.
+if False:
+    @api.post("/instances")
+    def add_new_instance(new_instance: SprigInitData):
+        """
+        Start a new instance of the sprig protocol.
 
-    TODO: misleading docstring!
-    The language (resp. parameters) dict must containt the
-    Language (resp. AbstractParameters) type ID as the "type" key.
-    and the other fields are the keyword arguments of the corresponding
-    type.
-    """
+        TODO: misleading docstring!
+        The language (resp. parameters) dict must containt the
+        Language (resp. AbstractParameters) type ID as the "type" key.
+        and the other fields are the keyword arguments of the corresponding
+        type.
+        """
 
-    try:
-        parameters = sprig.Parameters(**new_instance.constraints)
-        instance = sprig.Sprig.start(
-            new_instance.language_type,
-            parameters,
-            new_instance.claimer,
-            new_instance.root_claim,
-            *new_instance.sub_claims,
-        )
-    except AssertionError as e:
-        raise HTTPException(400, e.args)
+        try:
+            parameters = sprig.Parameters(**new_instance.constraints)
+            instance = sprig.Sprig.start(
+                new_instance.language_type,
+                parameters,
+                new_instance.claimer,
+                new_instance.root_claim,
+                *new_instance.sub_claims,
+            )
+        except AssertionError as e:
+            raise HTTPException(400, e.args)
 
-    save(instance, new_hash())
+        save(instance, new_hash())
 
-    return instance
-
-
-@api.get("/users")
-def get_users():
-    """Return a mapping User -> Account Balance."""
-    with load_users() as users:
-        return users
+        return instance
 
 
-@api.get("/{instance_hash}", response_model=sprig.Sprig)
-def get_instance(instance_hash: str):
-    """All the metadata of one SPRIG instance."""
-    return json.loads(path_from_hash(instance_hash).read_text())
+    @api.get("/users")
+    def get_users():
+        """Return a mapping User -> Account Balance."""
+        with load_users() as users:
+            return users
 
 
-@api.get("/{instance_hash}/{claim_hash}")
-def get_claim(claim_hash: str, instance: sprig.Sprig = Depends(load)):
-    """Return all the details about one claim."""
-    return instance.claims[claim_hash]
+    @api.get("/{instance_hash}", response_model=sprig.Sprig)
+    def get_instance(instance_hash: str):
+        """All the metadata of one SPRIG instance."""
+        return json.loads(path_from_hash(instance_hash).read_text())
 
 
-class ChallengeRecord(BaseModel):
-    balance: int
-    claim: sprig.Claim
+    @api.get("/{instance_hash}/{claim_hash}")
+    def get_claim(claim_hash: str, instance: sprig.Sprig = Depends(load)):
+        """Return all the details about one claim."""
+        return instance.claims[claim_hash]
 
 
-@api.post("/{instance_hash}/{claim_hash}/challenge")
-def new_challenge(skeptic: sprig.Address, claim_hash: str, instance_hash: str):
-    """Challenge a claim that isn't yet challenged and still active."""
+    class ChallengeRecord(BaseModel):
+        balance: int
+        claim: sprig.Claim
 
-    instance = load(instance_hash)
-    with load_users() as users:
-        instance.challenge(skeptic, claim_hash)
+
+    @api.post("/{instance_hash}/{claim_hash}/challenge")
+    def new_challenge(skeptic: sprig.Address, claim_hash: str, instance_hash: str):
+        """Challenge a claim that isn't yet challenged and still active."""
+
+        instance = load(instance_hash)
+        with load_users() as users:
+            instance.challenge(skeptic, claim_hash)
+            instance.distribute_all_bets()
+            sprig.now(1)
+            # TODO: payment in Sprig, not just a default of 1
+            users[skeptic] = users.get(skeptic, 100) - 1
+
+            save(instance, instance_hash)
+
+            return ChallengeRecord(balance=users[skeptic], claim=instance.claims[claim_hash])
+
+
+    @api.get("/{instance_hash}/{claim_hash}/proof_attempts")
+    def get_proof_attempts(claim_hash: str, instance: sprig.Sprig = Depends(load)):
+        """Return a list of all proof attempts for a claim.
+        A proof attempt is a list of the hashes of the claims that make up the proof."""
+        return instance.proof_attempts.get(claim_hash, [])
+
+
+    class NewProofAttempt(BaseModel):
+        claimer: sprig.Address
+        claims: list[str]
+        machine_level: bool = False
+
+
+    class AnswerRecord(BaseModel):
+        balance: int
+        attempt: sprig.ProofAttempt
+
+
+    @api.post("/{instance_hash}/{claim_hash}/proof_attempts")
+    def add_proof_attempt(attempt: NewProofAttempt, claim_hash: str, instance_hash: str):
+        """Create a new proof attempt of a challenged claim."""
+
+        instance = load(instance_hash)
+
+        if attempt.machine_level:
+            assert len(attempt.claims) == 1
+            instance.answer_low_level(claim_hash, attempt.claimer, *attempt.claims)
+        else:
+            instance.answer(claim_hash, attempt.claimer, *attempt.claims)
+
         instance.distribute_all_bets()
         sprig.now(1)
-        # TODO: payment in Sprig, not just a default of 1
-        users[skeptic] = users.get(skeptic, 100) - 1
-
         save(instance, instance_hash)
 
-        return ChallengeRecord(balance=users[skeptic], claim=instance.claims[claim_hash])
-
-
-@api.get("/{instance_hash}/{claim_hash}/proof_attempts")
-def get_proof_attempts(claim_hash: str, instance: sprig.Sprig = Depends(load)):
-    """Return a list of all proof attempts for a claim.
-    A proof attempt is a list of the hashes of the claims that make up the proof."""
-    return instance.proof_attempts.get(claim_hash, [])
-
-
-class NewProofAttempt(BaseModel):
-    claimer: sprig.Address
-    claims: list[str]
-    machine_level: bool = False
-
-
-class AnswerRecord(BaseModel):
-    balance: int
-    attempt: sprig.ProofAttempt
-
-
-@api.post("/{instance_hash}/{claim_hash}/proof_attempts")
-def add_proof_attempt(attempt: NewProofAttempt, claim_hash: str, instance_hash: str):
-    """Create a new proof attempt of a challenged claim."""
-
-    instance = load(instance_hash)
-
-    if attempt.machine_level:
-        assert len(attempt.claims) == 1
-        instance.answer_low_level(claim_hash, attempt.claimer, *attempt.claims)
-    else:
-        instance.answer(claim_hash, attempt.claimer, *attempt.claims)
-
-    instance.distribute_all_bets()
-    sprig.now(1)
-    save(instance, instance_hash)
-
-    return AnswerRecord(balance=42, attempt=instance.proof_attempts[claim_hash][-1])
+        return AnswerRecord(balance=42, attempt=instance.proof_attempts[claim_hash][-1])
 
 
 if __name__ == "__main__":
