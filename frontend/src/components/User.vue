@@ -21,10 +21,10 @@ defineProps({
                 <Price amount="6920" class="font-bold bg-blue-200 px-3 py-1 rounded-md"/>
             </div>
             <p>Proof attempts 
-                <SimpleStats yes="7" no="4" maybe="5"/>
+                <SimpleStats :yes="7" :no="4" :maybe="5"/>
             </p>
             <p>Challenges
-                <SimpleStats yes="2" no="6" maybe="1"/>
+                <SimpleStats :yes="2" :no="6" :maybe="1"/>
             </p>
 
             <button 

@@ -9,6 +9,8 @@ import * as relativeTime from 'dayjs/plugin/relativeTime'  // for .humanize()
 dayjs.extend(duration)
 dayjs.extend(relativeTime)
 
+import { ElNotification } from "element-plus";
+
 // TODO: to be removed
 const NOW = 13;
 
@@ -192,7 +194,7 @@ class Parameters {
     readonly verification_cost: number
 }
 
-const API_BASE = "http://localhost:8600/"
+const API_BASE = "http://localhost:8601/"
 
 const api = {
     get(path: string[], callback: FetchCallback<any>): void {
@@ -203,6 +205,12 @@ const api = {
                     callback(data)
                 })
             }
+        }).catch(err => {
+            ElNotification.error({
+                title: "Error fetching data",
+                message: `${url}\n${err}`,
+            })
+            console.error('Fetch error from', url, err)
         })
     },
     post(path: string[], query: Record<string, string>, body: any, callback: FetchCallback<any>) {

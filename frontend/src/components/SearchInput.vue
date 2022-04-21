@@ -1,7 +1,7 @@
 <script setup>
 import { reactive } from 'vue';
 import StatusTag from './StatusTag.vue';
-import { claims, Status, STATUSES, NOW, decided } from '../sprig'
+import { api, claims, Status, STATUSES, NOW, decided } from '../sprig'
 import ClaimMd from './ClaimMd.vue';
 
 const statuses = reactive({
@@ -19,7 +19,14 @@ const sort_methods = reactive([NEW, REWARD, OPEN_UNTIL])
 const types = reactive({
     "Claims": true,
     "Proof attempts": false,
+    "Instances": false,
+    "Users": false
 })
+
+var instances = reactive({});
+api.fetchInstanceList(l => {
+    instances = l;
+});
 
 function startDrag(event, method) {
     event.dataTransfer.dropEffect = 'move';
@@ -133,5 +140,8 @@ function results() {
                 <ClaimMd :claim="result"></ClaimMd>
             </li>
         </TransitionGroup>
+        <div>
+            {{ instances }}
+        </div>
     </div>
 </template>

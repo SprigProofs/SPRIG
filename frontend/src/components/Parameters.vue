@@ -26,7 +26,6 @@ for (let h = props.params.root_height - 1; h >= 0; h--) {
 }
 
 function rowHighlight(data) {
-    console.log(data, props.highlight);
     if (props.highlight === props.params.root_height - data.rowIndex - 1) {
         return "highlighted-row";
     }
@@ -37,6 +36,7 @@ function rowHighlight(data) {
 
 <template>
 
+    <div>
     <div class="flex space-x-12 pb-4">
         <LabeledData label="Max depth">{{ params.root_height }}</LabeledData>
         <LabeledData label="Time for questions">{{ params.time_for_questions.humanize() }}</LabeledData>
@@ -94,6 +94,7 @@ function rowHighlight(data) {
             </el-table-column>
         </el-table>
 
+    </div>
     </div>
 
 </template>
