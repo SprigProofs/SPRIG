@@ -57,6 +57,11 @@
                 >
                 <LabeledData :label="title" >{{ count }}</LabeledData>
             </li>
+            <li key="Total Bounties"
+                class="bg-white p-4 rounded shadow " >
+                <LabeledData label="Available bounties" >
+                    <Price :amount="totalBounties"/></LabeledData>
+            </li>
         </ul>
     
         <div class="mx-12 flex flex-col space-y-8 ">
@@ -87,12 +92,27 @@
 
 <script setup>
 import LabeledData from './LabeledData.vue';
+import { api } from "../sprig";
+import * as _ from 'lodash';
+import { reactive, ref } from 'vue';
+import Price from './Price.vue';
 
-const stats = {
-    Claims: 27,
-    Challenges: 12,
-    Proofs: 7,
-    "Available bounties": 10,
-}
+const stats = reactive({
+    Claims: -1,
+    Challenges: -1,
+    Proofs: -1,
+});
+const totalBounties = ref(-1);
+
+// TODO: use api.getStats() or something similar with values computed on the server.
+api.fetchAllInstances(data => {
+    console.log(data)
+    const instances = _.values(data)
+    stats.Claims = _.sumBy(instances, s => _.size(s.claims))
+    stats.Proofs = _.sumBy(instances, s => _.size(s.proof_attempts))
+    stats.Challenges = _.sumBy(instances, s => 1 + _.size(_.filter(s.claims, c => c.skeptic)))
+    totalBounties.value = _.sumBy(instances, s => s.totalBounties());
+})
+
 
 </script>

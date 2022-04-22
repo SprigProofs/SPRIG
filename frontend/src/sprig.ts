@@ -87,6 +87,14 @@ class Claim {
             return "Unknown statement";
         }
     }
+
+    challengeBounty(params: Parameters) {
+        if (this.status === Status.CHALLENGED) {
+            return params.question_bounties[this.height]
+        } else {
+            return 0;
+        }
+    }
 }
 
 interface StatusCounts {
@@ -106,19 +114,51 @@ interface SprigSummary {
     bounties: number
 }
 
-interface ProofAttempt {
+class ProofAttempt {
     claimer: string
     claims: string[]
     height: number
-    time: number
+    time: dayjs.Dayjs
     status: Status
+
+    constructor(attempt: Record<string, any>) {
+        this.claimer = attempt.claimer
+        this.claims = attempt.claims
+        this.height = attempt.height
+        this.time = dayjs(attempt.time)
+        this.status = attempt.status
+    }
+
+    moneyHeld(params: Parameters): number {
+        if (!decided(this.status)) {
+            return params.upstakes[this.height] + params.downstakes[this.height];
+        } else {
+            return 0;
+        }
+    }
 }
 
-interface Sprig {
+class Sprig {
     claims: Record<string, Claim>
-    language_data: Record<string, any> & { type: string }
+    language: string
     proof_attempts: Record<string, ProofAttempt[]>
-    constraints: Record<string, any>
+    params: Parameters
+
+    constructor(sprig: Record<string, any>) {
+        this.claims = _.mapValues(sprig.claims, (claim) => new Claim(claim));
+        this.language = sprig.language;
+        this.proof_attempts = _.mapValues(sprig.proof_attempts, (attempts) => _.map(attempts, (attempt) => new ProofAttempt(attempt)));
+        this.params = sprig.params;
+    }
+
+    totalBounties() {
+        const open_challenges = _.sumBy(_.values(this.claims), 
+            (claim) => claim.challengeBounty(this.params));
+        const open_attempts = _.sumBy(_.values(this.proof_attempts), 
+            (attempts) => _.sumBy(attempts, a => a.moneyHeld(this.params)));
+    
+        return open_challenges + open_attempts;
+    }
 }
 
 interface ChallengeRecord {
@@ -205,7 +245,10 @@ const api = {
         this.get(["instances"], data => callback(_.mapValues(data, convert.sprigSummary)))
     },
     fetchInstance(hash: string, callback: FetchCallback<Sprig>) {
-        this.get([hash], callback)
+        this.get([hash], data => callback(new Sprig(data)))
+    },
+    fetchAllInstances(callback: FetchCallback<Record<string, Sprig>>) {
+        this.get(["everything"], data => callback(_.mapValues(data, s => new Sprig(s))))
     },
     challenge(instance: string, claim: string, skeptic: string, callback: FetchCallback<ChallengeRecord>) {
         this.post([instance, claim, "challenge"], {skeptic: skeptic}, null, callback)
