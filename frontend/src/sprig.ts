@@ -40,25 +40,6 @@ function decided(status: Status) {
     return status === Status.VALIDATED || status === Status.REJECTED;
 }
 
-
-function claimTitle(claim: Claim) {
-    const m = claim.statement.match(/theorem \S+\s/ms);
-    if (m) {
-        return m[0].trim();
-    } else {
-        return "Unknown title";
-    }
-}
-
-function claimStatement(claim: Claim) {
-    const m = claim.statement.match(/theorem \S+\s(.*):=/ms);
-    if (m) {
-        return m[1].trim();
-    } else {
-        return "Unknown statement";
-    }
-}
-
 function humanize(date: dayjs.Dayjs, suffix=true) {
     return dayjs.duration(date.diff(dayjs())).humanize(suffix);
 }
@@ -96,54 +77,7 @@ const params: Parameters = {
     verification_cost: 7
 }
 
-const claims: Claim[] = [
-    {
-        hash: "30fb30",
-        statement: `theorem euclidean_geometry.dist_sq_eq_dist_sq_add_dist_sq_iff_angle_eq_pi_div_two 
-    {V : Type u_1} {P : Type u_2} [inner_product_space ℝ V] [metric_space P] [normed_add_torsor V P] (p1 p2 p3 : P) :
-    (dist p1 p3) * dist p1 p3 = (dist p1 p2) * dist p1 p2 + (dist p3 p2) * dist p3 p2 ↔ ∠ p1 p2 p3 = real.pi / 2 := 
-    [big proof]`,
-        status: Status.CHALLENGED,
-        parent: "a884ff2",
-        last_modification: dayjs().subtract(1, 'day'),
-        created_at: dayjs().subtract(1, 'day'),
-        open_until: dayjs().add(9, 'day'),
-        height: 3,
-        skeptic: null,
-    }, {
-        hash: "9f4024",
-        statement: "theorem infinitude_of_primes : set.infinite { p | nat.prime p } := [big proof]",
-        status: Status.UNCHALLENGED,
-        parent: "a884ff2",
-        last_modification: dayjs().subtract(3, 'day'),
-        created_at: dayjs().subtract(3, 'day'),
-        open_until: dayjs().add(7, 'day'),
-        height: 2,
-        skeptic: null,
-    }, {
-        hash: "cccccc",
-        statement: "theorem infinitude_of_primes : set.infinite { p | nat.prime p } := [big proof]",
-        status: Status.VALIDATED,
-        parent: "a884ff2",
-        last_modification: dayjs().subtract(2, 'day'),
-        created_at: dayjs().subtract(2, 'day'),
-        open_until: dayjs().add(8, 'day'),
-        height: 3,
-        skeptic: null,
-    }, {
-        hash: "dddddd",
-        statement: "theorem infinitude_of_primes : set.infinite { p | nat.prime p } := [big proof]",
-        status: Status.REJECTED,
-        parent: "a884ff2",
-        last_modification: dayjs().subtract(4, 'day'),
-        created_at: dayjs().subtract(4, 'day'),
-        open_until: dayjs().add(7, 'day'),
-        height: 0,
-        skeptic: null,
-    }
-]
-
-interface Claim {
+class Claim {
     statement: string
     height: number
     hash: string
@@ -153,6 +87,39 @@ interface Claim {
     last_modification: dayjs.Dayjs
     created_at: dayjs.Dayjs
     skeptic: string | null
+
+    constructor(claim: Record<string, any>) {
+        this.statement = claim.statement
+        this.height = claim.height
+        this.hash = claim.hash
+        this.parent = claim.parent
+        this.status = claim.status
+        this.open_until = dayjs(claim.open_until)
+        this.last_modification = dayjs(claim.last_modification)
+        this.created_at = dayjs(claim.created_at)
+        this.skeptic = claim.skeptic
+    }
+
+    decided() {
+        return decided(this.status);
+    }
+    title() {
+        const m = this.statement.match(/theorem \S+\s/ms);
+        if (m) {
+            return m[0].trim();
+        } else {
+            return "Unknown title";
+        }
+    }
+
+    shortStatement(claim: Claim) {
+        const m = claim.statement.match(/theorem \S+\s(.*):=/ms);
+        if (m) {
+            return m[1].trim();
+        } else {
+            return "Unknown statement";
+        }
+    }
 }
 
 interface StatusCounts {
@@ -210,24 +177,11 @@ class Parameters {
 const API_BASE = "http://localhost:8601/"
 
 const convert = {
-    claim(claim: Record<string, any>): Claim {
-        return {
-            hash: claim.hash,
-            statement: claim.statement,
-            status: claim.status,
-            parent: claim.parent,
-            last_modification: dayjs(claim.last_modification),
-            created_at: dayjs(claim.created_at),
-            open_until: dayjs(claim.open_until),
-            height: claim.height,
-            skeptic: claim.skeptic,
-        }
-    },
     sprigSummary(summary: Record<string, any>): SprigSummary {
         return {
             language: summary.language,
             params: summary.params,
-            root_claim: convert.claim(summary.root_claim),
+            root_claim: new Claim(summary.root_claim),
             counts: summary.counts,
             hash: summary.hash,
             author: summary.author,
@@ -298,7 +252,58 @@ const api = {
 
 }
 
-export {NOW, claimTitle, claimStatement, fmtDate,
+const claims: Claim[] = [
+    new Claim({
+        hash: "30fb30",
+        statement: `theorem euclidean_geometry.dist_sq_eq_dist_sq_add_dist_sq_iff_angle_eq_pi_div_two 
+    {V : Type u_1} {P : Type u_2} [inner_product_space ℝ V] [metric_space P] [normed_add_torsor V P] (p1 p2 p3 : P) :
+    (dist p1 p3) * dist p1 p3 = (dist p1 p2) * dist p1 p2 + (dist p3 p2) * dist p3 p2 ↔ ∠ p1 p2 p3 = real.pi / 2 := 
+    [big proof]`,
+        status: Status.CHALLENGED,
+        parent: "a884ff2",
+        last_modification: dayjs().subtract(1, 'day'),
+        created_at: dayjs().subtract(1, 'day'),
+        open_until: dayjs().add(9, 'day'),
+        height: 3,
+        skeptic: null,
+    }),
+    new Claim({
+        hash: "9f4024",
+        statement: "theorem infinitude_of_primes : set.infinite { p | nat.prime p } := [big proof]",
+        status: Status.UNCHALLENGED,
+        parent: "a884ff2",
+        last_modification: dayjs().subtract(3, 'day'),
+        created_at: dayjs().subtract(3, 'day'),
+        open_until: dayjs().add(7, 'day'),
+        height: 2,
+        skeptic: null,
+    }), 
+    new Claim({
+        hash: "cccccc",
+        statement: "theorem infinitude_of_primes : set.infinite { p | nat.prime p } := [big proof]",
+        status: Status.VALIDATED,
+        parent: "a884ff2",
+        last_modification: dayjs().subtract(2, 'day'),
+        created_at: dayjs().subtract(2, 'day'),
+        open_until: dayjs().add(8, 'day'),
+        height: 3,
+        skeptic: null,
+    }),
+    new Claim({
+        hash: "dddddd",
+        statement: "theorem infinitude_of_primes : set.infinite { p | nat.prime p } := [big proof]",
+        status: Status.REJECTED,
+        parent: "a884ff2",
+        last_modification: dayjs().subtract(4, 'day'),
+        created_at: dayjs().subtract(4, 'day'),
+        open_until: dayjs().add(7, 'day'),
+        height: 0,
+        skeptic: null,
+    })
+]
+
+
+export {NOW, fmtDate,
     humanize, 
     claims, params, api, STATUSES, STATUS_DISPLAY_NAME,
     decided, Claim, SprigSummary, Sprig, Status,

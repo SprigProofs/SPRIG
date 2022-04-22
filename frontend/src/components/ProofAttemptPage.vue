@@ -14,7 +14,7 @@
                 </div>
             </div>
             <h1 class="text-3xl font-bold font-title py-2">
-                {{ claimTitle(claim) }}
+                {{ claim.title() }}
             </h1>
             <div class="flex space-x-4">
                 <div>
@@ -142,7 +142,7 @@
 
 <script setup>
 
-import {claims, claimTitle, params, humanize} from './../sprig.ts';
+import {claims, params, humanize} from './../sprig.ts';
 import { MoreFilled, Plus } from '@element-plus/icons-vue'
 import StatusTag from './StatusTag.vue';
 import Algo from './Algo.vue';

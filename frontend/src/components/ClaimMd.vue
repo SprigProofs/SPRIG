@@ -30,11 +30,11 @@
             </div>
         </div>
         <h3 class="text-lg pt-2  ">
-            <span class="small-title break-all">{{ claimTitle(claim) }}</span>
+            <span class="small-title break-all">{{ claim.title() }}</span>
             <span class="text-sm text-gray-700"> by cozyfractal</span>
             </h3> 
         <code class="text-sm flex-grow">
-          <pre class="whitespace-pre-wrap">{{ claimStatement(claim) }}</pre>
+          <pre class="whitespace-pre-wrap">{{ claim.shortStatement() }}</pre>
         </code>
         <!-- Hint display  -->
         <div v-if="false"
@@ -191,7 +191,7 @@
 
 <script setup>
     import { reactive, ref } from 'vue';
-    import { NOW, decided, Status, claimTitle, claimStatement, fmtDate, humanize} from '../sprig';
+    import { NOW, decided, Status, fmtDate, humanize} from '../sprig';
     import StatusTag from './StatusTag.vue';
     import Price from './Price.vue';
 

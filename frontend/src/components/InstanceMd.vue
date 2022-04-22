@@ -16,7 +16,7 @@
             <span class="text-sm text-gray-700"> by <User :name="instance.author"/></span>
             </h3> 
         <code class="text-sm flex-grow">
-          <pre class="whitespace-pre-wrap">{{ claimStatement(claim) }}</pre>
+          <pre class="whitespace-pre-wrap">{{ claim.shortStatement() }}</pre>
         </code>
         
         <ul class="grid grid-cols-4 gap-4 pt-4 max-w-md"
@@ -57,7 +57,7 @@
 
 <script setup>
     import { reactive, ref } from 'vue';
-    import { NOW, decided, Status, claimTitle, claimStatement, fmtDate, humanize} from '../sprig';
+    import { NOW, decided, Status, fmtDate, humanize} from '../sprig';
     import StatusTag from './StatusTag.vue';
     import Price from './Price.vue';
     import { computed } from '@vue/reactivity';
