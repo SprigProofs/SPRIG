@@ -76,6 +76,50 @@
 
         </div>
     </div>
+    
+    <div class="
+        my-8
+        border-y border-black 
+        bg-gradient-to-tr to-purple-200 from-blue-200">
+        <div class="max-w-3xl mx-auto px-12 pt-8">
+            <h2 class="font-title font-bold text-2xl
+                pb-4 ">Meet the team</h2>
+            <ul class="grid grid-cols-3 gap-8 ">
+                <li v-for="p in team"
+                    class=" ">
+                    <div class="shadow rounded w-full h-36 bg-cover bg-center"
+                        :style="'background-image: url(\'' + p.image + '\');'"
+                        ></div>
+                    <div class="pt-2">
+                        <div class="font-semibold">{{ p.name }}</div>
+                        <div class="text-sm tracking-tight text-blue-900">{{ p.title }}</div>
+                    </div>
+                </li>
+            </ul>
+
+            <div class="flex bg-white -mb-12 border shadow -mx6 p-6 items-center justify-between mt-10 ">
+                
+                <div>
+                    <h3 class="font-title font-bold text-xl">We are hiring</h3>
+                    <p class="max-w-xs text-gray-700 pt-1">
+                        We are looking for a curious and ambitious part-time developer. 
+                        Experience with blockchain technologies is not required.
+                    </p>
+                </div>
+                    
+                    <div></div>
+                <a href="mailto:info@sprig.ch"
+                    class="flex flex-col items-center mt-2 mr-6 border-2 border-slate-500 bg-white py-3 px-6 shadow 
+                    hover:shadow-md transition hover:bg-blue-50 ">
+                    <span class="font-semibold">Work together</span>
+                    <span class="text-sm text-gray-600"
+                        >info@sprig.ch</span>
+
+                </a>
+            </div>
+        </div>
+    </div>
+
     <div class="h-64"></div>
 </div>
 </template>
@@ -103,6 +147,34 @@ api.fetchAllInstances(data => {
     stats.Challenges = _.sumBy(instances, s => 1 + _.size(_.filter(s.claims, c => c.skeptic)))
     totalBounties.value = _.sumBy(instances, s => s.totalBounties());
 })
+
+const team = [
+    {
+        name: 'Diego Dorn',
+        title: 'Lead developer',
+        image: '/diego.jpg',
+    }, {
+        name: 'Yann Aguettaz',
+        title: 'Developer',
+        image: 'https://people.epfl.ch/private/common/photos/links/337335.jpg?ts=1650665060',
+    }, {
+        name: 'Clément Hongler',
+        title: 'Research',
+        image: 'https://www.hongler.org/clement-2015.jpg',
+    }, {
+        name: 'Franck Gabriel',
+        title: 'Cool kid',
+        image: 'https://www.iliketowastemytime.com/sites/default/files/fractal-art-silvia-cordedda3.png',
+    }, {
+        name: 'Sylvain Carré',
+        title: 'Economist',
+        image: 'https://www.iliketowastemytime.com/sites/default/files/fractal-art-silvia-cordedda3.png',
+    }, {
+        name: 'Christophe Nussbaumer',
+        title: 'Cool kid',
+        image: 'https://www.iliketowastemytime.com/sites/default/files/fractal-art-silvia-cordedda3.png',
+    }, 
+]
 
 
 </script>
