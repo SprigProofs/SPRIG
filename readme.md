@@ -67,9 +67,10 @@ This will install:
 - [Vue 3](https://vuejs.org/): the frontend framework that provides components
 - [lodash](https://lodash.com/): a collection of utility functions
 - [dayjs](https://day.js.org/): utilities to manipulate dates and times
-- [tailwindcss](https://tailwindcss.com/): a CSS framework
-- [element-plus](element-plus.org/): a collection of ready-made components
-- [oh-vue-icons](oh-vue-icons.js.org/): a collection of icons
+- [Tailwindcss](https://tailwindcss.com/): a CSS framework
+- [Element+](element-plus.org/): a collection of ready-made components
+- [Oh Vue Icons](oh-vue-icons.js.org/): a collection of icons
+- [Vue Router](https://router.vuejs.org/): gestion of url and navigation between pages
 
 
 ## Dependencies

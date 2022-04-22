@@ -12,7 +12,8 @@
     "element-plus": "^2.1.9",
     "lodash": "^4.17.21",
     "oh-vue-icons": "^1.0.0-rc2",
-    "vue": "^3.2.25"
+    "vue": "^3.2.25",
+    "vue-router": "^4.0.14"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^2.2.0",
