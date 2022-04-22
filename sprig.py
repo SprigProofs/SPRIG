@@ -503,7 +503,7 @@ SPRIG instance:
         assert claim.status is Status.CHALLENGED, f"There is no open challenge for: {claim}"
         assert claim.height > 1, "Use answer_low_level instead"
 
-        self.language.validate_subclaims(self, claim.statement, *sub_statements)
+        self.language.validate_subclaims(self, claim.statement, self.gather_claims(self.claims[challenged_claim]), *sub_statements)
 
         claims = [
             Claim.new(statement, claim, len(self.proof_attempts.get(challenged_claim, [])), i, next(self.HASHES), self.params)
