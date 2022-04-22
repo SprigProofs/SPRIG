@@ -57,7 +57,7 @@
 
 <script setup>
     import { reactive, ref } from 'vue';
-    import { NOW, decided, Status, fmtDate, humanize} from '../sprig';
+    import { NOW, decided, Status, humanize} from '../sprig';
     import StatusTag from './StatusTag.vue';
     import Price from './Price.vue';
     import { computed } from '@vue/reactivity';

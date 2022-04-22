@@ -43,29 +43,6 @@ function decided(status: Status) {
 function humanize(date: dayjs.Dayjs, suffix=true) {
     return dayjs.duration(date.diff(dayjs())).humanize(suffix);
 }
-
-function fmtDate(time: number, short=true) {
-    const past = time <= NOW
-    const dt = Math.abs(time - NOW)
-    const hours = Math.floor(dt / 6)
-    const minutes = dt % 6 * 9
-    const hour_text = short ? "h" : hours > 1 ? " hours" : " hour"
-    const min_text = short ? "m" : minutes > 1 ? " mins" : " min"
-    var parts = ""
-    if (hours > 0) {
-        parts += hours + hour_text + " "
-    }
-    if (minutes > 0) {
-        parts += minutes + min_text + " "
-    }
-
-    if (past) {
-        return parts + "ago"
-    } else {
-        return parts
-    }
-}
-
 const params: Parameters = {
     root_height: 4,
     max_length: 2000,
@@ -303,8 +280,7 @@ const claims: Claim[] = [
 ]
 
 
-export {NOW, fmtDate,
-    humanize, 
+export {NOW, humanize, 
     claims, params, api, STATUSES, STATUS_DISPLAY_NAME,
     decided, Claim, SprigSummary, Sprig, Status,
     StatusCounts, ProofAttempt};
