@@ -79,8 +79,8 @@ class Claim {
         }
     }
 
-    shortStatement(claim: Claim) {
-        const m = claim.statement.match(/theorem \S+\s(.*):=/ms);
+    shortStatement() {
+        const m = this.statement.match(/theorem \S+\s(.*):=/ms);
         if (m) {
             return m[1].trim();
         } else {

@@ -63,7 +63,7 @@
     import { computed } from '@vue/reactivity';
     import LabeledData from './LabeledData.vue';
     import User from './User.vue';
-import StatusIcon from './StatusIcon.vue';
+    import StatusIcon from './StatusIcon.vue';
 
     const props = defineProps({
         instance: {
