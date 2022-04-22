@@ -7,17 +7,7 @@
         pb-24 border-b border-black
         bg-gradient-to-br from-blue-200 to-purple-200">
 
-        <header class="fixed z-10 shadow-2xl w-screen border-b border-black bg-white">
-            <ul class="flex space-x-6 py-3 px-12 max-w-3xl mx-auto">
-                <li>Home</li>
-                <li>Explore</li>
-                <li>Work with us</li>
-                <li>About</li>
-                <li class="flex-grow text-right">Login</li>
-            </ul>
-        </header>
-
-        <div class="max-w-3xl mx-auto pt-24">
+        <div class="max-w-3xl mx-auto pt-12">
             <div></div>
 
             <div class="home-rectangle p-8 bg-gray-100/30 ml-4 w-96 " >

@@ -122,7 +122,7 @@ function results() {
 </script>
 
 <template>
-    <div class="max-w-5xl mx-auto">
+    <div class="max-w-5xl mx-auto p-8">
         <input type="text" 
             v-model="search"
             class="border rounded-sm w-full p-2 mb-6"
