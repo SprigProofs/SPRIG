@@ -29,16 +29,17 @@ It can handle claim and challenges, stakes and bounties and updates SPRIG Trees 
 
 ## Languages
 
-Status: *In Progress*
+Status: *Almost Done*
 Dependencies: Python 3.8
 
 Languages specify the format of claims and the low level verification mechanisms.
-The only completed language is currently a toy language to represent Tic Tac Toe games.
-We currently study how to interface [Lean 3](https://leanprover.github.io/).
+Support for [Lean 3](https://leanprover.github.io/) should work in most cases, 
+but need more testing.
+We implemented a toy language to represent Tic Tac Toe games, which is complete.
 
 ## Web API / Server
 
-Status: *Broken* (not adapted to the last updates of the library)
+Status: *In progress*
 Dependencies: Python 3.8, FastAPI
 
 The API / Server is the interface from the library code to the web, so that modifications of SPRIG trees
@@ -47,20 +48,29 @@ and communicates via the standard JSON format.
 
 ## Web Interface
 
-Status: *To be rewritten*
+Status: *In progress*
 Dependencies: Vue 3, Vite
 
 The Web interface is the user facing part of the project.
 
 ### For developpers
 
-We use the [Vite](https://vitejs.dev/) build tool, which is the standard for Vue 3 projects.
 All dependencies for the web can be installed with
 
 ```shell script
 cd frontend
 npn install
 ```
+
+This will install:
+- [Vite](https://vitejs.dev/): the build tool
+- [Vue 3](https://vuejs.org/): the frontend framework that provides components
+- [lodash](https://lodash.com/): a collection of utility functions
+- [dayjs](https://day.js.org/): utilities to manipulate dates and times
+- [tailwindcss](https://tailwindcss.com/): a CSS framework
+- [element-plus](element-plus.org/): a collection of ready-made components
+- [oh-vue-icons](oh-vue-icons.js.org/): a collection of icons
+
 
 ## Dependencies
 
