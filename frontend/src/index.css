@@ -28,4 +28,7 @@
     .small-title {
         @apply font-title font-bold
     }
+    .home-rectangle {
+        @apply p-4 border border-black bg-opacity-30 flex items-center 
+    }
 }
