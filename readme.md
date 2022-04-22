@@ -85,6 +85,3 @@ Alternatively, if you have `make`, `poetry` and `npm` installed,
 you can run `make install` to get the dependencies and
 then `make run` or `make dev` to start the server in production
 or development mode.
-
-
-###
