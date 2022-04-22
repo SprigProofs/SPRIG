@@ -147,6 +147,17 @@ def get_instances_list():
 
     return instances
 
+@api.get("/everything", response_model=dict[sprig.Hash, SprigData])
+def get_everything():
+    """Get all the data of all the SPRIG instances."""
+
+    everything = {}
+    for file in all_instances_filenames():
+        instance = json.loads(file.read_text())
+        instance['hash'] = file.stem
+        everything[file.stem] = instance
+
+    return everything
 
 @api.post("/instances", response_model=SprigData)
 def add_new_instance(new_instance: SprigInitData):

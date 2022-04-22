@@ -43,16 +43,6 @@ function decided(status: Status) {
 function humanize(date: dayjs.Dayjs, suffix=true) {
     return dayjs.duration(date.diff(dayjs())).humanize(suffix);
 }
-const params: Parameters = {
-    root_height: 4,
-    max_length: 2000,
-    time_for_questions: dayjs.duration(5, 'days'),
-    time_for_answers: dayjs.duration(10, 'days'),
-    upstakes: [16, 12, 8, 0],
-    downstakes: [0, 300, 200, 100],
-    question_bounties: [0, 43, 42, 41],
-    verification_cost: 7
-}
 
 class Claim {
     statement: string
@@ -227,6 +217,17 @@ const api = {
     }
 
 
+}
+
+const params: Parameters = {
+    root_height: 4,
+    max_length: 2000,
+    time_for_questions: dayjs.duration(5, 'days'),
+    time_for_answers: dayjs.duration(10, 'days'),
+    upstakes: [16, 12, 8, 0],
+    downstakes: [0, 300, 200, 100],
+    question_bounties: [0, 43, 42, 41],
+    verification_cost: 7
 }
 
 const claims: Claim[] = [

@@ -14,6 +14,7 @@ client = TestClient(api)
     "path",
     [
         "/instances",
+        "/everything",
         "/00001",
         "/00001/0",
         "/00001/2",
@@ -38,6 +39,11 @@ def test_get_all_instances():
         assert Parameters(**instance['params'])
         assert isinstance(instance['language'], str)
         assert ClaimData(**instance['root_claim'])
+
+def test_get_everything():
+    response = client.get('/everything')
+    data = response.json()
+    assert set(data.keys()) == {p.stem for p in all_instances_filenames()}
 
 @pytest.mark.parametrize("hash", [p.stem for p in all_instances_filenames()])
 def test_instance_get(hash):
