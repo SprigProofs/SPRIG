@@ -297,17 +297,6 @@ const api = {
 
 }
 
-const params: Parameters = {
-    root_height: 4,
-    max_length: 2000,
-    time_for_questions: dayjs.duration(5, 'days'),
-    time_for_answers: dayjs.duration(10, 'days'),
-    upstakes: [16, 12, 8, 0],
-    downstakes: [0, 300, 200, 100],
-    question_bounties: [0, 43, 42, 41],
-    verification_cost: 7
-}
-
 var instances = null;
 api.fetchAllInstances(data => {
     instances = data;
@@ -315,6 +304,6 @@ api.fetchAllInstances(data => {
 
 
 export {NOW, humanize, instances,
-    params, api, STATUSES, STATUS_DISPLAY_NAME,
+    api, STATUSES, STATUS_DISPLAY_NAME,
     decided, Claim, SprigSummary, Sprig, Status,
     StatusCounts, ProofAttempt, Parameters};
