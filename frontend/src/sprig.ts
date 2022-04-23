@@ -48,6 +48,7 @@ class Claim {
     statement: string
     height: number
     hash: string
+    instance_hash: string
     parent: string
     status: Status
     open_until: dayjs.Dayjs
@@ -59,6 +60,7 @@ class Claim {
         this.statement = claim.statement
         this.height = claim.height
         this.hash = claim.hash
+        this.instance_hash = claim.instance_hash
         this.parent = claim.parent
         this.status = claim.status
         this.open_until = dayjs(claim.open_until)
@@ -120,6 +122,7 @@ class ProofAttempt {
     height: number
     time: dayjs.Dayjs
     status: Status
+    instance_hash: string
 
     constructor(attempt: Record<string, any>) {
         this.claimer = attempt.claimer
@@ -146,11 +149,17 @@ class Sprig {
     hash: string
 
     constructor(sprig: Record<string, any>) {
-        this.claims = _.mapValues(sprig.claims, (claim) => new Claim(claim));
-        this.language = sprig.language;
-        this.proof_attempts = _.mapValues(sprig.proof_attempts, (attempts) => _.map(attempts, (attempt) => new ProofAttempt(attempt)));
-        this.params = sprig.params;
         this.hash = sprig.hash;
+        this.claims = _.mapValues(sprig.claims, (claim) => {
+            claim.instance_hash = this.hash;
+            return new Claim(claim)
+        });
+        this.language = sprig.language;
+        this.proof_attempts = _.mapValues(sprig.proof_attempts, (attempts) => _.map(attempts, (attempt) => {
+            attempt.instance_hash = this.hash;
+            return new ProofAttempt(attempt)
+        }));
+        this.params = new Parameters(sprig.params);
     }
 
     totalBounties() {
@@ -198,6 +207,17 @@ class Parameters {
     readonly downstakes: number[]
     readonly question_bounties: number[]
     readonly verification_cost: number
+
+    constructor(params: Record<string, any>) {
+        this.root_height = params.root_height;
+        this.max_length = params.max_length;
+        this.time_for_questions = dayjs.duration(params.time_for_questions);
+        this.time_for_answers = dayjs.duration(params.time_for_answers);
+        this.upstakes = params.upstakes;
+        this.downstakes = params.downstakes;
+        this.question_bounties = params.question_bounties;
+        this.verification_cost = params.verification_cost;
+    }
 }
 
 const API_BASE = "http://localhost:8601/"
@@ -288,56 +308,6 @@ const params: Parameters = {
     verification_cost: 7
 }
 
-const claims: Claim[] = [
-    new Claim({
-        hash: "30fb30",
-        statement: `theorem euclidean_geometry.dist_sq_eq_dist_sq_add_dist_sq_iff_angle_eq_pi_div_two 
-    {V : Type u_1} {P : Type u_2} [inner_product_space ℝ V] [metric_space P] [normed_add_torsor V P] (p1 p2 p3 : P) :
-    (dist p1 p3) * dist p1 p3 = (dist p1 p2) * dist p1 p2 + (dist p3 p2) * dist p3 p2 ↔ ∠ p1 p2 p3 = real.pi / 2 := 
-    [big proof]`,
-        status: Status.CHALLENGED,
-        parent: "a884ff2",
-        last_modification: dayjs().subtract(1, 'day'),
-        created_at: dayjs().subtract(1, 'day'),
-        open_until: dayjs().add(9, 'day'),
-        height: 3,
-        skeptic: null,
-    }),
-    new Claim({
-        hash: "9f4024",
-        statement: "theorem infinitude_of_primes : set.infinite { p | nat.prime p } := [big proof]",
-        status: Status.UNCHALLENGED,
-        parent: "a884ff2",
-        last_modification: dayjs().subtract(3, 'day'),
-        created_at: dayjs().subtract(3, 'day'),
-        open_until: dayjs().add(7, 'day'),
-        height: 2,
-        skeptic: null,
-    }), 
-    new Claim({
-        hash: "cccccc",
-        statement: "theorem infinitude_of_primes : set.infinite { p | nat.prime p } := [big proof]",
-        status: Status.VALIDATED,
-        parent: "a884ff2",
-        last_modification: dayjs().subtract(2, 'day'),
-        created_at: dayjs().subtract(2, 'day'),
-        open_until: dayjs().add(8, 'day'),
-        height: 3,
-        skeptic: null,
-    }),
-    new Claim({
-        hash: "dddddd",
-        statement: "theorem infinitude_of_primes : set.infinite { p | nat.prime p } := [big proof]",
-        status: Status.REJECTED,
-        parent: "a884ff2",
-        last_modification: dayjs().subtract(4, 'day'),
-        created_at: dayjs().subtract(4, 'day'),
-        open_until: dayjs().add(7, 'day'),
-        height: 0,
-        skeptic: null,
-    })
-]
-
 var instances = null;
 api.fetchAllInstances(data => {
     instances = data;
@@ -345,6 +315,6 @@ api.fetchAllInstances(data => {
 
 
 export {NOW, humanize, instances,
-    claims, params, api, STATUSES, STATUS_DISPLAY_NAME,
+    params, api, STATUSES, STATUS_DISPLAY_NAME,
     decided, Claim, SprigSummary, Sprig, Status,
-    StatusCounts, ProofAttempt};
+    StatusCounts, ProofAttempt, Parameters};

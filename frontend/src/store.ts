@@ -1,7 +1,7 @@
-import { api } from "./sprig";
+import { api, Sprig } from "./sprig";
 import { reactive } from "vue";
 
-export const store = reactive({
+export const store = reactive<{instances: Record<string, Sprig>, loaded: boolean}>({
     instances: {},
     loaded: false,
 });

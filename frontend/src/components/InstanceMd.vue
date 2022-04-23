@@ -1,5 +1,7 @@
 <template>
-  <router-link to="/" class="w-full border rounded-sm shadow-sm hover:shadow-md group flex">
+  <!-- TODO: Route to a instance page, not the root proof attempt. -->
+  <router-link :to="{name: 'proofAttempt', params: {instanceHash: instance.hash, claimHash: '0', attemptNb: 0}}"
+    class="w-full border rounded-sm shadow-sm hover:shadow-md group flex">
       <!-- First part of the card -->
       <div class="p-4 flex flex-col flex-grow">
         <!-- First row -->

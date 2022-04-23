@@ -1,7 +1,3 @@
-
-
-
-
 <template>
     <div>
     <div class="max-w-7xl mx-auto">
@@ -140,19 +136,36 @@
     </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 
-import {claims, params, humanize} from './../sprig.ts';
-import { MoreFilled, Plus } from '@element-plus/icons-vue'
+import { humanize } from './../sprig';
+import { store } from './../store';
 import StatusTag from './StatusTag.vue';
-import Algo from './Algo.vue';
 import { ref } from 'vue';
 import Price from './Price.vue';
 import User from './User.vue';
 import Parameters from './Parameters.vue';
 
+const props = defineProps({
+    instanceHash: {
+        type: String,
+        required: true,
+    },
+    claimHash: {
+        type: String,
+        required: true,
+    },
+    attemptNb: {
+        type: Number,
+        required: true,
+    },
+})
 
-const claim = claims[0];
+const instance = store.instances[props.instanceHash];
+const attempt = instance.proof_attempts[props.claimHash][props.attemptNb];
+const claim = instance.claims[props.claimHash];
+const params = instance.params;
+
 const showPreviousDefinitions = ref(false);
 
 </script>

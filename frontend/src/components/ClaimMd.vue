@@ -33,6 +33,7 @@
         <code class="text-sm flex-grow">
           <pre class="whitespace-pre-wrap">{{ claim.shortStatement() }}</pre>
         </code>
+        {{ claim }}
       </div>
       <!-- Right of the card -->
       <div 
@@ -40,7 +41,7 @@
         class="w-48  p-4 flex-shrink-0
           flex flex-col space-y-2 items-end">
         <div class="text-black font-semibold rounded-sm">
-          Bounty <Price amount="120"/>
+          Bounty <Price :amount="bounty"/>
         </div>
         <div class="text-xs text-slate-700 flex-grow">
           {{ humanize(claim.open_until, false) }} left
@@ -56,23 +57,28 @@
   
 </template>
 
-<script setup>
-    import { reactive, ref } from 'vue';
-    import { NOW, decided, Status, humanize} from '../sprig';
+<script setup lang="ts">
+    import { decided, Status, humanize, Claim, Parameters } from '../sprig';
     import StatusTag from './StatusTag.vue';
     import Price from './Price.vue';
-
-    const hint = ref("hellooo")
+    import { store } from '../store';
 
     const props = defineProps({
-        claim: {
-            type: Object,
+        instanceHash: {
+          type: String,
+          required: true,
+        },
+        claimHash: {
+            type: String,
             required: true,
         },
     })
 
-    function setHint(kind) {
-        this.hint = kind;
-    }
+    const claim: Claim = store.instances[props.instanceHash].claims[props.claimHash];
+    const params: Parameters = store.instances[props.instanceHash].params;
+
+    const bounty = claim.status == Status.UNCHALLENGED
+      ? claim.challengeBounty(params)  // TODO: check if bouty is not already given to a sibling
+      : params.downstakes[claim.height];
 
 </script>

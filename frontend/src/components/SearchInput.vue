@@ -1,7 +1,9 @@
-<script setup>
+<script setup lang="ts">
 import { reactive, ref } from 'vue';
 import StatusTag from './StatusTag.vue';
-import { api, claims, Status, STATUSES, NOW, decided } from '../sprig'
+import * as _ from 'lodash';
+import { api, Status, STATUSES, NOW, decided, Sprig } from '../sprig'
+import { store } from '../store';
 import ClaimMd from './ClaimMd.vue';
 import { ElNotification } from 'element-plus';
 import InstanceMd from './InstanceMd.vue';
@@ -102,8 +104,12 @@ function sort_weight_instance(instance) {
 function results() {
     switch (selectedType.value) {
         case "Claims":
-            return claims
-                .filter(claim => statuses[claim.status]
+            // dict[instanceHash, list[claims]]
+            const claimsByInstance = _.mapValues(store.instances, (i) => _.values(i.claims));
+            const claims = _.flatten(_.values(claimsByInstance));
+            const keyedClaims = _.fromPairs(claims.map(c => [c.hash + '/' + c.instance_hash, c]))
+
+            return _.filter(keyedClaims, claim => statuses[claim.status]
                     && claim.statement.toLowerCase().includes(search.value.toLowerCase()))
                 .sort((a, b) => sort_weight(a) - sort_weight(b))
         
@@ -169,9 +175,9 @@ function results() {
             {{ results().length }} Result{{ results().length != 1 ? 's' : ''}}
         </h2>
         <TransitionGroup tag="ol" class="space-y-6">
-            <li v-for="result in results()" :key="result.hash"
+            <li v-for="(result, key) in results()" :key="key"
                 class="transition">
-                <ClaimMd v-if="selectedType=='Claims'" :claim="result"></ClaimMd>
+                <ClaimMd v-if="selectedType=='Claims'" :claim-hash="result.hash" :instance-hash="result.instance_hash"></ClaimMd>
                 <InstanceMd v-else-if="selectedType=='Instances'" :hash="result.hash"></InstanceMd>
                 <div v-else>{{ result }}</div>
             </li>

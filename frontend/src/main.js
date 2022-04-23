@@ -11,6 +11,7 @@ import Algo from './components/Algo.vue'
 import Price from './components/Price.vue'
 import Home from './components/Home.vue'
 import Search from './components/SearchInput.vue'
+import ProofAttemptPage from './components/ProofAttemptPage.vue'
 
 import { OhVueIcon, addIcons } from "oh-vue-icons";
 import { MdClearRound, MdCheckRound, MdMenu, MdModeedit, MdCancel, MdCheckcircle, MdOfflineboltSharp, MdKeyboarddoublearrowdown, MdKeyboarddoublearrowup, MdBolt, MdOfflinebolt, MdQuestionmarkRound, MdInfoRound, MdAccesstimeRound, MdPersonRound, FaMountain, MdLockclock, MdLockopenRound, MdPriorityhighRound, MdCloseRound, MdDownload, MdDownloading } from "oh-vue-icons/icons";
@@ -57,6 +58,7 @@ addIcons({
 const routes = [
     { path: '/', component: Home },
     { path: '/search', component: Search },
+    { path: '/i/:instanceHash/a/:claimHash/:attemptNb', component: ProofAttemptPage, props: true, name: 'proofAttempt' },
 ]
 const router = VueRouter.createRouter({
     history: VueRouter.createWebHashHistory(),
