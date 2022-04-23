@@ -143,12 +143,14 @@ class Sprig {
     language: string
     proof_attempts: Record<string, ProofAttempt[]>
     params: Parameters
+    hash: string
 
     constructor(sprig: Record<string, any>) {
         this.claims = _.mapValues(sprig.claims, (claim) => new Claim(claim));
         this.language = sprig.language;
         this.proof_attempts = _.mapValues(sprig.proof_attempts, (attempts) => _.map(attempts, (attempt) => new ProofAttempt(attempt)));
         this.params = sprig.params;
+        this.hash = sprig.hash;
     }
 
     totalBounties() {
@@ -158,6 +160,23 @@ class Sprig {
             (attempts) => _.sumBy(attempts, a => a.moneyHeld(this.params)));
     
         return open_challenges + open_attempts;
+    }
+    rootClaim() {
+        return this.claims['0'];
+    }
+    author() {
+        return this.proof_attempts['0'][0].claimer;
+    }
+    count(status: Status) {
+        return _.sum(_.map(this.claims, (claim) => claim.status === status ? 1 : 0));
+    }
+    counts() {
+        return {
+            [Status.CHALLENGED]: this.count(Status.CHALLENGED),
+            [Status.UNCHALLENGED]: this.count(Status.UNCHALLENGED),
+            [Status.VALIDATED]: this.count(Status.VALIDATED),
+            [Status.REJECTED]: this.count(Status.REJECTED),
+        }
     }
 }
 
@@ -196,7 +215,13 @@ const convert = {
         }
     }
 }
-
+function logFail(title: string, data: Object) {
+    console.error(title, data);
+    ElNotification.error({
+        title: title,
+        message: JSON.stringify(data, null, 2),
+    });
+}
 const api = {
     get(path: string[], callback: FetchCallback<any>): void {
         const url = API_BASE + path.join("/")
@@ -205,23 +230,13 @@ const api = {
                 resp.json().then(data => {
                     callback(data)
                 }).catch(err => {
-                    ElNotification({
-                        title: "Server returned weird json",
-                        message: `${url}\n${err}`,
-                    })
+                    logFail("Error handling data", {url, err});
                 })
             } else {
-                ElNotification.error({
-                    title: "Server returned error",
-                    message: `${url}\n${resp}`
-                })
+                logFail("Server returned error", {url, resp});
             }
         }).catch(err => {
-            ElNotification.error({
-                title: "Error fetching data",
-                message: `${url}\n${err}`,
-            })
-            console.error('Fetch error from', url, err)
+            logFail("Error fetching data", {url, err});
         })
     },
     post(path: string[], query: Record<string, string>, body: any, callback: FetchCallback<any>) {
@@ -323,8 +338,13 @@ const claims: Claim[] = [
     })
 ]
 
+var instances = null;
+api.fetchAllInstances(data => {
+    instances = data;
+});
 
-export {NOW, humanize, 
+
+export {NOW, humanize, instances,
     claims, params, api, STATUSES, STATUS_DISPLAY_NAME,
     decided, Claim, SprigSummary, Sprig, Status,
     StatusCounts, ProofAttempt};

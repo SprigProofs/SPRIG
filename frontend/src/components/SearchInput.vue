@@ -172,7 +172,7 @@ function results() {
             <li v-for="result in results()" :key="result.hash"
                 class="transition">
                 <ClaimMd v-if="selectedType=='Claims'" :claim="result"></ClaimMd>
-                <InstanceMd v-else-if="selectedType=='Instances'" :instance="result"></InstanceMd>
+                <InstanceMd v-else-if="selectedType=='Instances'" :hash="result.hash"></InstanceMd>
                 <div v-else>{{ result }}</div>
             </li>
             <li key="nothing there! It just allows to have hover effect on the last item :shrug:"></li>

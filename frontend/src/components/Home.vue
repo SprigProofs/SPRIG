@@ -126,27 +126,24 @@
 
 <script setup>
 import LabeledData from './LabeledData.vue';
-import { api } from "../sprig";
+import { store } from '../store';
 import * as _ from 'lodash';
 import { reactive, ref } from 'vue';
 import Price from './Price.vue';
+import { computed } from '@vue/reactivity';
 
-const stats = reactive({
-    Claims: -1,
-    Challenges: -1,
-    Proofs: -1,
+
+// TODO: Compute the stats on the server
+const instances = _.values(store.instances);
+const stats = computed( () => {
+    return {
+        Claims: _.sumBy(instances, s => _.size(s.claims)),
+        Challenges: _.sumBy(instances, s => 1 + _.size(_.filter(s.claims, c => c.skeptic))),
+        Proofs: _.sumBy(instances, s => _.size(s.proof_attempts)),
+    };
 });
-const totalBounties = ref(-1);
+const totalBounties = computed(() => _.sumBy(instances, s => s.totalBounties()));
 
-// TODO: use api.getStats() or something similar with values computed on the server.
-api.fetchAllInstances(data => {
-    console.log(data)
-    const instances = _.values(data)
-    stats.Claims = _.sumBy(instances, s => _.size(s.claims))
-    stats.Proofs = _.sumBy(instances, s => _.size(s.proof_attempts))
-    stats.Challenges = _.sumBy(instances, s => 1 + _.size(_.filter(s.claims, c => c.skeptic)))
-    totalBounties.value = _.sumBy(instances, s => s.totalBounties());
-})
 
 const team = [
     {

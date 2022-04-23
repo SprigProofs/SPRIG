@@ -2,5 +2,6 @@
     "compilerOptions": {
       "types": ["element-plus/global"],
       "allowJs": true,
+      "jsx": "preserve"
     }
 }
