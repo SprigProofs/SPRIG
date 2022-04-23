@@ -18,7 +18,7 @@
             <span class="text-sm text-gray-700"> by <User :name="instance.author()"/></span>
             </h3> 
         <code class="text-sm flex-grow">
-          <pre class="whitespace-pre-wrap">{{ claim.shortStatement() }}</pre>
+          <pre class="whitespace-pre-wrap">{{ language.shortDescription(claim) }}</pre>
         </code>
         
         <ul class="grid grid-cols-4 gap-4 pt-4 max-w-md"
@@ -58,7 +58,7 @@
 </template>
 
 <script setup lang="ts">
-    import { decided, Status, humanize, Sprig, Claim } from '../sprig';
+    import { decided, Status, humanize, Sprig, Claim, Language, LANGUAGES } from '../sprig';
     import { store } from '../store';
     import StatusTag from './StatusTag.vue';
     import Price from './Price.vue';
@@ -74,5 +74,6 @@
 
     const instance: Sprig = store.instances[props.hash];
     const claim: Claim = instance.claims['0'];
+    const language: Language = LANGUAGES[instance.language];
 
 </script>

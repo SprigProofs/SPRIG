@@ -27,11 +27,11 @@
                 </div> -->
             </div>
         <h3 class="text-lg pt-2  ">
-            <span class="small-title break-all">{{ claim.title() }}</span>
+            <span class="small-title break-all">{{ language.title(claim) }}</span>
             <span class="text-sm text-gray-700"> by cozyfractal</span>
             </h3> 
         <code class="text-sm flex-grow">
-          <pre class="whitespace-pre-wrap">{{ claim.shortStatement() }}</pre>
+          <pre class="whitespace-pre-wrap">{{ language.shortDescription(claim) }}</pre>
         </code>
         {{ claim }}
       </div>
@@ -58,7 +58,7 @@
 </template>
 
 <script setup lang="ts">
-    import { decided, Status, humanize, Claim, Parameters } from '../sprig';
+    import { decided, Status, humanize, Claim, Parameters, LANGUAGES, Language } from '../sprig';
     import StatusTag from './StatusTag.vue';
     import Price from './Price.vue';
     import { store } from '../store';
@@ -74,8 +74,10 @@
         },
     })
 
-    const claim: Claim = store.instances[props.instanceHash].claims[props.claimHash];
-    const params: Parameters = store.instances[props.instanceHash].params;
+    const instance = store.instances[props.instanceHash];
+    const claim: Claim = instance.claims[props.claimHash];
+    const params: Parameters = instance.params;
+    const language: Language = LANGUAGES[instance.language];
 
     const bounty = claim.status == Status.UNCHALLENGED
       ? claim.challengeBounty(params)  // TODO: check if bouty is not already given to a sibling

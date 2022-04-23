@@ -10,7 +10,7 @@
                 </div>
             </div>
             <h1 class="text-3xl font-bold font-title py-2">
-                {{ claim.title() }}
+                {{ language.title(claim) }}
             </h1>
             <div class="flex space-x-4">
                 <div>
@@ -138,7 +138,7 @@
 
 <script setup lang="ts">
 
-import { humanize } from './../sprig';
+import { humanize, LANGUAGES } from './../sprig';
 import { store } from './../store';
 import StatusTag from './StatusTag.vue';
 import { ref } from 'vue';
@@ -162,6 +162,7 @@ const props = defineProps({
 })
 
 const instance = store.instances[props.instanceHash];
+const language = LANGUAGES[instance.language];
 const attempt = instance.proof_attempts[props.claimHash][props.attemptNb];
 const claim = instance.claims[props.claimHash];
 const params = instance.params;

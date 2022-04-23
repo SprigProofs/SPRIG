@@ -72,23 +72,6 @@ class Claim {
     decided() {
         return decided(this.status);
     }
-    title() {
-        const m = this.statement.match(/theorem \S+\s/ms);
-        if (m) {
-            return m[0].trim();
-        } else {
-            return "Unknown title";
-        }
-    }
-
-    shortStatement() {
-        const m = this.statement.match(/theorem \S+\s(.*):=/ms);
-        if (m) {
-            return m[1].trim();
-        } else {
-            return "Unknown statement";
-        }
-    }
 
     challengeBounty(params: Parameters) {
         if (this.status === Status.CHALLENGED) {
@@ -220,6 +203,51 @@ class Parameters {
     }
 }
 
+interface Language {
+    name: string
+    title: (claim: Claim) => string
+    shortDescription: (claim: Claim) => string
+    longDescription: (claim: Claim) => string
+}
+
+
+const LANGUAGES: Record<string, Language> = {
+    Lean: {
+        name: "Lean",
+        title(claim: Claim) {
+            const m = claim.statement.match(/theorem \S+\s/ms);
+            if (m) {
+                return m[0].trim();
+            } else {
+                return "Cannot parse title";
+            }
+        },
+        shortDescription(claim: Claim) {
+            const m = claim.statement.match(/theorem \S+\s(.*):=/ms);
+            if (m) {
+                return m[1].trim();
+            } else {
+                return "Cannot parse statement";
+            }
+        },
+        longDescription(claim: Claim) {
+            return claim.statement;
+        }
+    },
+    TicTacToe: {
+        name: "TicTacToe",
+        title(claim: Claim) {
+            return claim.statement;
+        },
+        shortDescription(claim: Claim) {
+            return claim.statement;
+        },
+        longDescription(claim: Claim) {
+            return claim.statement;
+        }
+    }
+}
+
 const API_BASE = "http://localhost:8601/"
 
 const convert = {
@@ -297,13 +325,8 @@ const api = {
 
 }
 
-var instances = null;
-api.fetchAllInstances(data => {
-    instances = data;
-});
 
-
-export {NOW, humanize, instances,
-    api, STATUSES, STATUS_DISPLAY_NAME,
+export {NOW, humanize,
+    api, STATUSES, STATUS_DISPLAY_NAME, LANGUAGES, Language,
     decided, Claim, SprigSummary, Sprig, Status,
     StatusCounts, ProofAttempt, Parameters};
