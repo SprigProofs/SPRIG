@@ -29,6 +29,31 @@
         @apply font-title font-bold
     }
     .home-rectangle {
-        @apply p-4 border border-black bg-opacity-30 flex items-center 
+        @apply p-4 shadow-lg  border border-black bg-opacity-30 flex items-center 
+    }
+    
+    .animate-rainbow {
+        animation: rainbow 2s infinite;
+    }
+    @keyframes rainbow {
+        form {
+            filter: hue-rotate(0deg);
+        }
+        to {
+            filter: hue-rotate(360deg);
+        }
+    }
+    
+    .animate-spin-square {
+        animation: spin-square 0.3s linear infinite;
+    }
+
+    @keyframes spin-square {
+        from {
+            transform: rotate(0deg);
+        }
+        to {
+            transform: rotate(90deg);
+        }
     }
 }

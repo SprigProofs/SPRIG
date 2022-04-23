@@ -10,7 +10,7 @@
         <div class="max-w-3xl mx-auto pt-12">
             <div></div>
 
-            <div class="home-rectangle p-8 bg-gray-100/30 ml-4 w-96 " >
+            <div class="home-rectangle shadow-xl p-8 bg-gray-100/30 ml-4 w-96 " >
                 <img class="w-full"
                     src="/sprig.svg" alt="SPRIG">
             </div>
@@ -20,12 +20,13 @@
                 through blockchain technology and game theory.
             </p>
 
-            <div class="flex">
-                <p class="bg-red-600/30 home-rectangle w-48 h-48 ml-16 -mt-24 ">
+                <p class="relative mx-16 -mt-24 bg-red-600/30 home-rectangle w-48 h-48">
                     Lorem ipsum dolor sit amet consectetur adipisicing elit. Suscipit assumenda maxime nostrum officia earum consequatur deleniti 
+                    <div class="absolute 
+                        top-[calc(100%-1rem)] left-[calc(100%-1rem)] w-16 h-16 
+                        hover:animate-spin-square 
+                        shadow home-rectangle bg-green-600/30"></div>
                 </p>
-                <p class="self-end translate-y-3/4 -translate-x-4 home-rectangle w-16 h-16 bg-green-600/30"></p>
-            </div>
 
             <div class="w-64 h-32 ml-auto mr-32 mt-4
                 home-rectangle bg-amber-600/30
@@ -79,7 +80,7 @@
     
     <div class="
         my-8
-        border-y border-black 
+        border-y border-black hover:hue-rotate-180 transition duration-1000
         bg-gradient-to-tr to-purple-200 from-blue-200">
         <div class="max-w-3xl mx-auto px-12 pt-8">
             <h2 class="font-title font-bold text-2xl
