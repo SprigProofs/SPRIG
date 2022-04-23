@@ -39,12 +39,12 @@ class Lean(Language):
 
     def validate_subclaims(self, sprig, root_statement: str, common_proof_part: List[str], *sub_claim_statements: str):
         if extract_lemma_name(sub_claim_statements[-1]) != extract_lemma_name(root_statement):
-            return False
+            assert False
 
         common_code = '\n'.join(common_proof_part)
         for statement in sub_claim_statements:
             if lean_validate(common_code + '\n' + statement) != 0:
-                return False
+                assert False
 
         return True
 

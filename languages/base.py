@@ -27,17 +27,15 @@ class Language:
         return self.name
 
     def judge_low_level(self, statement: str, machine_proof: List[str]) -> bool:
-        """Perform the machine level verification.
-        :param machine_proof:
-        """
+        """Perform the machine level verification."""
         raise NotImplementedError
 
     def validate_subclaims(self, root_statement: str, common_proof_part: List[str], *sub_claim_statements: str):
-        """Check that a proof attempt is coherent."""
+        """Check that a proof attempt is coherent. Raises AssertionError if not."""
         raise NotImplementedError
 
     def validate_top_level(self, initial_claim: str):
-        """Check that an initial claim is valid."""
+        """Check that an initial claim is valid. Raises AssertionError if not."""
         raise NotImplementedError
 
     # Serialisation

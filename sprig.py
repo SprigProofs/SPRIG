@@ -45,7 +45,7 @@ INDENT = " " * 4  # For pretty printing
 
 REAL_TIME = "real"
 DISCRETE_TIME = "discrete"
-TIME_MODE = os.environ.get("TIME_MODE", "real")
+TIME_MODE = os.environ.get("TIME_MODE", DISCRETE_TIME)
 
 def now(increment=0) -> Time:
     """Current time. If an increment is given, it is added to the current time.
@@ -476,7 +476,7 @@ class Sprig:
         language = Language.load(language_type)
         self = cls(language, params, {ROOT_HASH: root_claim}, {})  #, [])
 
-        self.language.validate_top_level(self, root_claim.statement)
+        assert self.language.validate_top_level(self, root_claim.statement), "Invalid top level statement"
 
         self.answer(ROOT_HASH, claimer, *proof_attempt)
 
@@ -534,7 +534,7 @@ SPRIG instance:
         assert claim.status is Status.UNCHALLENGED, "This claim cannot be challenged anymore."
         assert skeptic
 
-        self.params.pay_new_challenge(skeptic, claim)
+        assert self.params.pay_new_challenge(skeptic, claim)
 
         claim.status = Status.CHALLENGED
         claim.skeptic = skeptic
@@ -549,7 +549,7 @@ SPRIG instance:
         assert claim.status is Status.CHALLENGED, f"There is no open challenge for: {claim}"
         assert claim.height > 1, "Use answer_low_level instead"
 
-        self.language.validate_subclaims(self, claim.statement, self.gather_claims(self.claims[challenged_claim]), *sub_statements)
+        assert self.language.validate_subclaims(self, claim.statement, self.gather_claims(self.claims[challenged_claim]), *sub_statements), "Invalid proof attempt."
 
         hashes = []
         for i, statement in enumerate(sub_statements):
@@ -568,7 +568,7 @@ SPRIG instance:
         if not self.params.pay_new_proof_attempt(attempt):
             for h in hashes:
                 del self.claims[h]
-            return
+            assert False, "Cannot pay the proof attempt."
 
         # Create the list of proof attempts if it doesn't exist yet and add the attempt.
         self.proof_attempts.setdefault(challenged_claim, []).append(attempt)
@@ -842,7 +842,7 @@ def play_lean(
         Lean().dump(),
         recommended_constraints,
         Address("Diego"),
-        "add_comm (a b : nat) : a + b = b + a",
+        "lemma add_comm a b : nat) : a + b = b + a",
 
         """lemma z_add (n : nat) : 0 + n = n :=
         begin
@@ -937,10 +937,10 @@ def main():
         verification_cost=1,
     )
 
-    s = play_tictactoe(level, costs, recommended_constraints, MICHAEL, DIEGO, CLEMENT)
-    # s = play_lean(level, costs, recommended_constraints, MICHAEL, DIEGO, CLEMENT)
+    # s = play_tictactoe(level, costs, recommended_constraints, MICHAEL, DIEGO, CLEMENT)
+    s = play_lean(level, costs, recommended_constraints, MICHAEL, DIEGO, CLEMENT)
 
-    print(s.dumps())
+    # print(s.dumps())
 
 if __name__ == "__main__":
     main()
