@@ -85,7 +85,7 @@ class TicTacToe(Language):
             else:
                 return set(grid[3 * i : 3 * i + 3]) == {win}
 
-    def validate_subclaims(self, sprig, root_statement: str, *sub_claim_statements: str):
+    def validate_subclaims(self, sprig, root_statement: str, common_proof_part: List[str], *sub_claim_statements: str):
         move_covered = [False] * 9
         prev_grid, prev_turn, prev_win = self.parse_board(root_statement)
         for claim in sub_claim_statements:

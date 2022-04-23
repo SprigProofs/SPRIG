@@ -32,7 +32,7 @@ class Language:
         """
         raise NotImplementedError
 
-    def validate_subclaims(self, root_statement: str, *sub_claim_statements: str):
+    def validate_subclaims(self, root_statement: str, common_proof_part: List[str], *sub_claim_statements: str):
         """Check that a proof attempt is coherent."""
         raise NotImplementedError
 
