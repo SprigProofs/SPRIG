@@ -33,9 +33,9 @@
 
         </header>
 
-        <div class="p-8 flex xl:flex-row-reverse flex-col">
+        <div class="p-8 flex xl:flex-row-reverse xl:justify-between flex-col">
             
-            <section class="max-w-">
+            <section class="xl:w-[32rem]">
                 <h2 class="small-title pb-2">Actions log</h2>
                 <el-timeline>
                     <el-timeline-item timestamp="15.04.22 20:46" class="" > 

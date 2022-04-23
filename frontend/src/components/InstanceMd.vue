@@ -14,7 +14,7 @@
             </div>
         </div>
         <h3 class="text-lg pt-2  ">
-            <span class="small-title break-all">{{ claim.statement }}</span>
+            <span class="small-title break-all">{{ language.title(claim) }}</span>
             <span class="text-sm text-gray-700"> by <User :name="instance.author()"/></span>
             </h3> 
         <code class="text-sm flex-grow">
