@@ -24,7 +24,7 @@
         <pre class="whitespace-pre-wrap">{{ language.shortDescription(claim) }}</pre>
       </code>
       <div class="leading-none rounded border-gray-200 p-2">
-        <div class="text-xs text-gray-600 mb-">Last action</div>
+        <div class="text-xs text-gray-600">Last action</div>
         <p class="text-sm">Michael challenged claim #1a209b for 70</p>
       </div>
 

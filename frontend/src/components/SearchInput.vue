@@ -4,9 +4,9 @@ import StatusTag from './StatusTag.vue';
 import * as _ from 'lodash';
 import { api, Status, STATUSES, NOW, decided, Sprig } from '../sprig'
 import { store } from '../store';
-import ClaimMd from './ClaimMd.vue';
+import ClaimEmbed from './ClaimEmbed.vue';
 import { ElNotification } from 'element-plus';
-import InstanceMd from './InstanceMd.vue';
+import InstanceEmbed from './InstanceEmbed.vue';
 import * as dayjs from 'dayjs';
 
 const statuses = reactive({
@@ -173,8 +173,8 @@ function results() {
         <TransitionGroup tag="ol" class="space-y-6">
             <li v-for="(result, key) in results()" :key="key"
                 class="transition">
-                <ClaimMd v-if="selectedType=='Claims'" :claim-hash="result.hash" :instance-hash="result.instance_hash"></ClaimMd>
-                <InstanceMd v-else-if="selectedType=='Instances'" :hash="result.hash"></InstanceMd>
+                <ClaimEmbed v-if="selectedType=='Claims'" :claim-hash="result.hash" :instance-hash="result.instance_hash"></ClaimEmbed>
+                <InstanceEmbed v-else-if="selectedType=='Instances'" :hash="result.hash"></InstanceEmbed>
                 <div v-else>{{ result }}</div>
             </li>
             <li key="nothing there! It just allows to have hover effect on the last item :shrug:"></li>
