@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue';
+import { computed, reactive, ref } from 'vue';
 import StatusTag from './StatusTag.vue';
 import * as _ from 'lodash';
 import { Status, decided, Sprig, Claim, ProofAttempt, Parameters } from '../sprig'
@@ -8,6 +8,7 @@ import ClaimEmbed from './ClaimEmbed.vue';
 import { ElNotification } from 'element-plus';
 import InstanceEmbed from './InstanceEmbed.vue';
 import * as dayjs from 'dayjs';
+import AttemptEmbed from './AttemptEmbed.vue';
 
 const statuses = reactive({
     [Status.CHALLENGED]: true,
@@ -87,8 +88,9 @@ function getWeights(o, type: Types) {
 
         case Types.ATTEMPT:
             const attempt: ProofAttempt = o;
-            weights[REWARD] = -attempt.possibleReward(store.instances[attempt.instance_hash].params);
-            weights[NEW] = timeDiff(attempt.time);
+            const instance_ = store.instances[attempt.instance_hash];
+            weights[REWARD] = -attempt.possibleReward(instance_.params);
+            weights[NEW] = timeDiff(attempt.parentClaim(instance_).last_modification);
             weights[OPEN_UNTIL] = -1;
             weights[RELEVANCE] = -1
             break;
@@ -122,39 +124,46 @@ function sort_weight(o, type: Types): number {
     return weight;
 }
 
-function results(): Record<string, any> {
+
+const results = computed<{key: string, claim?: Claim, instance?: Sprig, attempt?: ProofAttempt}[]>(() => {
+    const sortKey = (a, b) => sort_weight(a, selectedType.value) - sort_weight(b, selectedType.value);
     switch (selectedType.value) {
         case Types.CLAIM:
             // dict[instanceHash, list[claims]]
-            const claimsByInstance = _.mapValues(store.instances, (i) => _.values(i.claims));
-            const claims = _.flatten(_.values(claimsByInstance));
-            const keyedClaims = _.fromPairs(claims.map(c => [c.hash + '/' + c.instance_hash, c]))
+            return _.values(store.instances)
+                .flatMap((instance: Sprig) => _.values(instance.claims))
+                .filter(claim => statuses[claim.status] && claim.statement.toLowerCase().includes(search.value.toLowerCase()))
+                .sort(sortKey)
+                .map(claim => ({
+                    key: claim.instance_hash + '/' + claim.hash,
+                    claim,
+                }));
 
-            return _.filter(keyedClaims, claim => statuses[claim.status]
-                    && claim.statement.toLowerCase().includes(search.value.toLowerCase()))
-                .sort((a, b) => sort_weight(a, Types.CLAIM) - sort_weight(b, Types.CLAIM))
-        
         case Types.INSTANCE:
-            return Object.keys(store.instances)
-                .map(key => store.instances[key])
+            return _.values(store.instances)
                 .filter(instance => statuses[instance.rootClaim().status])
-                .sort((a, b) => sort_weight(a, Types.INSTANCE) - sort_weight(b, Types.INSTANCE))
-            
+                .sort(sortKey)
+                .map(instance => ({
+                    key: instance.hash,
+                    instance,
+                }));
+        
         case Types.ATTEMPT:
-            const attempts = _.flatMap(
-                _.values(store.instances),
-                (i) => _.flatten(_.values(i.proof_attempts)));
-            const keyedAttempts = _.fromPairs(attempts.map(a => [a.claim_hash + '/' + a.instance_hash, a]))
-
-            return _.filter(keyedAttempts, attempt => statuses[attempt.status]
-                    && store.instances[attempt.instance_hash].claims[attempt.claim_hash].statement.toLowerCase().includes(search.value.toLowerCase()))
-                .sort((a, b) => sort_weight(a, Types.ATTEMPT) - sort_weight(b, Types.ATTEMPT))
+            return _.values(store.instances)
+                .flatMap(instance => _.values(instance.proof_attempts))  // list[list[proof attempts]]
+                .flat(2)
+                .filter(attempt => statuses[attempt.status] && store.instances[attempt.instance_hash].claims[attempt.claim_hash].statement.toLowerCase().includes(search.value.toLowerCase()))
+                .sort(sortKey)
+                .map(attempt => ({
+                    key: attempt.instance_hash + '/' + attempt.claim_hash + '/' + attempt.attemptNb,
+                    attempt,
+                }));
             
         default:
             console.log(selectedType)
             return [];
     }
-}
+});
 
 </script>
 
@@ -203,15 +212,18 @@ function results(): Record<string, any> {
             </section>
         </div>
         <h2 class="mt-4 py-4">
-            {{ results().length }} Result{{ results().length != 1 ? 's' : ''}}
+            {{ results.length }} Result{{ results.length != 1 ? 's' : ''}}
         </h2>
         <TransitionGroup tag="ol" class="space-y-6">
-            <li v-for="(result, key) in results()" :key="key"
+            <li v-for="result in results" :key="result.key"
                 class="transition">
-                <ClaimEmbed v-if="selectedType=='Claims'" :claim-hash="result.hash" :instance-hash="result.instance_hash"></ClaimEmbed>
-                <InstanceEmbed v-else-if="selectedType=='Instances'" :hash="result.hash"></InstanceEmbed>
+                {{ result.key }}
+                <ClaimEmbed v-if="selectedType==Types.CLAIM" :claim-hash="result.claim.hash" :instance-hash="result.claim.instance_hash"></ClaimEmbed>
+                <AttemptEmbed v-else-if="selectedType == Types.ATTEMPT"
+                    :instance-hash="result.attempt.instance_hash" :claim-hash="result.attempt.claim_hash" :attempt-nb="result.attempt.attemptNb"/>
+                <InstanceEmbed v-else-if="selectedType==Types.INSTANCE" :hash="result.instance.hash"></InstanceEmbed>
                 <div v-else>{{ result }}</div>
-                {{ getWeights(result, selectedType) }}
+                {{ getWeights(result.attempt || result.claim || result.instance, selectedType) }}
             </li>
             <li key="nothing there! It just allows to have hover effect on the last item :shrug:"></li>
         </TransitionGroup>

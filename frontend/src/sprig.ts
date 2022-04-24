@@ -135,19 +135,21 @@ class ProofAttempt {
     claimer: string;
     claims: string[];
     height: number;
-    time: dayjs.Dayjs;
+    // time: dayjs.Dayjs;
     status: Status;
     instance_hash: string;
     claim_hash: string;
+    attemptNb: number;
 
     constructor(attempt: Record<string, any>) {
         this.claimer = attempt.claimer;
         this.claims = attempt.claims;
         this.height = attempt.height;
-        this.time = dayjs(attempt.time);
+        // this.time = dayjs(attempt.time);
         this.status = attempt.status;
         this.instance_hash = attempt.instance_hash;
         this.claim_hash = attempt.hash;
+        this.attemptNb = attempt.attemptNb;
     }
 
     decided() { return decided(this.status); }
@@ -170,6 +172,7 @@ class ProofAttempt {
             return 0;
         }
     }
+    parentClaim(instance: Sprig): Claim { return instance.claims[this.claim_hash]; }
 }
 
 class Sprig {
@@ -186,9 +189,10 @@ class Sprig {
             return new Claim(claim);
         });
         this.language = sprig.language;
-        this.proof_attempts = _.mapValues(sprig.proof_attempts, (attempts, claimHash) => _.map(attempts, (attempt) => {
+        this.proof_attempts = _.mapValues(sprig.proof_attempts, (attempts, claimHash) => _.map(attempts, (attempt, attemptNb) => {
             attempt.instance_hash = this.hash;
             attempt.hash = claimHash;
+            attempt.attemptNb = attemptNb;
             return new ProofAttempt(attempt);
         }));
         this.params = new Parameters(sprig.params);
