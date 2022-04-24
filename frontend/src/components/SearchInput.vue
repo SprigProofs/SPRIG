@@ -10,6 +10,7 @@ import InstanceEmbed from './InstanceEmbed.vue';
 import ClaimEmbed from './ClaimEmbed.vue';
 import AttemptEmbed from './AttemptEmbed.vue';
 import { StatusTag } from './small';
+import LanguageTag from './small/LanguageTag.vue';
 
 const statuses = reactive({
     [Status.CHALLENGED]: true,
@@ -198,16 +199,17 @@ const results = computed<{key: string, claim?: Claim, instance?: Sprig, attempt?
             <section class="flex flex-col space-y-2">
                 <h2 class="small-title">Filter status</h2>
                 <div class="flex flex-wrap -mx-1 -my-1">
-                    <label v-for="v, s in statuses" :key="s" class="mx-1 my-1">
+                    <label v-for="v, s in statuses" :key="s" 
+                        class="m-1 hover:brightness-105 cursor-pointer transition ">
                         <input hidden type="checkbox" :name="s" :id="s" v-model="statuses[s]"> 
                         <StatusTag :status="s" class="" :grayed="!statuses[s]" />
                     </label>
                 </div>
                 <h2 class="small-title pt-2">Filter language</h2>
                 <div class="flex flex-wrap -mx-1 -my-1">
-                    <label v-for="v, l in languages" :key="l" class="mx-1 my-1">
+                    <label v-for="v, l in languages" :key="l" class="m-1 cursor-pointer hover:font-semibold transition">
                         <input hidden type="checkbox" :name="l" :id="l" v-model="languages[l]"> 
-                        <el-tag :type="v ? '' : 'info'" effect="plain">{{ l }}</el-tag>
+                        <LanguageTag :lang="l" :grayed="!v"/>
                     </label>
                 </div>
             </section>
@@ -233,7 +235,7 @@ const results = computed<{key: string, claim?: Claim, instance?: Sprig, attempt?
             </section>
             <section class="flex flex-col space-y-2">
                 <h2 class="small-title">Type</h2>
-                <label v-for="(type) in types" :key="type">
+                <label v-for="(type) in types" :key="type" class="cursor-pointer">
                     <input type="checkbox" :name="type" :id="type" v-model="selectedTypes[type]"> 
                     {{ type }}
                 </label>

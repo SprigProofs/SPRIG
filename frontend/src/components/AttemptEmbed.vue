@@ -9,7 +9,7 @@
         <!-- Top left -->
         <div class="space-x-2">
           <StatusTag class="" :status="attempt.status" />
-          <el-tag effect="plain">{{ instance.language }}</el-tag>
+          <LanguageTag :lang="instance.language" />
           <span class="text-gray-500 italic text-sm font-mono">#{{ instanceHash }}/{{ claimHash }}.{{ attemptNb }}</span>
         </div>
       </div>
@@ -55,7 +55,7 @@
 <script setup lang="ts">
 import { Status, Sprig, Claim, Language, LANGUAGES, ProofAttempt, Parameters } from '../sprig';
 import { store } from '../store';
-import { LabeledData, StatusTag, Price } from "./small";
+import { LabeledData, StatusTag, Price, LanguageTag } from "./small";
 import User from './User.vue';
 
 const props = defineProps({

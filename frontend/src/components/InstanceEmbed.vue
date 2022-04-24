@@ -9,7 +9,7 @@
         <!-- Top left -->
         <div class="space-x-2">
           <StatusTag class="" :status="claim.status" />
-          <el-tag effect="plain">{{ instance.language }}</el-tag>
+          <LanguageTag :lang="instance.language"/>
           <span class="text-gray-500 italic text-sm font-mono">#{{ instance.hash }}</span>
         </div>
       </div>
@@ -59,7 +59,7 @@
 <script setup lang="ts">
 import { Status, Sprig, Claim, Language, LANGUAGES } from '../sprig';
 import { store } from '../store';
-import { Price, StatusIcon, StatusTag, Time } from './small';
+import { Price, StatusIcon, StatusTag, Time, LanguageTag } from './small';
 import User from './User.vue';
 
 
