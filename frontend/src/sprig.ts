@@ -271,56 +271,62 @@ function logFail(title: string, data: Object) {
     });
 }
 const api = {
-    get(path: string[], callback: FetchCallback<any>): void {
+    async get(path: string[]) {
         const url = API_BASE + path.join("/")
-        fetch(url).then(resp => {
-            if (resp.ok) {
-                resp.json().then(data => {
-                    callback(data)
-                }).catch(err => {
-                    logFail("Error handling data", {url, err});
-                })
-            } else {
-                logFail("Server returned error", {url, resp});
-            }
-        }).catch(err => {
-            logFail("Error fetching data", {url, err});
-        })
-    },
-    post(path: string[], query: Record<string, string>, body: any, callback: FetchCallback<any>) {
-        const url = new URL(API_BASE + path.join("/"))
-        for (const key of Object.keys(query)) {
-            url.searchParams.append(key, query[key])
+        const resp = await fetch(url)
+            .catch(err => {
+                logFail("Error fetching data", { url, err })
+                return Promise.reject(err);
+            });
+        if (resp.ok) {
+            return await resp.json()
+                .catch(err => {
+                    logFail("Failed to parse JSON", { url, err, resp })
+                    return Promise.reject(err);
+                });
+        } else {
+            logFail("Server returned error", { url, resp });
+            throw new Error(`Server returned error ${resp.status}`);
         }
-        console.log("post url", url, "body", body)
-        fetch(url.toString(), {
-            method: "POST",
-            body: body ? JSON.stringify(body) : "",
-        }).then(resp => {
-            if (resp.ok) {
-                resp.json().then(data => {
-                    callback(data)
-                })
-            }
-        })
     },
-    fetchInstanceList(callback: FetchCallback<Record<string, SprigSummary>>) {
-        this.get(["instances"], data => callback(_.mapValues(data, convert.sprigSummary)))
+    async fetchInstanceList(): Promise<Record<string, SprigSummary>> {
+        return await this.get(["instances"])
+            .then(data => _.mapValues(data, convert.sprigSummary));
     },
-    fetchInstance(hash: string, callback: FetchCallback<Sprig>) {
-        this.get([hash], data => callback(new Sprig(data)))
+    async fetchInstance(hash: string): Promise<Sprig> {
+        return await this.get([hash])
+            .then(data => new Sprig(data));
     },
-    fetchAllInstances(callback: FetchCallback<Record<string, Sprig>>) {
-        this.get(["everything"], data => callback(_.mapValues(data, s => new Sprig(s))))
+    async fetchAllInstances(): Promise<Record<string, Sprig>> {
+        return await this.get(["everything"])
+            .then(data => _.mapValues(data, s => new Sprig(s)));
     },
-    challenge(instance: string, claim: string, skeptic: string, callback: FetchCallback<ChallengeRecord>) {
-        this.post([instance, claim, "challenge"], {skeptic: skeptic}, null, callback)
-    },
-    answer(instance: string, claim: string, claimer: string, claims: string[], lowLevel: boolean, callback: FetchCallback<AnswerRecord>) {
-        this.post([instance, claim, "proof_attempts"], {}, {
-            claimer, claims, machine_level: lowLevel
-        }, callback)
-    }
+
+    // post(path: string[], query: Record<string, string>, body: any, callback: FetchCallback<any>) {
+    //     const url = new URL(API_BASE + path.join("/"))
+    //     for (const key of Object.keys(query)) {
+    //         url.searchParams.append(key, query[key])
+    //     }
+    //     console.log("post url", url, "body", body)
+    //     fetch(url.toString(), {
+    //         method: "POST",
+    //         body: body ? JSON.stringify(body) : "",
+    //     }).then(resp => {
+    //         if (resp.ok) {
+    //             resp.json().then(data => {
+    //                 callback(data)
+    //             })
+    //         }
+    //     })
+    // },
+    // challenge(instance: string, claim: string, skeptic: string, callback: FetchCallback<ChallengeRecord>) {
+    //     this.post([instance, claim, "challenge"], {skeptic: skeptic}, null, callback)
+    // },
+    // answer(instance: string, claim: string, claimer: string, claims: string[], lowLevel: boolean, callback: FetchCallback<AnswerRecord>) {
+    //     this.post([instance, claim, "proof_attempts"], {}, {
+    //         claimer, claims, machine_level: lowLevel
+    //     }, callback)
+    // }
 
 
 }
