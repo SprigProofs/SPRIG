@@ -13,6 +13,7 @@ import json
 from collections import defaultdict
 from enum import Enum
 from pathlib import Path
+import sys
 from time import sleep, time_ns
 from typing import NewType, Optional
 
@@ -201,6 +202,20 @@ class Parameters(AbstractParameters):
     downstakes: list[int]
     question_bounties: list[int]
     verification_cost: int
+
+    def __post_init__(self):
+        assert self.root_height > 0
+        assert len(self.upstakes) == self.root_height
+        assert len(self.downstakes) == self.root_height
+        assert len(self.question_bounties) == self.root_height
+
+        assert self.downstakes[0] == 0
+        assert self.question_bounties[0] == 0
+
+        assert self.verification_cost > 0
+        assert self.max_length > 0
+        assert self.time_for_questions > 0
+        assert self.time_for_answers > 0
 
     def protocol_height(self) -> int:
         return self.root_height
@@ -768,15 +783,13 @@ def time_passes(sprig, amount=1):
     print()
 
 def play_tictactoe(
-    level: int,
-    costs: list[int],
-    recommended_constraints: Parameters,
+    params: Parameters,
     MICHAEL, DIEGO, CLEMENT
 ):
     ctx = " O plays X wins"
     sprig = Sprig.start(
         TicTacToe().dump(),
-        recommended_constraints,
+        params,
         Address("Diego"),
         "...|XX.|... O plays X wins",
 
@@ -833,14 +846,12 @@ def play_tictactoe(
     return sprig
 
 def play_lean(
-    level: int,
-    costs: list[int],
-    recommended_constraints: Parameters,
+    params: Parameters,
     MICHAEL, DIEGO, CLEMENT
 ):
     sprig = Sprig.start(
         Lean().dump(),
-        recommended_constraints,
+        params,
         Address("Diego"),
         "lemma add_comm a b : nat) : a + b = b + a",
 
@@ -925,20 +936,21 @@ def main():
     CLEMENT = Address("Clément")
 
     level = 5
-    costs = [1, 2, 3, 4, 5]
-    recommended_constraints = Parameters(
+    params = Parameters(
         root_height=level,
         max_length=1000,
         time_for_questions=2,
         time_for_answers=2,
-        upstakes=costs,
-        downstakes=costs,
-        question_bounties=costs,
+        upstakes=[5, 4, 3, 2, 1],
+        downstakes=[0, 1, 2, 3, 4],
+        question_bounties=[0, 1, 2, 3, 4],
         verification_cost=1,
     )
 
-    # s = play_tictactoe(level, costs, recommended_constraints, MICHAEL, DIEGO, CLEMENT)
-    s = play_lean(level, costs, recommended_constraints, MICHAEL, DIEGO, CLEMENT)
+    if "tictactoe" in sys.argv:
+        s = play_tictactoe(params, MICHAEL, DIEGO, CLEMENT)
+    else:
+        s = play_lean(params, MICHAEL, DIEGO, CLEMENT)
 
     # print(s.dumps())
 

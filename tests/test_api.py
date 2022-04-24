@@ -65,13 +65,13 @@ def test_instance_get(hash):
 def test_post_new_instance():
     creation_data = {
         'params': {
-            'root_height': 4,
+            'root_height': 5,
             'max_length': 100,
             'time_for_questions': 5,
             'time_for_answers': 10,
-            'upstakes': [1, 2, 3, 4, 0],
+            'upstakes': [1, 2, 3, 4, 5],
             'downstakes': [0, 7, 8, 9, 10],
-            'question_bounties': [11, 12, 13, 14, 15],
+            'question_bounties': [0, 12, 13, 14, 15],
             'verification_cost': 16,
         },
         'language': 'TicTacToe',

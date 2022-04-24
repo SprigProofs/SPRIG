@@ -118,6 +118,10 @@ class TicTacToe(Language):
             move_covered
         ), f"Not all possibilities for {prev_turn} have been covered."
 
+        return True
+
     def validate_top_level(self, sprig, initial_statement: str):
         grid, turn, win = self.parse_board(initial_statement)
         assert turn != win
+
+        return True
