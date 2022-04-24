@@ -2,12 +2,10 @@ PORT=8600
 BACKEND_PORT=8601
 
 backend:
-	DEV=true poetry run uvicorn api:api --port $(BACKEND_PORT) --reload &
+	DEV=true poetry run uvicorn api:api --port $(BACKEND_PORT) --reload
 
 frontend:
 	cd frontend && PORT=$(PORT) npm run serve
-
-dev: backend frontend
 
 run:
 	poetry run uvicorn api:api --port $(BACKEND_PORT) &
