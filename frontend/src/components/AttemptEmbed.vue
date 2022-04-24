@@ -10,7 +10,7 @@
         <div class="space-x-2">
           <StatusTag class="" :status="attempt.status" />
           <LanguageTag :lang="instance.language" />
-          <span class="text-gray-500 italic text-sm font-mono">#{{ instanceHash }}/{{ claimHash }}.{{ attemptNb }}</span>
+          <span class="text-gray-500 italic text-sm font-mono">{{ attempt.uid() }}</span>
         </div>
       </div>
       <h3 class="text-lg pt-2  ">

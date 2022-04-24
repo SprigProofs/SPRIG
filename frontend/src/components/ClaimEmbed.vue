@@ -9,12 +9,12 @@
         <div class="space-x-2">
           <StatusTag class="" :status="claim.status" />
           <LanguageTag :lang="instance.language" />
-          <span class="text-gray-500 italic text-sm font-mono">#{{ instanceHash }}/{{ claim.hash }}</span>
+          <span class="text-gray-500 italic text-sm font-mono">{{ claim.uid() }}</span>
         </div>
       </div>
       <h3 class="text-lg pt-2  ">
         <span class="small-title break-all">{{ language.title(claim) }}</span>
-        <span class="text-sm text-gray-700"> by cozyfractal</span>
+        <span class="text-sm text-gray-700"> by TODO </span>
       </h3>
       <code class="text-sm flex-grow">
         <pre class="whitespace-pre-wrap">{{ language.shortDescription(claim) }}</pre>

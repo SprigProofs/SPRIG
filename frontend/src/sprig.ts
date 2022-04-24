@@ -65,6 +65,7 @@ class Claim {
         return this.parent === null;
     }
     decided() { return decided(this.status); }
+    uid(): string { return '#' + this.instance_hash + '/' + this.hash; }
     attempt(instance: Sprig): ProofAttempt | null {
         if (!this.parent) {
             return null;
@@ -149,6 +150,7 @@ class ProofAttempt {
         this.attemptNb = attempt.attemptNb;
     }
 
+    uid(): string { return '#' + this.instance_hash + '/' + this.claim_hash + '.' + this.attemptNb; }
     decided() { return decided(this.status); }
     stakeHeld(params: Parameters): number {
         if (!decided(this.status)) {
@@ -195,6 +197,7 @@ class Sprig {
         this.params = new Parameters(sprig.params);
     }
 
+    uid(): string { return '#' + this.hash; }
     totalBounties() {
         const open_challenges = _.sumBy(_.values(this.claims),
             (claim) => claim.challengeBounty(this.params));
