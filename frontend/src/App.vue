@@ -1,9 +1,5 @@
-<script setup>
+<script setup lang="ts">
 
-import SearchInput from './components/SearchInput.vue';
-import ProofAttemptPage from './components/ProofAttemptPage.vue';
-import Parameters from './components/Parameters.vue';
-import Home from './components/Home.vue';
 import NavBar from './components/NavBar.vue';
 import { store } from './store';
 

@@ -29,7 +29,7 @@
         <Price :amount="bounty" />
       </div>
       <div class="text-xs text-slate-700 flex-grow">
-        {{ humanize(claim.open_until, false) }} left
+        {{ claim.open_until.toNow() }} left
       </div>
       <button v-if="claim.status == Status.UNCHALLENGED" class="border bg-blue-100 rounded-md py-2 self-stretch shadow">
         Challenge for

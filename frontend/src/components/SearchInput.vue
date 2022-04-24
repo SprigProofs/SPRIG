@@ -2,7 +2,7 @@
 import { reactive, ref } from 'vue';
 import StatusTag from './StatusTag.vue';
 import * as _ from 'lodash';
-import { api, Status, STATUSES, NOW, decided, Sprig } from '../sprig'
+import { Status, decided, Sprig, Claim, ProofAttempt, Parameters } from '../sprig'
 import { store } from '../store';
 import ClaimEmbed from './ClaimEmbed.vue';
 import { ElNotification } from 'element-plus';
@@ -20,9 +20,15 @@ const REWARD = "Reward";
 const OPEN_UNTIL = "Open until";
 const RELEVANCE = "Relevance";
 const NEW = "New";
-const sort_methods = reactive([NEW, REWARD, OPEN_UNTIL])
-const types = ["Claims", "Proof Attempts", "Instances", "Users"];
-const selectedType = ref("Instances")
+const sort_methods = reactive([NEW, REWARD, OPEN_UNTIL]);
+enum Types {
+    CLAIM = "Claims",
+    ATTEMPT = "Proof Attempts",
+    INSTANCE = "Instances",
+    USER = "Users",
+}
+const types = [Types.CLAIM, Types.ATTEMPT, Types.INSTANCE, Types.USER];
+const selectedType = ref(Types.ATTEMPT);
 const search = ref("")
 
 
@@ -63,43 +69,62 @@ function drop(event, droppedMethod) {
     sort_methods.splice(idxCurrent, 0, draggedMethod);
 }
 
-function sort_weight(claim) {
+function getWeights(o, type: Types) {
     const weights = {};
-    // TODO: Put the real reward here
-    weights[REWARD] = 10;
-    weights[NEW] = NOW - claim.last_modification;
-    weights[OPEN_UNTIL] = decided(claim.status) ? 9999 : claim.open_until - NOW
-    weights[RELEVANCE] = 0
+    const now = dayjs();
+    const timeDiff = (d: dayjs.Dayjs) => now.diff(d, "hours", true);
+    switch (type) {
+        // TODO: Set all weights
+        case Types.CLAIM:
+            const claim: Claim = o;
+            weights[REWARD] = -claim.possibleReward(store.instances[claim.instance_hash]);
+            weights[NEW] = timeDiff(claim.last_modification);
+            weights[OPEN_UNTIL] = decided(claim.status) 
+                ? 999999999999
+                : timeDiff(claim.open_until);
+            weights[RELEVANCE] = -1
+            break;
 
-    var weight = 0;
-    for (let i = 0; i < sort_methods.length; i++) {
-        const method = sort_methods[i];
-        weight += weights[method] * 0.3 ** i;
+        case Types.ATTEMPT:
+            const attempt: ProofAttempt = o;
+            weights[REWARD] = -attempt.possibleReward(store.instances[attempt.instance_hash].params);
+            weights[NEW] = timeDiff(attempt.time);
+            weights[OPEN_UNTIL] = -1;
+            weights[RELEVANCE] = -1
+            break;
+
+        case Types.INSTANCE:
+            const instance: Sprig = o;
+            weights[REWARD] = -instance.totalBounties();
+            weights[NEW] = timeDiff(instance.rootClaim().last_modification);
+            weights[OPEN_UNTIL] = -1
+            weights[RELEVANCE] = -1
+            break;
+    
+        default:
+            break;
     }
-    return weight;
+    
+    return weights;
 }
 
-function sort_weight_instance(instance: Sprig) {
-    const weights = {};
-    weights[REWARD] = -instance.totalBounties();
-    weights[NEW] = dayjs().diff(instance.rootClaim().last_modification);
-    // TODO: Set the correct value
-    weights[OPEN_UNTIL] = 1
-    weights[RELEVANCE] = 0
+/**
+ * Weight of objects to sort. Smallest weight is first.
+ */
+function sort_weight(o, type: Types): number {
 
-
+    const weights = getWeights(o, type);
     var weight = 0;
     for (let i = 0; i < sort_methods.length; i++) {
         const method = sort_methods[i];
         weight += weights[method] * 0.3 ** i;
     }
-    // console.log(instance.hash, weights, weight)
     return weight;
 }
 
 function results(): Record<string, any> {
     switch (selectedType.value) {
-        case "Claims":
+        case Types.CLAIM:
             // dict[instanceHash, list[claims]]
             const claimsByInstance = _.mapValues(store.instances, (i) => _.values(i.claims));
             const claims = _.flatten(_.values(claimsByInstance));
@@ -107,13 +132,23 @@ function results(): Record<string, any> {
 
             return _.filter(keyedClaims, claim => statuses[claim.status]
                     && claim.statement.toLowerCase().includes(search.value.toLowerCase()))
-                .sort((a, b) => sort_weight(a) - sort_weight(b))
+                .sort((a, b) => sort_weight(a, Types.CLAIM) - sort_weight(b, Types.CLAIM))
         
-        case "Instances":
+        case Types.INSTANCE:
             return Object.keys(store.instances)
                 .map(key => store.instances[key])
                 .filter(instance => statuses[instance.rootClaim().status])
-                .sort((a, b) => sort_weight_instance(a) - sort_weight_instance(b))
+                .sort((a, b) => sort_weight(a, Types.INSTANCE) - sort_weight(b, Types.INSTANCE))
+            
+        case Types.ATTEMPT:
+            const attempts = _.flatMap(
+                _.values(store.instances),
+                (i) => _.flatten(_.values(i.proof_attempts)));
+            const keyedAttempts = _.fromPairs(attempts.map(a => [a.claim_hash + '/' + a.instance_hash, a]))
+
+            return _.filter(keyedAttempts, attempt => statuses[attempt.status]
+                    && store.instances[attempt.instance_hash].claims[attempt.claim_hash].statement.toLowerCase().includes(search.value.toLowerCase()))
+                .sort((a, b) => sort_weight(a, Types.ATTEMPT) - sort_weight(b, Types.ATTEMPT))
             
         default:
             console.log(selectedType)
@@ -176,6 +211,7 @@ function results(): Record<string, any> {
                 <ClaimEmbed v-if="selectedType=='Claims'" :claim-hash="result.hash" :instance-hash="result.instance_hash"></ClaimEmbed>
                 <InstanceEmbed v-else-if="selectedType=='Instances'" :hash="result.hash"></InstanceEmbed>
                 <div v-else>{{ result }}</div>
+                {{ getWeights(result, selectedType) }}
             </li>
             <li key="nothing there! It just allows to have hover effect on the last item :shrug:"></li>
         </TransitionGroup>

@@ -12,9 +12,6 @@ dayjs.extend(relativeTime);
 
 import { ElNotification } from "element-plus";
 
-// TODO: to be removed
-const NOW = 13;
-
 /** 
  * Constants
 */
@@ -51,7 +48,7 @@ class Claim {
     status: Status;
     open_until: dayjs.Dayjs;
     last_modification: dayjs.Dayjs;
-    created_at: dayjs.Dayjs;
+    // created_at: dayjs.Dayjs;
     skeptic: string | null;
 
     constructor(claim: Record<string, any>) {
@@ -63,10 +60,13 @@ class Claim {
         this.status = claim.status;
         this.open_until = dayjs(claim.open_until);
         this.last_modification = dayjs(claim.last_modification);
-        this.created_at = dayjs(claim.created_at);
+        // this.created_at = dayjs(claim.created_at);
         this.skeptic = claim.skeptic;
     }
 
+    isRoot(): boolean {
+        return this.parent === null;
+    }
     decided() { return decided(this.status); }
     attempt(instance: Sprig): ProofAttempt | null {
         if (!this.parent) {
@@ -77,7 +77,9 @@ class Claim {
     }
 
     challengeBounty(params: Parameters): number {
-        if (this.status === Status.CHALLENGED) {
+        if (this.isRoot()) {
+            return 0;
+        } else if (this.status === Status.CHALLENGED) {
             return params.question_bounties[this.height];
         } else {
             return 0;
@@ -86,7 +88,7 @@ class Claim {
     possibleDownstake(instance: Sprig): number {
         if (this.decided()) {
             return 0;
-        } else if (!this.parent) {
+        } else if (this.isRoot()) {
             return 0;
         } else if (this.attempt(instance)?.decided()) {
             return 0;
@@ -94,7 +96,11 @@ class Claim {
             return instance.params.downstakes[this.height];
         }
     }
-
+    possibleReward(instance: Sprig): number { 
+        return this.status == Status.CHALLENGED 
+            ? this.challengeBounty(instance.params)
+            : this.possibleDownstake(instance);
+    }
     costAddAttempt(params: Parameters): number | null {
         const attemptHeight = this.height - 1;
         if (attemptHeight == 0) {
@@ -132,6 +138,7 @@ class ProofAttempt {
     time: dayjs.Dayjs;
     status: Status;
     instance_hash: string;
+    claim_hash: string;
 
     constructor(attempt: Record<string, any>) {
         this.claimer = attempt.claimer;
@@ -139,12 +146,26 @@ class ProofAttempt {
         this.height = attempt.height;
         this.time = dayjs(attempt.time);
         this.status = attempt.status;
+        this.instance_hash = attempt.instance_hash;
+        this.claim_hash = attempt.hash;
     }
 
     decided() { return decided(this.status); }
-    moneyHeld(params: Parameters): number {
+    stakeHeld(params: Parameters): number {
         if (!decided(this.status)) {
             return params.upstakes[this.height] + params.downstakes[this.height];
+        } else {
+            return 0;
+        }
+    }
+    /**
+     * How much one can expect to win by challenging or submiting a proof.
+     */
+    possibleReward(params: Parameters): number {
+        if (this.status === Status.CHALLENGED) {
+            return params.question_bounties[this.height];
+        } else if (this.status === Status.UNCHALLENGED) {
+            return this.stakeHeld(params);
         } else {
             return 0;
         }
@@ -165,8 +186,9 @@ class Sprig {
             return new Claim(claim);
         });
         this.language = sprig.language;
-        this.proof_attempts = _.mapValues(sprig.proof_attempts, (attempts) => _.map(attempts, (attempt) => {
+        this.proof_attempts = _.mapValues(sprig.proof_attempts, (attempts, claimHash) => _.map(attempts, (attempt) => {
             attempt.instance_hash = this.hash;
+            attempt.hash = claimHash;
             return new ProofAttempt(attempt);
         }));
         this.params = new Parameters(sprig.params);
@@ -176,7 +198,7 @@ class Sprig {
         const open_challenges = _.sumBy(_.values(this.claims),
             (claim) => claim.challengeBounty(this.params));
         const open_attempts = _.sumBy(_.values(this.proof_attempts),
-            (attempts) => _.sumBy(attempts, a => a.moneyHeld(this.params)));
+            (attempts) => _.sumBy(attempts, a => a.stakeHeld(this.params)));
 
         return open_challenges + open_attempts;
     }
@@ -360,7 +382,7 @@ const api = {
 
 
 export {
-    NOW, humanize,
+    humanize,
     api, STATUSES, STATUS_DISPLAY_NAME, LANGUAGES, Language,
     decided, Claim, SprigSummary, Sprig, Status,
     StatusCounts, ProofAttempt, Parameters
