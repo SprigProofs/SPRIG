@@ -57,10 +57,10 @@
 </template>
 
 <script setup lang="ts">
-import { Status, Sprig, Claim, Language, LANGUAGES } from '../sprig';
-import { store } from '../store';
-import { Price, StatusIcon, StatusTag, Time, LanguageTag } from './small';
-import User from './User.vue';
+import { Status, Sprig, Claim, Language, LANGUAGES } from '../../sprig';
+import { store } from '../../store';
+import { Price, StatusIcon, StatusTag, Time, LanguageTag } from '../small';
+import User from '../medium/User.vue';
 
 
 const props = defineProps({

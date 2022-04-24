@@ -53,9 +53,9 @@
 </template>
 
 <script setup lang="ts">
-import { Status, Sprig, Claim, Language, LANGUAGES, ProofAttempt, Parameters } from '../sprig';
-import { store } from '../store';
-import { LabeledData, StatusTag, Price, LanguageTag } from "./small";
+import { Status, Sprig, Claim, Language, LANGUAGES, ProofAttempt, Parameters } from '../../sprig';
+import { store } from '../../store';
+import { LabeledData, StatusTag, Price, LanguageTag } from "../small";
 import User from './User.vue';
 
 const props = defineProps({

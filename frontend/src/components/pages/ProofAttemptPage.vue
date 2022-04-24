@@ -139,11 +139,11 @@
 <script setup lang="ts">
 
 import { ref } from 'vue';
-import { LANGUAGES } from './../sprig';
-import { store } from './../store';
-import { Price, StatusTag, Time } from "./small";
-import User from './User.vue';
-import Parameters from './Parameters.vue';
+import { LANGUAGES } from '../../sprig';
+import { store } from '../../store';
+import { Price, StatusTag, Time } from "../small";
+import User from '../medium/User.vue';
+import Parameters from '../medium/Parameters.vue';
 
 const props = defineProps({
     instanceHash: {

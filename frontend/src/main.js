@@ -8,10 +8,9 @@ import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
 
 import { Algo, Price } from './components/small'
-import Home from './components/Home.vue'
-import Search from './components/SearchInput.vue'
-import ProofAttemptPage from './components/ProofAttemptPage.vue'
-
+import Home from './components/pages/Home.vue'
+import Search from './components/pages/SearchInput.vue'
+import ProofAttemptPage from './components/pages/ProofAttemptPage.vue'
 import { OhVueIcon, addIcons } from "oh-vue-icons";
 import { MdClearRound, MdCheckRound, MdMenu, MdModeedit, MdCancel, MdCheckcircle, MdOfflineboltSharp, MdKeyboarddoublearrowdown, MdKeyboarddoublearrowup, MdBolt, MdOfflinebolt, MdQuestionmarkRound, MdInfoRound, MdAccesstimeRound, MdPersonRound, FaMountain, MdLockclock, MdLockopenRound, MdPriorityhighRound, MdCloseRound, MdDownload, MdDownloading } from "oh-vue-icons/icons";
 import { PiPikachu } from 'oh-vue-icons/icons' 

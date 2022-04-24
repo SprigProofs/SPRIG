@@ -4,13 +4,13 @@ import { computed, reactive, ref } from 'vue';
 import _ from 'lodash';
 import dayjs from 'dayjs';
 
-import { Status, decided, Sprig, Claim, ProofAttempt, Parameters } from '../sprig'
-import { store } from '../store';
-import InstanceEmbed from './InstanceEmbed.vue';
-import ClaimEmbed from './ClaimEmbed.vue';
-import AttemptEmbed from './AttemptEmbed.vue';
-import { StatusTag } from './small';
-import LanguageTag from './small/LanguageTag.vue';
+import { Status, decided, Sprig, Claim, ProofAttempt, Parameters } from '../../sprig'
+import { store } from '../../store';
+import InstanceEmbed from '../medium/InstanceEmbed.vue';
+import ClaimEmbed from '../medium/ClaimEmbed.vue';
+import AttemptEmbed from '../medium/AttemptEmbed.vue';
+import { StatusTag } from '../small';
+import LanguageTag from '../small/LanguageTag.vue';
 
 const statuses = reactive({
     [Status.CHALLENGED]: true,

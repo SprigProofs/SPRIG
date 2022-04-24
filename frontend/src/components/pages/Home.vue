@@ -126,8 +126,8 @@
 </template>
 
 <script setup lang="ts">
-import { LabeledData } from './small';
-import { store } from '../store';
+import { LabeledData } from '../small';
+import { store } from '../../store';
 import * as _ from 'lodash';
 import { reactive, ref, computed } from 'vue';
 

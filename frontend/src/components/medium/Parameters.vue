@@ -1,6 +1,6 @@
 <script setup lang="ts">
 
-import { Hint, LabeledData } from './small';
+import { Hint, LabeledData } from '../small';
 
 const props = defineProps({
     params: {
