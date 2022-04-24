@@ -23,21 +23,14 @@
       <code class="text-sm flex-grow">
         <pre class="whitespace-pre-wrap">{{ language.shortDescription(claim) }}</pre>
       </code>
-
-      <ul class="grid grid-cols-4 gap-4 pt-4 max-w-md">
-        <li class="bg-slate-100 rounded p-2 flex flex-col items-center space-y-2"
-          v-for="(count, status) in instance.counts()" :key="status">
-          <div class="text-xs text-gray-500 capitalize">{{ status }}</div>
-          <div class="flex items-center font-semibold">
-            <StatusIcon :status="status" class="mr-2" />
-            <div>{{ count }}</div>
-          </div>
-        </li>
-      </ul>
+      <div class="leading-none rounded border-gray-200 p-2">
+        <div class="text-xs text-gray-600 mb-">Last action</div>
+        <p class="text-sm">Michael challenged claim #1a209b for 70</p>
+      </div>
 
     </div>
     <!-- Right of the card -->
-    <div v-if="!decided(claim.status)" class="w-48  p-4 flex-shrink-0
+    <div v-if="!decided(claim.status)" class=" p-4 flex-shrink-0
           flex flex-col space-y-2 items-end">
       <div class="text-black font-semibold rounded-sm">
         Bounties total
@@ -46,10 +39,17 @@
       <div class="text-xs text-slate-700 flex-grow">
         {{ humanize(claim.open_until, false) }} left
       </div>
-      <button v-if="claim.status == Status.UNCHALLENGED" class="border bg-blue-100 rounded-md py-2 self-stretch shadow">
-        Challenge for
-        <Price amount="12" />
-      </button>
+
+      <ul class="grid grid-cols-2 gap-4 self-end pt-4 max-w-md">
+        <li class="bg-gray-50 shadow rounded p-2 flex flex-col items-center space-y-2"
+          v-for="(count, status) in instance.counts()" :key="status">
+          <div class="text-xs text-gray-500 capitalize">{{ status }}</div>
+          <div class="flex items-center font-semibold">
+            <StatusIcon :status="status" class="mr-2" />
+            <div>{{ count }}</div>
+          </div>
+        </li>
+      </ul>
     </div>
 
   </router-link>

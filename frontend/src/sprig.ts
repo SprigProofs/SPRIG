@@ -72,14 +72,44 @@ class Claim {
     decided() {
         return decided(this.status);
     }
+    attempt(instance: Sprig): ProofAttempt | null {
+        if (!this.parent) {
+            return null;
+        }
+        const attempts = instance.proof_attempts[this.parent];
+        return attempts.find(a => _.includes(a.claims, this.hash));
+    }
 
-    challengeBounty(params: Parameters) {
+    challengeBounty(params: Parameters): number {
         if (this.status === Status.CHALLENGED) {
             return params.question_bounties[this.height]
         } else {
             return 0;
         }
     }
+    possibleDownstake(instance: Sprig): number {
+        if (this.decided()) {
+            return 0;
+        } else if (!this.parent) {
+            return 0;
+        } else if (this.attempt(instance)?.decided()) {
+            return 0;
+        } else {
+            return instance.params.downstakes[this.height];
+        }
+    }
+
+    costAddAttempt(params: Parameters): number | null {
+        const attemptHeight = this.height - 1;
+        if (attemptHeight == 0) {
+            return params.verification_cost + params.upstakes[attemptHeight];
+        } else if (this.height >= params.root_height || this.height <= 0) {
+            return null;
+        } else {
+            return params.upstakes[attemptHeight] + params.downstakes[attemptHeight];
+        }
+    }
+
 }
 
 interface StatusCounts {
@@ -115,6 +145,7 @@ class ProofAttempt {
         this.status = attempt.status
     }
 
+    decided() { return decided(this.status); }
     moneyHeld(params: Parameters): number {
         if (!decided(this.status)) {
             return params.upstakes[this.height] + params.downstakes[this.height];
