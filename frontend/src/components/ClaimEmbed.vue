@@ -45,7 +45,7 @@
 </template>
 
 <script setup lang="ts">
-import { decided, Status, humanize, Claim, Parameters, LANGUAGES, Language } from '../sprig';
+import { decided, Status, Claim, Parameters, LANGUAGES, Language } from '../sprig';
 import StatusTag from './StatusTag.vue';
 import Price from './Price.vue';
 import { store } from '../store';

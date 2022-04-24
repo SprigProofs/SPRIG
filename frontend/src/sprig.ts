@@ -6,7 +6,7 @@ to the processing of the data.
 import * as _ from "lodash";
 import * as dayjs from 'dayjs';
 import * as duration from 'dayjs/plugin/duration';
-import * as relativeTime from 'dayjs/plugin/relativeTime';  // for .humanize()
+import * as relativeTime from 'dayjs/plugin/relativeTime';  // for .humanize(  / fromNow()
 dayjs.extend(duration);
 dayjs.extend(relativeTime);
 
@@ -35,9 +35,6 @@ function decided(status: Status) {
     return status === Status.VALIDATED || status === Status.REJECTED;
 }
 
-function humanize(date: dayjs.Dayjs, suffix = true) {
-    return dayjs.duration(date.diff(dayjs())).humanize(suffix);
-}
 
 class Claim {
     statement: string;
@@ -388,7 +385,6 @@ const api = {
 
 
 export {
-    humanize,
     api, STATUSES, STATUS_DISPLAY_NAME, LANGUAGES, Language,
     decided, Claim, SprigSummary, Sprig, Status,
     StatusCounts, ProofAttempt, Parameters

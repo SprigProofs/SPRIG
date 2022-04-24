@@ -15,15 +15,15 @@
             <div class="flex space-x-4">
                 <div>
                     <v-icon name="md-person-round" class="mr-1"/> 
-                    <User name="cozyfractal" />
+                    <User :name="attempt.claimer" />
                 </div>
                 <div>
                     <v-icon name="md-accesstime-round" class="mr-1"/> 
-                    <span>{{ humanize(claim.last_modification) }}</span>
+                    <Time :time="claim.last_modification" />
                 </div>
                 <div>
                     <v-icon name="md-lockclock" class="mr-1"/> 
-                    <span>{{ humanize(claim.open_until) }}</span>
+                    <Time :time="claim.open_until" />
                 </div>
                 <div>
                     <v-icon name="fa-mountain" class="mr-1"/> 
@@ -97,7 +97,7 @@
         </div>
     </div>
 
-    <section>
+    <section class="m-8">
         <el-collapse>
             <el-collapse-item title="Instance parameters">
                     <Parameters :params="params" :highlight="claim.height" />
@@ -138,13 +138,14 @@
 
 <script setup lang="ts">
 
-import { humanize, LANGUAGES } from './../sprig';
+import { LANGUAGES } from './../sprig';
 import { store } from './../store';
 import StatusTag from './StatusTag.vue';
 import { ref } from 'vue';
 import Price from './Price.vue';
 import User from './User.vue';
 import Parameters from './Parameters.vue';
+import Time from './Time.vue';
 
 const props = defineProps({
     instanceHash: {

@@ -53,7 +53,7 @@
 </template>
 
 <script setup lang="ts">
-import { decided, Status, humanize, Sprig, Claim, Language, LANGUAGES, ProofAttempt, Parameters } from '../sprig';
+import { decided, Status, Sprig, Claim, Language, LANGUAGES, ProofAttempt, Parameters } from '../sprig';
 import { store } from '../store';
 import StatusTag from './StatusTag.vue';
 import Price from './Price.vue';

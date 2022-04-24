@@ -9,7 +9,7 @@
         <!-- Top left -->
         <div class="space-x-2">
           <StatusTag class="" :status="claim.status" />
-          <el-tag>{{ instance.language }}</el-tag>
+          <el-tag effect="plain">{{ instance.language }}</el-tag>
           <span class="text-gray-500 italic text-sm font-mono">#{{ instance.hash }}</span>
         </div>
       </div>
@@ -37,7 +37,7 @@
         <Price :amount="instance.totalBounties()" />
       </div>
       <div class="text-xs text-slate-700 flex-grow">
-        {{ humanize(claim.open_until, false) }} left
+        <Time :time="claim.open_until" :suffix="false"/> left
       </div>
 
       <ul class="grid grid-cols-2 gap-4 self-end pt-4 max-w-md">
@@ -57,12 +57,13 @@
 </template>
 
 <script setup lang="ts">
-import { decided, Status, humanize, Sprig, Claim, Language, LANGUAGES } from '../sprig';
+import { decided, Status, Sprig, Claim, Language, LANGUAGES } from '../sprig';
 import { store } from '../store';
 import StatusTag from './StatusTag.vue';
 import Price from './Price.vue';
 import User from './User.vue';
 import StatusIcon from './StatusIcon.vue';
+import Time from './Time.vue';
 
 const props = defineProps({
   hash: {
