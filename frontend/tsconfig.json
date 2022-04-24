@@ -1,8 +1,0 @@
-{
-    "compilerOptions": {
-      "types": ["element-plus/global"],
-      "allowJs": true,
-      "jsx": "preserve",
-      "lib": ["ES2015", "DOM"],  // I don't know what this does, but it removes warnings. Feel free to modify it if you find it meaningful.
-    }
-}

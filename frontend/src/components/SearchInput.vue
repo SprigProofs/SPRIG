@@ -97,7 +97,7 @@ function sort_weight_instance(instance: Sprig) {
     return weight;
 }
 
-function results() {
+function results(): Record<string, any> {
     switch (selectedType.value) {
         case "Claims":
             // dict[instanceHash, list[claims]]

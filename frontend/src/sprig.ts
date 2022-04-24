@@ -4,18 +4,16 @@ to the processing of the data.
 */
 
 import * as _ from "lodash";
-import * as dayjs from 'dayjs'
-import * as duration from 'dayjs/plugin/duration'
-import * as relativeTime from 'dayjs/plugin/relativeTime'  // for .humanize()
-dayjs.extend(duration)
-dayjs.extend(relativeTime)
+import * as dayjs from 'dayjs';
+import * as duration from 'dayjs/plugin/duration';
+import * as relativeTime from 'dayjs/plugin/relativeTime';  // for .humanize()
+dayjs.extend(duration);
+dayjs.extend(relativeTime);
 
 import { ElNotification } from "element-plus";
 
 // TODO: to be removed
 const NOW = 13;
-
-type FetchCallback<T> = (data: T) => void
 
 /** 
  * Constants
@@ -34,44 +32,42 @@ const STATUS_DISPLAY_NAME = {
     [Status.UNCHALLENGED]: "Unchallenged",
     [Status.VALIDATED]: "Validated",
     [Status.REJECTED]: "Rejected",
-}
+};
 
 function decided(status: Status) {
     return status === Status.VALIDATED || status === Status.REJECTED;
 }
 
-function humanize(date: dayjs.Dayjs, suffix=true) {
+function humanize(date: dayjs.Dayjs, suffix = true) {
     return dayjs.duration(date.diff(dayjs())).humanize(suffix);
 }
 
 class Claim {
-    statement: string
-    height: number
-    hash: string
-    instance_hash: string
-    parent: string
-    status: Status
-    open_until: dayjs.Dayjs
-    last_modification: dayjs.Dayjs
-    created_at: dayjs.Dayjs
-    skeptic: string | null
+    statement: string;
+    height: number;
+    hash: string;
+    instance_hash: string;
+    parent: string;
+    status: Status;
+    open_until: dayjs.Dayjs;
+    last_modification: dayjs.Dayjs;
+    created_at: dayjs.Dayjs;
+    skeptic: string | null;
 
     constructor(claim: Record<string, any>) {
-        this.statement = claim.statement
-        this.height = claim.height
-        this.hash = claim.hash
-        this.instance_hash = claim.instance_hash
-        this.parent = claim.parent
-        this.status = claim.status
-        this.open_until = dayjs(claim.open_until)
-        this.last_modification = dayjs(claim.last_modification)
-        this.created_at = dayjs(claim.created_at)
-        this.skeptic = claim.skeptic
+        this.statement = claim.statement;
+        this.height = claim.height;
+        this.hash = claim.hash;
+        this.instance_hash = claim.instance_hash;
+        this.parent = claim.parent;
+        this.status = claim.status;
+        this.open_until = dayjs(claim.open_until);
+        this.last_modification = dayjs(claim.last_modification);
+        this.created_at = dayjs(claim.created_at);
+        this.skeptic = claim.skeptic;
     }
 
-    decided() {
-        return decided(this.status);
-    }
+    decided() { return decided(this.status); }
     attempt(instance: Sprig): ProofAttempt | null {
         if (!this.parent) {
             return null;
@@ -82,7 +78,7 @@ class Claim {
 
     challengeBounty(params: Parameters): number {
         if (this.status === Status.CHALLENGED) {
-            return params.question_bounties[this.height]
+            return params.question_bounties[this.height];
         } else {
             return 0;
         }
@@ -113,36 +109,36 @@ class Claim {
 }
 
 interface StatusCounts {
-    challenged: number
-    unchallenged: number
-    validated: number
-    rejected: number
+    challenged: number;
+    unchallenged: number;
+    validated: number;
+    rejected: number;
 }
 
 interface SprigSummary {
-    language: string
-    root_claim: Claim
-    counts: StatusCounts
-    hash: string
-    params: Parameters
-    author: string
-    bounties: number
+    language: string;
+    root_claim: Claim;
+    counts: StatusCounts;
+    hash: string;
+    params: Parameters;
+    author: string;
+    bounties: number;
 }
 
 class ProofAttempt {
-    claimer: string
-    claims: string[]
-    height: number
-    time: dayjs.Dayjs
-    status: Status
-    instance_hash: string
+    claimer: string;
+    claims: string[];
+    height: number;
+    time: dayjs.Dayjs;
+    status: Status;
+    instance_hash: string;
 
     constructor(attempt: Record<string, any>) {
-        this.claimer = attempt.claimer
-        this.claims = attempt.claims
-        this.height = attempt.height
-        this.time = dayjs(attempt.time)
-        this.status = attempt.status
+        this.claimer = attempt.claimer;
+        this.claims = attempt.claims;
+        this.height = attempt.height;
+        this.time = dayjs(attempt.time);
+        this.status = attempt.status;
     }
 
     decided() { return decided(this.status); }
@@ -156,32 +152,32 @@ class ProofAttempt {
 }
 
 class Sprig {
-    claims: Record<string, Claim>
-    language: string
-    proof_attempts: Record<string, ProofAttempt[]>
-    params: Parameters
-    hash: string
+    claims: Record<string, Claim>;
+    language: string;
+    proof_attempts: Record<string, ProofAttempt[]>;
+    params: Parameters;
+    hash: string;
 
     constructor(sprig: Record<string, any>) {
         this.hash = sprig.hash;
         this.claims = _.mapValues(sprig.claims, (claim) => {
             claim.instance_hash = this.hash;
-            return new Claim(claim)
+            return new Claim(claim);
         });
         this.language = sprig.language;
         this.proof_attempts = _.mapValues(sprig.proof_attempts, (attempts) => _.map(attempts, (attempt) => {
             attempt.instance_hash = this.hash;
-            return new ProofAttempt(attempt)
+            return new ProofAttempt(attempt);
         }));
         this.params = new Parameters(sprig.params);
     }
 
     totalBounties() {
-        const open_challenges = _.sumBy(_.values(this.claims), 
+        const open_challenges = _.sumBy(_.values(this.claims),
             (claim) => claim.challengeBounty(this.params));
-        const open_attempts = _.sumBy(_.values(this.proof_attempts), 
+        const open_attempts = _.sumBy(_.values(this.proof_attempts),
             (attempts) => _.sumBy(attempts, a => a.moneyHeld(this.params)));
-    
+
         return open_challenges + open_attempts;
     }
     rootClaim() {
@@ -199,28 +195,28 @@ class Sprig {
             [Status.UNCHALLENGED]: this.count(Status.UNCHALLENGED),
             [Status.VALIDATED]: this.count(Status.VALIDATED),
             [Status.REJECTED]: this.count(Status.REJECTED),
-        }
+        };
     }
 }
 
 interface ChallengeRecord {
-    balance: number
-    claim: Claim
+    balance: number;
+    claim: Claim;
 }
 
 interface AnswerRecord {
-    balance: number
+    balance: number;
 }
 
 class Parameters {
-    readonly root_height: number
-    readonly max_length: number
-    readonly time_for_questions: duration.Duration
-    readonly time_for_answers: duration.Duration
-    readonly upstakes: number[]
-    readonly downstakes: number[]
-    readonly question_bounties: number[]
-    readonly verification_cost: number
+    readonly root_height: number;
+    readonly max_length: number;
+    readonly time_for_questions: duration.Duration;
+    readonly time_for_answers: duration.Duration;
+    readonly upstakes: number[];
+    readonly downstakes: number[];
+    readonly question_bounties: number[];
+    readonly verification_cost: number;
 
     constructor(params: Record<string, any>) {
         this.root_height = params.root_height;
@@ -235,10 +231,10 @@ class Parameters {
 }
 
 interface Language {
-    name: string
-    title: (claim: Claim) => string
-    shortDescription: (claim: Claim) => string
-    longDescription: (claim: Claim) => string
+    name: string;
+    title: (claim: Claim) => string;
+    shortDescription: (claim: Claim) => string;
+    longDescription: (claim: Claim) => string;
 }
 
 
@@ -277,9 +273,9 @@ const LANGUAGES: Record<string, Language> = {
             return claim.statement;
         }
     }
-}
+};
 
-const API_BASE = "http://localhost:8601/"
+const API_BASE = "http://localhost:8601/";
 
 const convert = {
     sprigSummary(summary: Record<string, any>): SprigSummary {
@@ -291,9 +287,9 @@ const convert = {
             hash: summary.hash,
             author: summary.author,
             bounties: summary.bounties,
-        }
+        };
     }
-}
+};
 function logFail(title: string, data: Object) {
     console.error(title, data);
     ElNotification.error({
@@ -303,16 +299,16 @@ function logFail(title: string, data: Object) {
 }
 const api = {
     async get(path: string[]) {
-        const url = API_BASE + path.join("/")
+        const url = API_BASE + path.join("/");
         const resp = await fetch(url)
             .catch(err => {
-                logFail("Error fetching data", { url, err })
+                logFail("Error fetching data", { url, err });
                 return Promise.reject(err);
             });
         if (resp.ok) {
             return await resp.json()
                 .catch(err => {
-                    logFail("Failed to parse JSON", { url, err, resp })
+                    logFail("Failed to parse JSON", { url, err, resp });
                     return Promise.reject(err);
                 });
         } else {
@@ -360,10 +356,12 @@ const api = {
     // }
 
 
-}
+};
 
 
-export {NOW, humanize,
+export {
+    NOW, humanize,
     api, STATUSES, STATUS_DISPLAY_NAME, LANGUAGES, Language,
     decided, Claim, SprigSummary, Sprig, Status,
-    StatusCounts, ProofAttempt, Parameters};
+    StatusCounts, ProofAttempt, Parameters
+};
