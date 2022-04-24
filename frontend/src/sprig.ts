@@ -268,18 +268,20 @@ const LANGUAGES: Record<string, Language> = {
     Lean: {
         name: "Lean",
         title(claim: Claim) {
-            const m = claim.statement.match(/theorem \S+\s/ms);
+            const m = claim.statement.match(/(theorem|lemma) \S+\s/m, );
             if (m) {
                 return m[0].trim();
             } else {
+                console.warn("Cannot parse title", claim);
                 return "Cannot parse title";
             }
         },
         shortDescription(claim: Claim) {
-            const m = claim.statement.match(/theorem \S+\s(.*):=/ms);
+            const m = claim.statement.match(/(?:theorem|lemma) \S+\s(.*):=/m);
             if (m) {
                 return m[1].trim();
             } else {
+                console.warn("Cannot make shortDescription", claim);
                 return "Cannot parse statement";
             }
         },

@@ -30,7 +30,7 @@
 
     </div>
     <!-- Right of the card -->
-    <div v-if="!decided(claim.status)" class=" p-4 flex-shrink-0
+    <div  class=" p-4 flex-shrink-0
           flex flex-col space-y-2 items-end">
       <div class="text-black font-semibold rounded-sm">
         Bounties total

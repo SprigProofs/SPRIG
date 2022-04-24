@@ -32,6 +32,10 @@ const types = [Types.CLAIM, Types.ATTEMPT, Types.INSTANCE, Types.USER];
 const selectedType = ref(Types.ATTEMPT);
 const search = ref("")
 
+const languages = reactive<Record<string, boolean>>({});
+_.uniq(_.values(store.instances)
+    .map(instance => instance.language))
+    .forEach(lang => languages[lang] = true);
 
 
 function startDrag(event, method) {
@@ -110,12 +114,7 @@ function getWeights(o, type: Types) {
     return weights;
 }
 
-/**
- * Weight of objects to sort. Smallest weight is first.
- */
-function sort_weight(o, type: Types): number {
-
-    const weights = getWeights(o, type);
+function combineWeights(weights): number {
     var weight = 0;
     for (let i = 0; i < sort_methods.length; i++) {
         const method = sort_methods[i];
@@ -123,16 +122,23 @@ function sort_weight(o, type: Types): number {
     }
     return weight;
 }
-
+function weightDebug(o, type: Types) {
+    const weights = getWeights(o, type);
+    weights["Total"] = combineWeights(weights);
+    return weights;
+}
 
 const results = computed<{key: string, claim?: Claim, instance?: Sprig, attempt?: ProofAttempt}[]>(() => {
-    const sortKey = (a, b) => sort_weight(a, selectedType.value) - sort_weight(b, selectedType.value);
+    const sortKey = (a, b) => combineWeights(getWeights(a, selectedType.value))
+         - combineWeights(getWeights(b, selectedType.value));
+
     switch (selectedType.value) {
         case Types.CLAIM:
             // dict[instanceHash, list[claims]]
             return _.values(store.instances)
                 .flatMap((instance: Sprig) => _.values(instance.claims))
                 .filter(claim => statuses[claim.status] && claim.statement.toLowerCase().includes(search.value.toLowerCase()))
+                .filter(claim => languages[store.instances[claim.instance_hash].language])
                 .sort(sortKey)
                 .map(claim => ({
                     key: claim.instance_hash + '/' + claim.hash,
@@ -142,6 +148,7 @@ const results = computed<{key: string, claim?: Claim, instance?: Sprig, attempt?
         case Types.INSTANCE:
             return _.values(store.instances)
                 .filter(instance => statuses[instance.rootClaim().status])
+                .filter(instance => languages[instance.language])
                 .sort(sortKey)
                 .map(instance => ({
                     key: instance.hash,
@@ -153,6 +160,7 @@ const results = computed<{key: string, claim?: Claim, instance?: Sprig, attempt?
                 .flatMap(instance => _.values(instance.proof_attempts))  // list[list[proof attempts]]
                 .flat(2)
                 .filter(attempt => statuses[attempt.status] && store.instances[attempt.instance_hash].claims[attempt.claim_hash].statement.toLowerCase().includes(search.value.toLowerCase()))
+                .filter(attempt => languages[store.instances[attempt.instance_hash].language])
                 .sort(sortKey)
                 .map(attempt => ({
                     key: attempt.instance_hash + '/' + attempt.claim_hash + '/' + attempt.attemptNb,
@@ -175,13 +183,22 @@ const results = computed<{key: string, claim?: Claim, instance?: Sprig, attempt?
             placeholder="Search...">
         <div class="bg-gray-100 rounded-sm border
             p-4
-            grid grid-cols-3">
-            <section class="flex flex-col space-y-4">
-                <h2 class="small-title">Filter claim status</h2>
-                <label v-for="v, s in statuses" :key="s">
-                    <input type="checkbox" :name="s" :id="s" v-model="statuses[s]"> 
-                    <StatusTag :status="s" class="ml-2" :grayed="!statuses[s]" />
-                </label>
+            grid grid-cols-3 gap-8">
+            <section class="flex flex-col space-y-2">
+                <h2 class="small-title">Filter status</h2>
+                <div class="flex flex-wrap -mx-1 -my-1">
+                    <label v-for="v, s in statuses" :key="s" class="mx-1 my-1">
+                        <input hidden type="checkbox" :name="s" :id="s" v-model="statuses[s]"> 
+                        <StatusTag :status="s" class="" :grayed="!statuses[s]" />
+                    </label>
+                </div>
+                <h2 class="small-title pt-2">Filter language</h2>
+                <div class="flex flex-wrap -mx-1 -my-1">
+                    <label v-for="v, l in languages" :key="l" class="mx-1 my-1">
+                        <input hidden type="checkbox" :name="l" :id="l" v-model="languages[l]"> 
+                        <el-tag :type="v ? '' : 'info'" effect="plain">{{ l }}</el-tag>
+                    </label>
+                </div>
             </section>
             <section class="flex flex-col space-y-2">
                 <h2 class="small-title">Sort by</h2>
@@ -217,15 +234,13 @@ const results = computed<{key: string, claim?: Claim, instance?: Sprig, attempt?
         <TransitionGroup tag="ol" class="space-y-6">
             <li v-for="result in results" :key="result.key"
                 class="transition">
-                {{ result.key }}
                 <ClaimEmbed v-if="selectedType==Types.CLAIM" :claim-hash="result.claim.hash" :instance-hash="result.claim.instance_hash"></ClaimEmbed>
                 <AttemptEmbed v-else-if="selectedType == Types.ATTEMPT"
                     :instance-hash="result.attempt.instance_hash" :claim-hash="result.attempt.claim_hash" :attempt-nb="result.attempt.attemptNb"/>
                 <InstanceEmbed v-else-if="selectedType==Types.INSTANCE" :hash="result.instance.hash"></InstanceEmbed>
                 <div v-else>{{ result }}</div>
-                {{ getWeights(result.attempt || result.claim || result.instance, selectedType) }}
+                <!-- <pre>{{ weightDebug(result.attempt || result.claim || result.instance, selectedType) }}</pre> -->
             </li>
-            <li key="nothing there! It just allows to have hover effect on the last item :shrug:"></li>
         </TransitionGroup>
     </div>
 </template>

@@ -1,20 +1,28 @@
-<script setup>
+<script setup lang="ts">
 
 import { Status, STATUSES, STATUS_DISPLAY_NAME } from '../sprig';
 
 const statuses = {
-    [Status.CHALLENGED]: "bg-yellow-100 text-yellow-800",
-    [Status.UNCHALLENGED]: "bg-blue-100 text-blue-600",
-    [Status.VALIDATED]: "bg-green-100 text-green-600",
-    [Status.REJECTED]: "bg-red-100 text-red-600",
+    [Status.CHALLENGED]: "bg-amber-100 text-amber-600 border-amber-200",
+    [Status.UNCHALLENGED]: "bg-blue-100 text-blue-600 border-blue-200",
+    [Status.VALIDATED]: "bg-green-100 text-green-600 border-green-300",
+    [Status.REJECTED]: "bg-rose-100 text-rose-600 border-rose-200",
 }
-const greyClass = "bg-gray-200 text-gray-600"
+const statusType = {
+    [Status.CHALLENGED]: "warning",
+    [Status.UNCHALLENGED]: "",
+    [Status.VALIDATED]: "success",
+    [Status.REJECTED]: "danger",
+}
+
+const greyClass = "bg-gray-200 text-gray-600 border-gray-300"
 
 defineProps({
     status: {
         required: true,
-        validator(value) {
-            return STATUSES.includes(value)
+        type: String,
+        validator(value: string) {
+            return (STATUSES as string[]).includes(value)
         },
     },
     grayed: Boolean
@@ -23,8 +31,11 @@ defineProps({
 </script>
 
 <template>
+    <!-- <el-tag :type="grayed ? 'info' : statusType[status]" 
+        class="font-semibold transition">{{ STATUS_DISPLAY_NAME[status] }}</el-tag> -->
     <span :class="grayed ? greyClass: statuses[status]" 
-        class="px-2 pt-[0.3rem] pb-1 rounded-md h-min
+        class="inline-flex px-2 h-6 items-center rounded 
+            border  
             font-semibold text-xs transition">
         {{ STATUS_DISPLAY_NAME[status] }}
     </span>
