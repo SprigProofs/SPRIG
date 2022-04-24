@@ -1,6 +1,6 @@
 <script setup lang="ts">
 
-import { Status, STATUSES, STATUS_DISPLAY_NAME } from '../sprig';
+import { Status, STATUSES, STATUS_DISPLAY_NAME } from '../../sprig';
 
 const statuses = {
     [Status.CHALLENGED]: "bg-amber-100 text-amber-600 border-amber-200",

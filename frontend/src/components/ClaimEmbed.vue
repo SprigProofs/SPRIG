@@ -46,8 +46,7 @@
 
 <script setup lang="ts">
 import { decided, Status, Claim, Parameters, LANGUAGES, Language } from '../sprig';
-import StatusTag from './StatusTag.vue';
-import Price from './Price.vue';
+import { Price, StatusTag } from './small';
 import { store } from '../store';
 
 const props = defineProps({

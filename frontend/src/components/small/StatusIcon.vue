@@ -1,6 +1,6 @@
-<script setup>
+<script setup lang="ts">
 
-import { Status, STATUSES, STATUS_DISPLAY_NAME } from '../sprig';
+import { Status, STATUSES, STATUS_DISPLAY_NAME } from '../../sprig';
 
 const statuses = {
     [Status.CHALLENGED]: "bg-yellow-100 text-yellow-800",
@@ -20,8 +20,9 @@ const icon = {
 defineProps({
     status: {
         required: true,
-        validator(value) {
-            return STATUSES.includes(value)
+        type: String,
+        validator(value: string) {
+            return (STATUSES as string[]).includes(value)
         },
     },
     grayed: Boolean

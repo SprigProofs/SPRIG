@@ -1,6 +1,6 @@
 <!-- TODO: Replace user placeholder stats with real stats. -->
 
-<script setup>
+<script setup lang="ts">
 
 import SimpleStats from "./SimpleStats.vue";
 

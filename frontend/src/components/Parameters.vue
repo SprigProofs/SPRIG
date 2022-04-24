@@ -1,8 +1,6 @@
-<script setup>
+<script setup lang="ts">
 
-import Price from "./Price.vue";
-import Hint from "./Hint.vue";
-import LabeledData from "./LabeledData.vue";
+import { Hint, LabeledData } from './small';
 
 const props = defineProps({
     params: {

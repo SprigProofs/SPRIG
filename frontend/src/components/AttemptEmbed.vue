@@ -53,13 +53,10 @@
 </template>
 
 <script setup lang="ts">
-import { decided, Status, Sprig, Claim, Language, LANGUAGES, ProofAttempt, Parameters } from '../sprig';
+import { Status, Sprig, Claim, Language, LANGUAGES, ProofAttempt, Parameters } from '../sprig';
 import { store } from '../store';
-import StatusTag from './StatusTag.vue';
-import Price from './Price.vue';
+import { LabeledData, StatusTag, Price } from "./small";
 import User from './User.vue';
-import StatusIcon from './StatusIcon.vue';
-import LabeledData from './LabeledData.vue';
 
 const props = defineProps({
   instanceHash: {

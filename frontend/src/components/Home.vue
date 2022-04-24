@@ -125,13 +125,11 @@
 </div>
 </template>
 
-<script setup>
-import LabeledData from './LabeledData.vue';
+<script setup lang="ts">
+import { LabeledData } from './small';
 import { store } from '../store';
 import * as _ from 'lodash';
-import { reactive, ref } from 'vue';
-import Price from './Price.vue';
-import { computed } from '@vue/reactivity';
+import { reactive, ref, computed } from 'vue';
 
 
 // TODO: Compute the stats on the server
@@ -139,7 +137,7 @@ const instances = _.values(store.instances);
 const stats = computed( () => {
     return {
         Claims: _.sumBy(instances, s => _.size(s.claims)),
-        Challenges: _.sumBy(instances, s => 1 + _.size(_.filter(s.claims, c => c.skeptic))),
+        Challenges: _.sumBy(instances, s => 1 + _.size(_.filter(s.claims, c => c.skeptic !== null))),
         Proofs: _.sumBy(instances, s => _.size(s.proof_attempts)),
     };
 });

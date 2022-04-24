@@ -1,14 +1,13 @@
 import { createApp } from 'vue'
 import * as VueRouter from "vue-router";
-import App from './App.vue'
+import App from './App.vue';
 import './index.css'
 
 // For ready made components from Element Plus: https://element-plus.org/en-US/component/button.html
 import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
 
-import Algo from './components/Algo.vue'
-import Price from './components/Price.vue'
+import { Algo, Price } from './components/small'
 import Home from './components/Home.vue'
 import Search from './components/SearchInput.vue'
 import ProofAttemptPage from './components/ProofAttemptPage.vue'

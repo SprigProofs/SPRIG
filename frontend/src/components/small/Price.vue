@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 
 // TODO: Replace conversion rate by live data
 const ALGO_TO_USD = 0.67;
@@ -6,6 +6,7 @@ const ALGO_TO_USD = 0.67;
 defineProps({
     amount: {
         required: true,
+        type: Number,
     },
 })
 

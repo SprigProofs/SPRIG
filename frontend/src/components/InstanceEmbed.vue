@@ -57,13 +57,11 @@
 </template>
 
 <script setup lang="ts">
-import { decided, Status, Sprig, Claim, Language, LANGUAGES } from '../sprig';
+import { Status, Sprig, Claim, Language, LANGUAGES } from '../sprig';
 import { store } from '../store';
-import StatusTag from './StatusTag.vue';
-import Price from './Price.vue';
+import { Price, StatusIcon, StatusTag, Time } from './small';
 import User from './User.vue';
-import StatusIcon from './StatusIcon.vue';
-import Time from './Time.vue';
+
 
 const props = defineProps({
   hash: {

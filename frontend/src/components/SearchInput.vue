@@ -1,14 +1,15 @@
 <script setup lang="ts">
+
 import { computed, reactive, ref } from 'vue';
-import StatusTag from './StatusTag.vue';
-import * as _ from 'lodash';
+import _ from 'lodash';
+import dayjs from 'dayjs';
+
 import { Status, decided, Sprig, Claim, ProofAttempt, Parameters } from '../sprig'
 import { store } from '../store';
-import ClaimEmbed from './ClaimEmbed.vue';
-import { ElNotification } from 'element-plus';
 import InstanceEmbed from './InstanceEmbed.vue';
-import * as dayjs from 'dayjs';
+import ClaimEmbed from './ClaimEmbed.vue';
 import AttemptEmbed from './AttemptEmbed.vue';
+import { StatusTag } from './small';
 
 const statuses = reactive({
     [Status.CHALLENGED]: true,

@@ -138,14 +138,12 @@
 
 <script setup lang="ts">
 
+import { ref } from 'vue';
 import { LANGUAGES } from './../sprig';
 import { store } from './../store';
-import StatusTag from './StatusTag.vue';
-import { ref } from 'vue';
-import Price from './Price.vue';
+import { Price, StatusTag, Time } from "./small";
 import User from './User.vue';
 import Parameters from './Parameters.vue';
-import Time from './Time.vue';
 
 const props = defineProps({
     instanceHash: {
