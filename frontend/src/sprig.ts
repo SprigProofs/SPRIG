@@ -274,6 +274,7 @@ const LANGUAGES: Record<string, Language> = {
             }
         },
         shortDescription(claim: Claim) {
+            return claim.statement;
             const m = claim.statement.match(/(?:theorem|lemma) \S+\s(.*):=/m);
             if (m) {
                 return m[1].trim();

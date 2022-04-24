@@ -30,7 +30,12 @@ enum Types {
     USER = "Users",
 }
 const types = [Types.CLAIM, Types.ATTEMPT, Types.INSTANCE, Types.USER];
-const selectedType = ref(Types.ATTEMPT);
+const selectedTypes = reactive({
+    [Types.CLAIM]: true,
+    [Types.ATTEMPT]: true,
+    [Types.INSTANCE]: true,
+    [Types.USER]: true,
+})
 const search = ref("")
 
 const languages = reactive<Record<string, boolean>>({});
@@ -130,48 +135,53 @@ function weightDebug(o, type: Types) {
 }
 
 const results = computed<{key: string, claim?: Claim, instance?: Sprig, attempt?: ProofAttempt}[]>(() => {
-    const sortKey = (a, b) => combineWeights(getWeights(a, selectedType.value))
-         - combineWeights(getWeights(b, selectedType.value));
+    const sortKey = (type) => (a, b) => combineWeights(getWeights(a, type))
+         - combineWeights(getWeights(b, type));
 
-    switch (selectedType.value) {
-        case Types.CLAIM:
-            // dict[instanceHash, list[claims]]
-            return _.values(store.instances)
-                .flatMap((instance: Sprig) => _.values(instance.claims))
-                .filter(claim => statuses[claim.status] && claim.statement.toLowerCase().includes(search.value.toLowerCase()))
-                .filter(claim => languages[store.instances[claim.instance_hash].language])
-                .sort(sortKey)
-                .map(claim => ({
-                    key: claim.instance_hash + '/' + claim.hash,
-                    claim,
-                }));
-
-        case Types.INSTANCE:
-            return _.values(store.instances)
-                .filter(instance => statuses[instance.rootClaim().status])
-                .filter(instance => languages[instance.language])
-                .sort(sortKey)
-                .map(instance => ({
-                    key: instance.hash,
-                    instance,
-                }));
-        
-        case Types.ATTEMPT:
-            return _.values(store.instances)
-                .flatMap(instance => _.values(instance.proof_attempts))  // list[list[proof attempts]]
-                .flat(2)
-                .filter(attempt => statuses[attempt.status] && store.instances[attempt.instance_hash].claims[attempt.claim_hash].statement.toLowerCase().includes(search.value.toLowerCase()))
-                .filter(attempt => languages[store.instances[attempt.instance_hash].language])
-                .sort(sortKey)
-                .map(attempt => ({
-                    key: attempt.instance_hash + '/' + attempt.claim_hash + '/' + attempt.attemptNb,
-                    attempt,
-                }));
-            
-        default:
-            console.log(selectedType)
-            return [];
+    var all = [];
+    if (selectedTypes[Types.CLAIM]) {
+        all = all.concat(
+            _.values(store.instances)
+            .flatMap((instance: Sprig) => _.values(instance.claims))
+            .filter(claim => statuses[claim.status] && claim.statement.toLowerCase().includes(search.value.toLowerCase()))
+            .filter(claim => languages[store.instances[claim.instance_hash].language])
+            .map(claim => ({
+                key: claim.instance_hash + '/' + claim.hash,
+                claim,
+            })));
     }
+
+    if (selectedTypes[Types.INSTANCE]) {
+        all = all.concat(_.values(store.instances)
+            .filter(instance => statuses[instance.rootClaim().status])
+            .filter(instance => languages[instance.language])
+            .map(instance => ({
+                key: instance.hash,
+                instance,
+            })));
+    }
+    
+    if (selectedTypes[Types.ATTEMPT]) {
+        all = all.concat(_.values(store.instances)
+            .flatMap(instance => _.values(instance.proof_attempts))  // list[list[proof attempts]]
+            .flat(2)
+            .filter(attempt => statuses[attempt.status] && store.instances[attempt.instance_hash].claims[attempt.claim_hash].statement.toLowerCase().includes(search.value.toLowerCase()))
+            .filter(attempt => languages[store.instances[attempt.instance_hash].language])
+            .map(attempt => ({
+                key: attempt.instance_hash + '/' + attempt.claim_hash + '/' + attempt.attemptNb,
+                attempt,
+            })));
+    }
+
+    const getType = o => o.attempt ? Types.ATTEMPT : o.instance ? Types.INSTANCE : Types.CLAIM;
+    const getItem = o => o.claim ? o.claim : o.instance ? o.instance : o.attempt;
+
+    all.sort((a, b) => (
+        combineWeights(getWeights(getItem(a), getType(a)))
+        - combineWeights(getWeights(getItem(b), getType(b)))
+    ))
+        
+    return all;
 });
 
 </script>
@@ -224,7 +234,7 @@ const results = computed<{key: string, claim?: Claim, instance?: Sprig, attempt?
             <section class="flex flex-col space-y-2">
                 <h2 class="small-title">Type</h2>
                 <label v-for="(type) in types" :key="type">
-                    <input type="radio" name="type" :value="type" v-model="selectedType"> 
+                    <input type="checkbox" :name="type" :id="type" v-model="selectedTypes[type]"> 
                     {{ type }}
                 </label>
             </section>
@@ -235,10 +245,10 @@ const results = computed<{key: string, claim?: Claim, instance?: Sprig, attempt?
         <TransitionGroup tag="ol" class="space-y-6">
             <li v-for="result in results" :key="result.key"
                 class="transition">
-                <ClaimEmbed v-if="selectedType==Types.CLAIM" :claim-hash="result.claim.hash" :instance-hash="result.claim.instance_hash"></ClaimEmbed>
-                <AttemptEmbed v-else-if="selectedType == Types.ATTEMPT"
+                <ClaimEmbed v-if="result.claim" :claim-hash="result.claim.hash" :instance-hash="result.claim.instance_hash"></ClaimEmbed>
+                <AttemptEmbed v-else-if="result.attempt"
                     :instance-hash="result.attempt.instance_hash" :claim-hash="result.attempt.claim_hash" :attempt-nb="result.attempt.attemptNb"/>
-                <InstanceEmbed v-else-if="selectedType==Types.INSTANCE" :hash="result.instance.hash"></InstanceEmbed>
+                <InstanceEmbed v-else-if="result.instance" :hash="result.instance.hash"></InstanceEmbed>
                 <div v-else>{{ result }}</div>
                 <!-- <pre>{{ weightDebug(result.attempt || result.claim || result.instance, selectedType) }}</pre> -->
             </li>
