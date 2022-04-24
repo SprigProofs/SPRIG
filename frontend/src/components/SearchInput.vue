@@ -25,11 +25,7 @@ const types = ["Claims", "Proof Attempts", "Instances", "Users"];
 const selectedType = ref("Instances")
 const search = ref("")
 
-const instances = ref({});
-api.fetchInstanceList(l => {
-    console.log(l)
-    instances.value = l;
-});
+
 
 function startDrag(event, method) {
     event.dataTransfer.dropEffect = 'move';
@@ -83,10 +79,10 @@ function sort_weight(claim) {
     return weight;
 }
 
-function sort_weight_instance(instance) {
+function sort_weight_instance(instance: Sprig) {
     const weights = {};
-    weights[REWARD] = -instance.bounties;
-    weights[NEW] = dayjs().diff(instance.root_claim.last_modification);
+    weights[REWARD] = -instance.totalBounties();
+    weights[NEW] = dayjs().diff(instance.rootClaim().last_modification);
     // TODO: Set the correct value
     weights[OPEN_UNTIL] = 1
     weights[RELEVANCE] = 0
@@ -97,7 +93,7 @@ function sort_weight_instance(instance) {
         const method = sort_methods[i];
         weight += weights[method] * 0.3 ** i;
     }
-    console.log(instance.hash, weights, weight)
+    // console.log(instance.hash, weights, weight)
     return weight;
 }
 
@@ -114,9 +110,9 @@ function results() {
                 .sort((a, b) => sort_weight(a) - sort_weight(b))
         
         case "Instances":
-            return Object.keys(instances.value)
-                .map(key => instances.value[key])
-                .filter(instance => statuses[instance.root_claim.status])
+            return Object.keys(store.instances)
+                .map(key => store.instances[key])
+                .filter(instance => statuses[instance.rootClaim().status])
                 .sort((a, b) => sort_weight_instance(a) - sort_weight_instance(b))
             
         default:
