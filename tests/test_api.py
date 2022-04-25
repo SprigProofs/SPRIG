@@ -18,8 +18,8 @@ client = TestClient(api)
         "/00001",
         "/00001/0",
         "/00001/2",
-        "/00001/0/proof_attempts",
-        "/00001/3/proof_attempts",
+        # "/00001/0/proof_attempts",
+        # "/00001/3/proof_attempts",
         "/users",
     ],
 )
@@ -52,7 +52,7 @@ def test_instance_get(hash):
     data = response.json()
     assert data['hash'] == hash
     data.pop('hash')
-    
+
     stored = json.loads(path_from_hash(hash).read_text())
 
     purge_key(stored, 'money_held')

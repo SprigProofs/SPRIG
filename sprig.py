@@ -50,7 +50,7 @@ TIME_MODE = os.environ.get("TIME_MODE", DISCRETE_TIME)
 
 def now(increment=0) -> Time:
     """Current time. If an increment is given, it is added to the current time.
-    
+
     If TIME_MODE is real, the time is the number of miliseconds since the epoch.
     If TIME_MODE is discrete, the time is a monotonically increasing number (stored in TIME_FILE).
     """
@@ -546,7 +546,7 @@ SPRIG instance:
         assert claim_hash in self.claims, f"The claim hash ({claim_hash}) is not valid. Valid hashes are {list(self.claims.keys())}"
         claim = self.claims[claim_hash]
         assert claim.height > 0, "A machine level claim cannot be challenged."
-        assert claim.status is Status.UNCHALLENGED, "This claim cannot be challenged anymore."
+        assert claim.status is Status.UNCHALLENGED, f"This claim cannot be challenged anymore. {claim}"
         assert skeptic
 
         assert self.params.pay_new_challenge(skeptic, claim)
@@ -626,11 +626,11 @@ SPRIG instance:
         """Retrieve statements that may be used as hypothesis to prove a claim"""
         if not start.parent:
             return []
-        
+
         claims = self.gather_claims(self.claims[start.parent])
         for claim_index in range(start.claim_nb):
             claims.append(self.claims[self.proof_attempts[start.parent][start.proof_attempt].claims[claim_index]].statement)
-        
+
         return claims
 
     def fixup(self, start: Claim):
@@ -884,7 +884,7 @@ def play_lean(
         """false claim""",
         """false claim => add_comm"""
     )
-    
+
     time_passes(sprig)
 
     sprig.challenge(MICHAEL, "4")

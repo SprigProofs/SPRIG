@@ -7,19 +7,20 @@ from tests import exemples
 @pytest.mark.parametrize(
     "sprig",
     [
-        exemples.sprig_started(),
-        exemples.sprig_challenged(),
-        exemples.sprig_answer(),
-        exemples.sprig_challenged_2(),
+        exemples.sprig_started,  # We pass functions because calling them might raise error and stop test detection early
+        exemples.sprig_challenged,
+        exemples.sprig_answer,
+        exemples.sprig_challenged_2,
     ],
 )
 def test_serialisation(sprig):
-    new = Sprig.loads(sprig.dumps())
+    instance = sprig()
+    new = Sprig.loads(instance.dumps())
 
-    assert new.language == sprig.language
-    assert new == sprig
+    assert new.language == instance.language
+    assert new == instance
 
-    d = sprig.dump_as_dict()
+    d = instance.dump_as_dict()
     assert set(d) == {"language", "params", "claims", "proof_attempts"}
 
 

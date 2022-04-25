@@ -1,0 +1,263 @@
+{
+    "language": "TicTacToe",
+    "params": {
+        "root_height": 5,
+        "max_length": 1000,
+        "time_for_questions": 2,
+        "time_for_answers": 2,
+        "upstakes": [
+            1,
+            2,
+            3,
+            4,
+            5
+        ],
+        "downstakes": [
+            0,
+            2,
+            3,
+            4,
+            5
+        ],
+        "question_bounties": [
+            0,
+            2,
+            3,
+            4,
+            5
+        ],
+        "verification_cost": 1
+    },
+    "claims": {
+        "0": {
+            "statement": "...|XX.|... O plays X wins",
+            "status": "challenged",
+            "height": 5,
+            "parent": null,
+            "proof_attempt": null,
+            "claim_nb": null,
+            "skeptic": null,
+            "last_modification": 1650579107766,
+            "open_until": 1650579107768,
+            "money_held": 0,
+            "hash": "0"
+        },
+        "1": {
+            "statement": "O..|XXX|... O plays X wins",
+            "status": "validated",
+            "height": 4,
+            "parent": "0",
+            "proof_attempt": 0,
+            "claim_nb": 0,
+            "skeptic": null,
+            "last_modification": 1650579107760,
+            "open_until": 1650579107762,
+            "money_held": 0,
+            "hash": "1"
+        },
+        "2": {
+            "statement": ".O.|XXX|... O plays X wins",
+            "status": "validated",
+            "height": 4,
+            "parent": "0",
+            "proof_attempt": 0,
+            "claim_nb": 1,
+            "skeptic": "Michael",
+            "last_modification": 1650579107761,
+            "open_until": 1650579107763,
+            "money_held": 0,
+            "hash": "2"
+        },
+        "3": {
+            "statement": "..O|XXX|... O plays X wins",
+            "status": "validated",
+            "height": 4,
+            "parent": "0",
+            "proof_attempt": 0,
+            "claim_nb": 2,
+            "skeptic": null,
+            "last_modification": 1650579107760,
+            "open_until": 1650579107762,
+            "money_held": 0,
+            "hash": "3"
+        },
+        "4": {
+            "statement": "X..|XXO|... O plays X wins",
+            "status": "challenged",
+            "height": 4,
+            "parent": "0",
+            "proof_attempt": 0,
+            "claim_nb": 3,
+            "skeptic": "Michael",
+            "last_modification": 1650579107766,
+            "open_until": 1650579107768,
+            "money_held": 5,
+            "hash": "4"
+        },
+        "5": {
+            "statement": "...|XXX|O.. O plays X wins",
+            "status": "validated",
+            "height": 4,
+            "parent": "0",
+            "proof_attempt": 0,
+            "claim_nb": 4,
+            "skeptic": null,
+            "last_modification": 1650579107760,
+            "open_until": 1650579107762,
+            "money_held": 0,
+            "hash": "5"
+        },
+        "6": {
+            "statement": "...|XXX|.O. O plays X wins",
+            "status": "validated",
+            "height": 4,
+            "parent": "0",
+            "proof_attempt": 0,
+            "claim_nb": 5,
+            "skeptic": null,
+            "last_modification": 1650579107760,
+            "open_until": 1650579107762,
+            "money_held": 0,
+            "hash": "6"
+        },
+        "7": {
+            "statement": "...|XXX|..O O plays X wins",
+            "status": "validated",
+            "height": 4,
+            "parent": "0",
+            "proof_attempt": 0,
+            "claim_nb": 6,
+            "skeptic": null,
+            "last_modification": 1650579107760,
+            "open_until": 1650579107762,
+            "money_held": 0,
+            "hash": "7"
+        },
+        "8": {
+            "statement": "XO.|XXO|X.. O plays X wins",
+            "status": "unchallenged",
+            "height": 3,
+            "parent": "4",
+            "proof_attempt": 0,
+            "claim_nb": 0,
+            "skeptic": null,
+            "last_modification": 1650579107763,
+            "open_until": 1650579107765,
+            "money_held": 0,
+            "hash": "8"
+        },
+        "9": {
+            "statement": "XXO|XXO|... O plays X wins",
+            "status": "challenged",
+            "height": 3,
+            "parent": "4",
+            "proof_attempt": 0,
+            "claim_nb": 1,
+            "skeptic": "Michael",
+            "last_modification": 1650579107766,
+            "open_until": 1650579107768,
+            "money_held": 4,
+            "hash": "9"
+        },
+        "10": {
+            "statement": "X..|XXO|O.X O plays X wins",
+            "status": "unchallenged",
+            "height": 3,
+            "parent": "4",
+            "proof_attempt": 0,
+            "claim_nb": 2,
+            "skeptic": null,
+            "last_modification": 1650579107763,
+            "open_until": 1650579107765,
+            "money_held": 0,
+            "hash": "10"
+        },
+        "11": {
+            "statement": "X..|XXO|XO. O plays X wins",
+            "status": "unchallenged",
+            "height": 3,
+            "parent": "4",
+            "proof_attempt": 0,
+            "claim_nb": 3,
+            "skeptic": null,
+            "last_modification": 1650579107763,
+            "open_until": 1650579107765,
+            "money_held": 0,
+            "hash": "11"
+        },
+        "12": {
+            "statement": "X..|XXO|X.O O plays X wins",
+            "status": "unchallenged",
+            "height": 3,
+            "parent": "4",
+            "proof_attempt": 0,
+            "claim_nb": 4,
+            "skeptic": null,
+            "last_modification": 1650579107763,
+            "open_until": 1650579107765,
+            "money_held": 0,
+            "hash": "12"
+        },
+        "13": {
+            "statement": "-2",
+            "status": "validated",
+            "height": 0,
+            "parent": "2",
+            "proof_attempt": 0,
+            "claim_nb": 0,
+            "skeptic": null,
+            "last_modification": 1650579107763,
+            "open_until": 1650579107765,
+            "money_held": 0,
+            "hash": "13"
+        }
+    },
+    "proof_attempts": {
+        "0": [
+            {
+                "parent": "0",
+                "claimer": "Diego",
+                "claims": [
+                    "1",
+                    "2",
+                    "3",
+                    "4",
+                    "5",
+                    "6",
+                    "7"
+                ],
+                "height": 4,
+                "status": "unchallenged",
+                "money_held": 5
+            }
+        ],
+        "2": [
+            {
+                "parent": "2",
+                "claimer": "Diego",
+                "claims": [
+                    "13"
+                ],
+                "height": 0,
+                "status": "validated",
+                "money_held": 1
+            }
+        ],
+        "4": [
+            {
+                "parent": "4",
+                "claimer": "Diego",
+                "claims": [
+                    "8",
+                    "9",
+                    "10",
+                    "11",
+                    "12"
+                ],
+                "height": 3,
+                "status": "unchallenged",
+                "money_held": 8
+            }
+        ]
+    }
+}

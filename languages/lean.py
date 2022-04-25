@@ -18,8 +18,8 @@ def lean_validate(lean_code: str) -> bool:
     return out.returncode
 
 def extract_lemma_name(code_piece: str) -> Optional[str]:
-    lemma_match = re.match("^lemma\s([^\s]*)", code_piece)
-    
+    lemma_match = re.match(r"^lemma\s([^\s]*)", code_piece)
+
     if lemma_match is None:
         return None
     else:
