@@ -1,4 +1,5 @@
 from __future__ import annotations
+from contextlib import contextmanager
 
 import dataclasses
 import itertools
@@ -15,7 +16,7 @@ from enum import Enum
 from pathlib import Path
 import sys
 from time import sleep, time_ns
-from typing import NewType, Optional
+from typing import Literal, NewType, Optional
 
 from languages.base import Language
 from utils import *
@@ -65,6 +66,18 @@ def now(increment=0) -> Time:
         TIME_FILE.write_text(str(time))
 
         return Time(time)
+
+@contextmanager
+def time_mode(mode: Literal["real", "discrete"]):
+    """Context manager to temporarily change the time mode."""
+
+    global TIME_MODE
+    old_mode = TIME_MODE
+    TIME_MODE = mode
+    try:
+        yield
+    finally:
+        TIME_MODE = old_mode
 
 
 def transfer_money(from_, to, amount, msg="") -> bool:
@@ -543,6 +556,8 @@ SPRIG instance:
     # Public interface to add claims/challenges
 
     def challenge(self, skeptic: Address, claim_hash: Hash):
+        self.distribute_all_bets()
+
         assert claim_hash in self.claims, f"The claim hash ({claim_hash}) is not valid. Valid hashes are {list(self.claims.keys())}"
         claim = self.claims[claim_hash]
         assert claim.height > 0, "A machine level claim cannot be challenged."
@@ -559,6 +574,8 @@ SPRIG instance:
 
     def answer(self, challenged_claim: Hash, claimer: Address, *sub_statements: str):
         """Answer a challenge with a (non-machine) proof."""
+        self.distribute_all_bets()
+
         assert challenged_claim in self.claims, "The claim hash is not valid."
         claim = self.claims[challenged_claim]
         assert claim.status is Status.CHALLENGED, f"There is no open challenge for: {claim}"
@@ -591,6 +608,8 @@ SPRIG instance:
         self.extend_deadlines(claim)
 
     def answer_low_level(self, challenged_claim: Hash, claimer: Address, machine_proof: str):
+        self.distribute_all_bets()
+
         assert challenged_claim in self.claims, "No such claim."
         claim = self.claims[challenged_claim]
         assert claim.status is Status.CHALLENGED, "There is no open challenge for this claim."
@@ -808,7 +827,6 @@ def play_tictactoe(
     sprig.challenge(MICHAEL, "2")
 
     time_passes(sprig)
-
     sprig.answer(
         "4",
         DIEGO,

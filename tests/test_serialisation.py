@@ -14,7 +14,8 @@ from tests import exemples
     ],
 )
 def test_serialisation(sprig):
-    instance = sprig()
+    with time_mode(DISCRETE_TIME):
+        instance = sprig()
     new = Sprig.loads(instance.dumps())
 
     assert new.language == instance.language

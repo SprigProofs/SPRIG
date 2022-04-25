@@ -4,11 +4,8 @@ This file contains the code of the API / Server.
 It reads and updates the sprig instances in the data/ folder.
 """
 
-from lib2to3.pgen2.token import OP
 import os
 import json
-from collections import defaultdict
-from contextlib import contextmanager
 from pathlib import Path
 from typing import Optional
 
@@ -18,7 +15,6 @@ from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 
 os.environ["BANK_FILE"] = str((Path(__file__).parent / "data" / "api_bank").absolute())
-os.environ["TIME_MODE"] = "real"
 
 import languages.base
 import sprig
@@ -167,28 +163,29 @@ def add_new_instance(new_instance: SprigInitData):
     The language is the name of the desired language.
     """
 
-    try:
-        parameters = sprig.Parameters(**new_instance.params)
-        instance = sprig.Sprig.start(
-            new_instance.language,
-            parameters,
-            new_instance.claimer,
-            new_instance.root_claim,
-            *new_instance.sub_claims,
-        )
-    except AssertionError as e:
-        raise HTTPException(400, e.args)
+    with sprig.time_mode(sprig.REAL_TIME):
+        try:
+            parameters = sprig.Parameters(**new_instance.params)
+            instance = sprig.Sprig.start(
+                new_instance.language,
+                parameters,
+                new_instance.claimer,
+                new_instance.root_claim,
+                *new_instance.sub_claims,
+            )
+        except AssertionError as e:
+            raise HTTPException(400, e.args)
 
-    h = new_hash()
-    save(instance, h)
+        h = new_hash()
+        save(instance, h)
 
-    return {
-        "hash": h,
-        "params": instance.params,
-        "language": instance.language.dump(),
-        "claims": instance.claims,
-        "proof_attempts": instance.proof_attempts,
-    }
+        return {
+            "hash": h,
+            "params": instance.params,
+            "language": instance.language.dump(),
+            "claims": instance.claims,
+            "proof_attempts": instance.proof_attempts,
+        }
 
 @api.get("/users", response_model=dict[sprig.Address, int])
 def get_users():
@@ -221,7 +218,7 @@ if False:
         instance = load(instance_hash)
 
         instance.challenge(skeptic, claim_hash)
-        
+
         save(instance, instance_hash)
 
         return ChallengeCreatedData(balance=sprig.BANK[skeptic], claim=instance.claims[claim_hash])
