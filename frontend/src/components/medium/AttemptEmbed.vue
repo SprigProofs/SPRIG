@@ -23,7 +23,7 @@
       <code class="text-sm flex-grow">
         <pre class="whitespace-pre-wrap">{{ language.shortDescription(claim) }}</pre>
       </code>
-      
+
 
       <!-- <pre>{{ attempt }}</pre> -->
 
@@ -39,13 +39,13 @@
         {{ claim.open_until.fromNow() }} left
       </div> -->
 
-      <div class="grid grid-cols-[auto_auto] flex-wrap justify-evenly gap-y-4 gap-x-8 m-4">
+      <div class="grid grid-cols-[auto_auto] min-w-max h-min gap-y-4 gap-x-8 m-4">
         <LabeledData label="Bounty"><Price :amount="attempt.possibleReward(params)"/></LabeledData>
         <LabeledData label="Expires">{{ claim.open_until.fromNow() }}</LabeledData>
         <LabeledData label="Claims">5</LabeledData>
         <LabeledData label="Height">{{ attempt.height }} / {{ params.root_height - 1 }}</LabeledData>
       </div>
-      
+
     <!-- </div> -->
 
   </router-link>

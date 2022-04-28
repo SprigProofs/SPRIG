@@ -22,21 +22,24 @@
     </div>
 
     <!-- Right of the card -->
-    <div v-if="!decided(claim.status)" class="w-48  p-4 flex-shrink-0
-          flex flex-col space-y-2 items-end">
-      <div v-if="bounty > 0"
-        class="text-black font-semibold rounded-sm">
-        Bounty
-        <Price :amount="bounty" />
-      </div>
-      <div class="text-xs text-slate-700 flex-grow">
-        {{ claim.open_until.toNow() }} left
-      </div>
-      <button v-if="claim.status == Status.UNCHALLENGED" class="border bg-blue-100 rounded-md py-2 self-stretch shadow">
+    <div v-if="!decided(claim.status)" class="p-4
+          grid grid-cols-[auto_auto] gap-6 min-w-max">
+      <LabeledData label="Bounty">
+        <Price :amount="claim.possibleReward(instance)" />
+      </LabeledData>
+      <LabeledData :label="claim.decided() ? 'Expired' : 'Expires'">
+        <Time :time="claim.open_until" />
+      </LabeledData>
+
+      <button v-if="claim.status == Status.UNCHALLENGED"
+        class="col-span-2 self-end
+          border bg-blue-100 rounded-md py-2 shadow">
         Challenge for
-        <Price amount="12" />
+        <Price :amount="params.question_bounties[claim.height]" />
       </button>
-      <button v-else-if="attemptCost !== null" class="border bg-blue-100 rounded-md py-2 w-full shadow">
+      <button v-else-if="attemptCost !== null"
+        class="col-span-2 self-end
+        border bg-blue-100 rounded-md py-2 w-full shadow">
         Add proof for
         <Price :amount="attemptCost" />
       </button>
@@ -50,6 +53,8 @@ import { decided, Status, Claim, Parameters, LANGUAGES, Language } from '../../s
 import { Price, StatusTag } from '../small';
 import { store } from '../../store';
 import LanguageTag from '../small/LanguageTag.vue';
+import Time from '../small/Time.vue';
+import LabeledData from '../small/LabeledData.vue';
 
 const props = defineProps({
   instanceHash: {
@@ -68,4 +73,5 @@ const language: Language = LANGUAGES[instance.language];
 const params: Parameters = instance.params;
 const bounty = claim.possibleDownstake(instance);
 const attemptCost = claim.costAddAttempt(params);
+const challengeCost = params.question_bounties[claim.height];
 </script>

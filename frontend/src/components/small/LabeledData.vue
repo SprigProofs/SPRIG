@@ -11,7 +11,7 @@ defineProps({
 
 <template>
     <div>
-        <div class="text-xs text-gray-600"
+        <div class="text-xs text-gray-600 capitalize"
             >{{ label }}</div>
         <div class="text-xl font-bold tracking-tight"
             > <slot/> </div>

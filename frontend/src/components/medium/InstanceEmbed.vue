@@ -32,24 +32,29 @@
     <!-- Right of the card -->
     <div  class=" p-4 flex-shrink-0
           flex flex-col space-y-2 items-end">
-      <div class="text-black font-semibold rounded-sm">
-        Bounties total
-        <Price :amount="instance.totalBounties()" />
-      </div>
-      <div class="text-xs text-slate-700 flex-grow">
-        <Time :time="claim.open_until" :suffix="false"/> left
-      </div>
+      <div class="grid grid-cols-[auto_auto] gap-4">
+        <LabeledData label="Bounties">
+          <span class="font-extralight text-gray-600 text-sm pr-1.5">Σ</span>
+          <Price :amount="instance.totalBounties()"/>
+        </LabeledData>
+        <LabeledData :label="claim.decided() ? 'Expired' : 'Expires'">
+          <Time :time="claim.open_until" />
+        </LabeledData>
 
-      <ul class="grid grid-cols-2 gap-4 self-end pt-4 max-w-md">
-        <li class="bg-gray-50 shadow rounded p-2 flex flex-col items-center space-y-2"
-          v-for="(count, status) in instance.counts()" :key="status">
-          <div class="text-xs text-gray-500 capitalize">{{ status }}</div>
-          <div class="flex items-center font-semibold">
+        <LabeledData
+          v-for="(count, status) in instance.counts()" :key="status"
+          :label="status">
+          <div class="flex items-center">
             <StatusIcon :status="status" class="mr-2" />
             <div>{{ count }}</div>
           </div>
-        </li>
-      </ul>
+        </LabeledData>
+      </div>
+      <!-- <div class="text-xs text-gray-500 capitalize">{{ status }}</div>
+      <div class="flex items-center font-semibold">
+        <StatusIcon :status="status" class="mr-2" />
+        <div>{{ count }}</div>
+      </div> -->
     </div>
 
   </router-link>
@@ -61,6 +66,7 @@ import { Status, Sprig, Claim, Language, LANGUAGES } from '../../sprig';
 import { store } from '../../store';
 import { Price, StatusIcon, StatusTag, Time, LanguageTag } from '../small';
 import User from '../medium/User.vue';
+import LabeledData from '../small/LabeledData.vue';
 
 
 const props = defineProps({
