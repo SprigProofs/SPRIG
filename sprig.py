@@ -49,6 +49,7 @@ REAL_TIME = "real"
 DISCRETE_TIME = "discrete"
 TIME_MODE = os.environ.get("TIME_MODE", DISCRETE_TIME)
 
+
 def now(increment=0) -> Time:
     """Current time. If an increment is given, it is added to the current time.
 
@@ -145,7 +146,7 @@ class AbstractParameters:
         """Initial height of the protocol and height of the root."""
         raise NotImplementedError
 
-    def deadline(self, claim: Claim) -> Optional[Time]:
+    def deadline(self, claim: Claim) -> Optional[Time]:  # ?? Attempt ?
         """Compute the time at which a non-decided claim becomes decided, if no actions are taken.
 
         If the claim is UNCHALLENGED, it is the time to ask questions.
@@ -153,7 +154,7 @@ class AbstractParameters:
         """
         raise NotImplementedError
 
-    def claim_passes_constraints(self, claim: Claim) -> bool:
+    def attempt_passes_constraints(self, attempt: ProofAttempt) -> bool:
         """Whether a claim passes all constraints such as bounds on size."""
         raise NotImplementedError
 
@@ -171,10 +172,10 @@ class AbstractParameters:
         """
         raise NotImplementedError
 
-    def pay_attempt_rejected(self, attempt: ProofAttempt, rejecting: Claim, sprig: Sprig):
+    def pay_attempt_rejected(self, attempt: ProofAttempt, rejecting: Challenge, sprig: Sprig):
         """Make the transactions when an attempt is rejected.
 
-        In particular:
+        In particular:downstakes
          - Distribute the upstake to the parent challenge (if any)
          - Distribute the downstake to the closing challenge
         """
@@ -182,11 +183,11 @@ class AbstractParameters:
 
     # Transfers related to challenges
 
-    def pay_new_challenge(self, skeptic: Address, claim: Claim) -> bool:
-        """Make the transactions for the challenging of a claim. Return whether it succeeded."""
+    def pay_new_challenge(self, attempt: ProofAttempt, challenge: Challenge) -> bool:
+        """Make the transactions for the challenging of an attempt. Return whether it succeeded."""
         raise NotImplementedError
 
-    def pay_challenge_defeating(self, claim: Claim):
+    def pay_challenge_defeating(self, attempt: ProofAttempt, challenge: Challenge):
         """Make the transactions when a challenge get no answer and invalidates a proof attempt.
 
         In particular:
@@ -194,7 +195,7 @@ class AbstractParameters:
         """
         raise NotImplementedError
 
-    def pay_challenge_answered(self, claim: Claim, closing_attempt: ProofAttempt) -> bool:
+    def pay_challenge_answered(self, answer: ProofAttempt, sprig: Sprig):
         """Make the transactions when a challenge is closed by a valid proof attempt.
 
         In particular:
@@ -241,15 +242,15 @@ class Parameters(AbstractParameters):
         else:
             return None
 
-    def claim_passes_constraints(self, claim: Claim) -> bool:
-        return len(claim.statement) < self.max_length
+    def attempt_passes_constraints(self, attempt: ProofAttempt) -> bool:
+        return len(attempt.proof) < self.max_length
 
     # Attempts
 
     def pay_new_proof_attempt(self, attempt: ProofAttempt) -> bool:
         if attempt.height == 0:  # machine => upstake + verif cost
             amount = self.verification_cost + self.upstakes[attempt.height]
-            msg = f"machine verification {attempt.claims[0]}"
+            msg = f"machine verification {attempt}"
         else:
             amount = self.downstakes[attempt.height]
             if attempt.height < self.root_height - 1:  # non-root
@@ -257,11 +258,12 @@ class Parameters(AbstractParameters):
             msg = f"new proof attempt - ⛰️{attempt.height}"
 
         attempt.money_held += amount
-        success = transfer_money(attempt.claimer, SPRIG_ADDRESS, amount, msg)
+        success = transfer_money(attempt.author, SPRIG_ADDRESS, amount, msg)
 
         # transfer machine verification cost, which never fails
         if success and attempt.height == 0:
-            transfer_money(SPRIG_ADDRESS, MACHINE_VERIF, self.verification_cost, f"machine verification of {attempt.claims[0]}")
+            transfer_money(SPRIG_ADDRESS, MACHINE_VERIF, self.verification_cost, msg)
+
         return success
 
     def pay_attempt_accepted(self, attempt: ProofAttempt, sprig: Sprig):
@@ -276,9 +278,9 @@ class Parameters(AbstractParameters):
             amount += self.upstakes[attempt.height]
 
         attempt.money_held -= amount
-        transfer_money(SPRIG_ADDRESS, attempt.claimer, amount, f"attempt validated")
+        transfer_money(SPRIG_ADDRESS, attempt.author, amount, f"attempt validated")
 
-    def pay_attempt_rejected(self, attempt: ProofAttempt, rejecting: Claim, sprig: Sprig):
+    def pay_attempt_rejected(self, attempt: ProofAttempt, rejecting: Challenge, sprig: Sprig):
 
         # non-machine: downstakes goes to closing claim challenger.
         if attempt.height > 0:
@@ -286,53 +288,56 @@ class Parameters(AbstractParameters):
             attempt.money_held -= amount
             transfer_money(
                 SPRIG_ADDRESS,
-                rejecting.skeptic,
+                rejecting.author,
                 amount,
                 f"downstakes to {rejecting.hash}",
             )
 
-        # non-root: upstake goes to un-answered challenge
-        if attempt.height < self.root_height - 1:
+        # non-root: upstake goes to challenge that was failed to answer
+        if attempt.parent is not None:
             amount = self.upstakes[attempt.height]
-            parent = sprig.claims[attempt.parent]
+            parent_challenge = sprig.challenges[attempt.parent]
             attempt.money_held -= amount
             transfer_money(
                 SPRIG_ADDRESS,
-                parent.skeptic,
+                parent_challenge.author,
                 amount,
-                f"upstakes to {parent.hash}",
+                f"upstakes to {parent_challenge.hash}",
             )
 
     # Challenges
 
-    def pay_new_challenge(self, skeptic: Address, claim: Claim) -> bool:
-        amount = self.question_bounties[claim.height]
-        claim.money_held += amount
+    def pay_new_challenge(self, attempt: ProofAttempt, challenge: Challenge) -> bool:
+        amount = self.question_bounties[attempt.height]
+        attempt.money_held += amount
         return transfer_money(
-            skeptic,
+            challenge.author,
             SPRIG_ADDRESS,
             amount,
-            f"challenge {claim.hash}",
+            f"challenge {challenge.hash}",
         )
 
-    def pay_challenge_defeating(self, claim: Claim):
-        amount = self.question_bounties[claim.height]
-        claim.money_held -= amount
+    def pay_challenge_defeating(self, attempt: ProofAttempt, challenge: Challenge):
+        amount = self.question_bounties[attempt.height]
+        attempt.money_held -= amount
         transfer_money(
             SPRIG_ADDRESS,
-            claim.skeptic,
+            challenge.author,
             amount,
-            f"challenge {claim.hash} unanswered",
+            f"challenge {challenge.hash} unanswered",
         )
 
-    def pay_challenge_answered(self, claim: Claim, closing_attempt: ProofAttempt):
-        amount = self.question_bounties[claim.height]
-        claim.money_held -= amount
+    def pay_challenge_answered(self, answer: ProofAttempt, sprig: Sprig):
+        assert answer.parent is not None  # Sanity check
+
+        challenge = sprig.challenges[answer.parent]
+        amount = self.question_bounties[challenge.height]
+        sprig.proofs[challenge.parent].money_held -= amount
         transfer_money(
             SPRIG_ADDRESS,
-            closing_attempt.claimer,
+            answer.author,
             amount,
-            f"challenge {claim.hash} answered",
+            f"challenge {challenge.hash} answered",
         )
 
 
@@ -352,7 +357,7 @@ class DefaultParameters(Parameters):
 
 
 @dataclass
-class Claim:
+class ClaimOld:
     statement: str
     status: Status
     height: int
@@ -407,37 +412,6 @@ class Claim:
 
         self.money_held = money_held
 
-    @classmethod
-    def new(
-        cls,
-        statement: str,
-        parent: Optional[Claim],
-        proof_attempt: Optional[int],
-        claim_nb: Optional[int],
-        hash: Hash,
-        params: AbstractParameters,
-        low_level=False,
-    ):
-        """Simplified constructor for uses other than serialisation."""
-
-        if low_level:  # machine
-            height = 0
-        elif parent:
-            height = parent.height - 1
-        else:  # root
-            height = params.protocol_height()
-
-        if parent is None:
-            status = Status.CHALLENGED
-            parent_hash = None
-        else:
-            status = Status.UNCHALLENGED
-            parent_hash = parent.hash
-
-        claim = cls(statement, height, hash, parent_hash, proof_attempt, claim_nb, now(), status=status)
-        claim.open_until = params.deadline(claim)
-        return claim
-
     def __str__(self):
         claim_s = fmt(self.statement, self.status.color())
         status = self.status.name.title()
@@ -451,25 +425,36 @@ class Claim:
 
 @dataclass
 class ProofAttempt:
-    parent: Hash
-    claimer: Address
-    claims: list[Hash]
+    hash: Hash
+    # Hash of the parent challenge
+    parent: Optional[Hash]
+    author: Address
+    proof: str
     # Height is the height of the claims it contains, not the height of the claims it answers.
     height: int
-    # time: int  # Those may not be needed!
     status: Status
+    created_at: Time
 
+    challenges: list[Hash]
     # For debugging purposes
     money_held: int
 
-    def __init__(self, parent, claimer, claims, height, *, status: Status = None, money_held=0):
-        self.parent = parent
-        self.claimer = claimer
-        self.claims = claims
-        self.height = height
-        self.status = Status.load(status)
-        self.money_held = money_held
+    def __str__(self) -> str:
+        return f"Attempt {self.hash} by {self.author} at {self.created_at} ({self.status} {fmt_money(self.money_held)} {self.height}{HEIGHT_SYMBOL})"
 
+class Challenge:
+    hash: Hash
+    parent: Hash
+    author: Address
+    created_at: Time
+    attempts: list[Hash]
+    status: Status
+    height: int  # The height of a challenge is the same as it's parent attempt
+
+    def __str__(self) -> str:
+        if self.status is Status.UNCHALLENGED:
+            return f"Challenge point {self.hash}"
+        return f"Challenge {self.hash} by {self.author} at {self.created_at}. {self.status}"
 
 @dataclass
 class Sprig:
@@ -482,8 +467,9 @@ class Sprig:
     # different stakes models, however it is much harder to design a general interface for all possible
     # types of constraints.
     params: AbstractParameters
-    claims: dict[Hash, Claim]
-    proof_attempts: dict[Hash, list[ProofAttempt]]
+    proofs: dict[Hash, ProofAttempt]
+    challenges: dict[Hash, Challenge]
+    root_question: str
 
     # Calls to fixup that will need to be done in the future,
     # when we reached timeouts.
@@ -496,62 +482,64 @@ class Sprig:
         params: AbstractParameters,
         claimer: Address,
         claim: str,
-        *proof_attempt: str,
+        proof_attempt: str,
     ):
         """Start a new instance of the SPRIG protocol, originating from a claim."""
 
-        root_claim = Claim.new(claim, None, None, None, ROOT_HASH, params)
+
+        root_attempt = ProofAttempt(hash=ROOT_HASH, parent=None, author=claimer, proof=proof_attempt, height=params.protocol_height(), status=Status.UNCHALLENGED, created_at=now(), challenges=[], money_held=0)
         language = Language.load(language_type)
-        self = cls(language, params, {ROOT_HASH: root_claim}, {})  #, [])
+        self = cls(language, params, proofs={ROOT_HASH: root_attempt}, challenges={}, root_question=claim)
 
-        assert self.language.validate_top_level(self, root_claim.statement), "Invalid top level statement"
+        assert self.language.validate_top_level(claim), "Invalid top level statement"
 
-        self.answer(ROOT_HASH, claimer, *proof_attempt)
+        self.answer(ROOT_HASH, claimer, proof_attempt)
 
         return self
 
     def __str__(self):
         # Can we make this a bit cleaner ?
 
-        def claim_str(claim_hash: Hash):
-            ret = ""
+        def attempt_str(attempt_hash: Hash) -> str:
+            attempt = self.proofs[attempt_hash]
 
-            if claim_hash != ROOT_HASH:
-                # We don't want to draw the root here, as it is in the base template string.
-                ret += str(self.claims[claim_hash]) + "\n"
-
-            attempt: ProofAttempt
-            for i, attempt in enumerate(self.proof_attempts.get(claim_hash, [])):
-                money = f" ({fmt_money(attempt.money_held)})" if attempt.money_held else ""
-                ret += (
-                    fmt(f"Attempt {i + 1} by {attempt.claimer}", attempt.status.color()) + f" {money}:\n"
-                )
-                for claim in attempt.claims:
-                    claim_s = indent(claim_str(claim), INDENT)
+            ret = fmt(attempt, attempt.status.color())
+            for challenge_hash in attempt.challenges:
+                challenge = self.challenges[challenge_hash]
+                # money = f" ({fmt_money(attempt.money_held)})" if attempt.money_held else ""
+                ret += fmt(challenge, challenge.status.color)
+                # ret += (
+                #     fmt(f"Attempt {i + 1} by {attempt.claimer}", attempt.status.color()) + f" {money}:\n"
+                # )
+                for child_attempt_hash in challenge.attempts:
+                    claim_s = indent(attempt_str(child_attempt_hash), INDENT)
                     ret += "  - " + claim_s[len(INDENT):]
 
             return ret
 
-        root_claim = self.claims[ROOT_HASH]
         return f"""
 SPRIG instance:
  - Language: {self.language}
- - Claim: {root_claim}
-{indent(claim_str(ROOT_HASH), "   ")}"""
+ - Claim: {self.root_question}
+{indent(attempt_str(ROOT_HASH), "   ")}"""
 
-    def next_hash(self, __memory=[0]) -> Hash:
-        """Generate a new hash for a claim. This hash needs to be added to the claims dictionary before other hashes can be generated."""
-        return Hash(str(len(self.claims)))
+    def next_hashes(self, count=1, for_attempts=True) -> list[Hash]:
+        """Generate a new hashes for attempt or challenges.
+
+        Those hash needs to be added to the attempt/challenges dictionary before other hashes can be generated."""
+
+        first = len(self.proofs) if for_attempts else len(self.challenges)
+        prefix = '' if for_attempts else 'C'
+
+        return [Hash(prefix + str(first + i)) for i in range(count)]
 
     def status_count(self, status: Status):
-        """Count the number of claims of a given status."""
-        return sum(1 for claim in self.claims.values() if claim.status is status)
+        """Count the number of challenges of a given status."""
+        return sum(1 for claim in self.challenges.values() if claim.status is status)
 
     def total_bounties(self) -> int:
         """Count the total amount of money held by all attempts and challenges."""
-        return sum(claim.money_held for claim in self.claims.values()) + sum(
-            attempt.money_held for attempts in self.proof_attempts.values() for attempt in attempts
-        )
+        return sum(attempt.money_held for attempt in self.proofs.values())
 
     # Public interface to add claims/challenges
 
@@ -812,13 +800,14 @@ def play_tictactoe(
         Address("Diego"),
         "...|XX.|... O plays X wins",
 
-        "O..|XXX|... O plays X wins",
-        ".O.|XXX|... O plays X wins",
-        "..O|XXX|... O plays X wins",
-        "X..|XXO|... O plays X wins",
-        "...|XXX|O.. O plays X wins",
-        "...|XXX|.O. O plays X wins",
-        "...|XXX|..O O plays X wins",
+        """O plays X wins
+        O..|XXX|...
+        .O.|XXX|...
+        ..O|XXX|...
+        X..|XXO|...
+        ...|XXX|O..
+        ...|XXX|.O.
+        ...|XXX|..O"""
     )
 
     time_passes(sprig)
@@ -873,17 +862,20 @@ def play_lean(
         Address("Diego"),
         "lemma add_comm a b : nat) : a + b = b + a",
 
-        """lemma z_add (n : nat) : 0 + n = n :=
+        """
+        def zero := 0
+
+        lemma z_add (n : nat) : zero + n = n :=
         begin
             sorry
         end
-        """,
-        """lemma add_succ (a b : nat) : a + nat.succ(b) = nat.succ(a + b) :=
+
+        lemma add_succ (a b : nat) : a + nat.succ(b) = nat.succ(a + b) :=
         begin
             sorry
         end
-        """,
-        """lemma add_comm (a b : nat) : a + b = b + a :=
+
+        lemma add_comm (a b : nat) : a + b = b + a :=
         begin
             sorry
         end

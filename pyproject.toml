@@ -12,7 +12,16 @@ pytest = "^7.1.1"
 requests = "^2.27.1"
 
 [tool.poetry.dev-dependencies]
+mypy = "^0.950"
+yapf = "^0.32.0"
+toml = "^0.10.2"  # needed by yapf, but not installed...
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[mypy]
+warn_return_any = true
+warn_unused_configs = true
+disallow_incomplete_defs = true
+disallow_untyped_defs = true

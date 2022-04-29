@@ -3,6 +3,7 @@ from textwrap import indent
 from typing import Iterator
 
 CURRENCY = " ₽"
+HEIGHT_SYMBOL = "⛰"
 ORANGE = (255, 165, 0)
 BG = 12, 34, 56
 FG_ORANGE = "\033[38;2;255;165;0m"

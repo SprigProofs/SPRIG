@@ -13,6 +13,7 @@ run:
 
 test:
 	poetry run pytest
+	poetry run mypy sprig.py
 
 install:
 	poetry install

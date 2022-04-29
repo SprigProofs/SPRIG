@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Dict, List, NewType, Optional
+from typing import Dict, List, NewType, Optional, Type
 
 
 @dataclass
@@ -21,7 +21,7 @@ class Language:
     """
 
     # Stores all languages known to the interpreter.
-    REGISTER = {}
+    REGISTER: dict[str, "Type[Language]"] = {}
 
     def __str__(self):
         return self.name
