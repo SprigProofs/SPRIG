@@ -14,6 +14,10 @@ run:
 test:
 	poetry run pytest
 	poetry run mypy sprig.py
+	poetry run yapf --diff --recursive .
+
+fmt:
+	poetry run yapf --recursive .
 
 install:
 	poetry install

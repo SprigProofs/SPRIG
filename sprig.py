@@ -68,6 +68,7 @@ def now(increment=0) -> Time:
 
         return Time(time)
 
+
 @contextmanager
 def time_mode(mode: Literal["real", "discrete"]):
     """Context manager to temporarily change the time mode."""
@@ -343,6 +344,7 @@ class Parameters(AbstractParameters):
 
 @dataclass
 class DefaultParameters(Parameters):
+
     def __init__(self, root_height=6):
         super().__init__(
             root_height=root_height,
@@ -442,6 +444,7 @@ class ProofAttempt:
     def __str__(self) -> str:
         return f"Attempt {self.hash} by {self.author} at {self.created_at} ({self.status} {fmt_money(self.money_held)} {self.height}{HEIGHT_SYMBOL})"
 
+
 class Challenge:
     hash: Hash
     parent: Hash
@@ -455,6 +458,7 @@ class Challenge:
         if self.status is Status.UNCHALLENGED:
             return f"Challenge point {self.hash}"
         return f"Challenge {self.hash} by {self.author} at {self.created_at}. {self.status}"
+
 
 @dataclass
 class Sprig:
@@ -486,10 +490,21 @@ class Sprig:
     ):
         """Start a new instance of the SPRIG protocol, originating from a claim."""
 
-
-        root_attempt = ProofAttempt(hash=ROOT_HASH, parent=None, author=claimer, proof=proof_attempt, height=params.protocol_height(), status=Status.UNCHALLENGED, created_at=now(), challenges=[], money_held=0)
+        root_attempt = ProofAttempt(hash=ROOT_HASH,
+            parent=None,
+            author=claimer,
+            proof=proof_attempt,
+            height=params.protocol_height(),
+            status=Status.UNCHALLENGED,
+            created_at=now(),
+            challenges=[],
+            money_held=0)
         language = Language.load(language_type)
-        self = cls(language, params, proofs={ROOT_HASH: root_attempt}, challenges={}, root_question=claim)
+        self = cls(language,
+            params,
+            proofs={ROOT_HASH: root_attempt},
+            challenges={},
+            root_question=claim)
 
         assert self.language.validate_top_level(claim), "Invalid top level statement"
 
@@ -569,7 +584,9 @@ SPRIG instance:
         assert claim.status is Status.CHALLENGED, f"There is no open challenge for: {claim}"
         assert claim.height > 1, "Use answer_low_level instead"
 
-        assert self.language.validate_subclaims(self, claim.statement, self.gather_claims(self.claims[challenged_claim]), *sub_statements), "Invalid proof attempt."
+        assert self.language.validate_subclaims(self, claim.statement,
+            self.gather_claims(self.claims[challenged_claim]),
+            *sub_statements), "Invalid proof attempt."
 
         hashes = []
         for i, statement in enumerate(sub_statements):
@@ -579,11 +596,11 @@ SPRIG instance:
                 statement,
                 claim,
                 len(self.proof_attempts.get(challenged_claim, [])),
-                i, h, self.params,
+                i,
+                h,
+                self.params,
             )
-        attempt = ProofAttempt(
-            challenged_claim, claimer, hashes, claim.height - 1
-        )
+        attempt = ProofAttempt(challenged_claim, claimer, hashes, claim.height - 1)
 
         if not self.params.pay_new_proof_attempt(attempt):
             for h in hashes:
@@ -603,7 +620,8 @@ SPRIG instance:
         assert claim.status is Status.CHALLENGED, "There is no open challenge for this claim."
         assert claim.height >= 0  # Should not happen
 
-        proof = Claim.new(machine_proof, claim, len(self.proof_attempts.get(challenged_claim, [])), 0, self.next_hash(), self.params, True)
+        proof = Claim.new(machine_proof, claim, len(self.proof_attempts.get(challenged_claim, [])),
+            0, self.next_hash(), self.params, True)
         attempt = ProofAttempt(challenged_claim, claimer, [proof.hash], 0)
 
         assert self.params.pay_new_proof_attempt(attempt)
@@ -636,7 +654,8 @@ SPRIG instance:
 
         claims = self.gather_claims(self.claims[start.parent])
         for claim_index in range(start.claim_nb):
-            claims.append(self.claims[self.proof_attempts[start.parent][start.proof_attempt].claims[claim_index]].statement)
+            claims.append(self.claims[self.proof_attempts[start.parent][
+                start.proof_attempt].claims[claim_index]].statement)
 
         return claims
 
@@ -650,7 +669,8 @@ SPRIG instance:
             return  # Nothing to do.
 
         elif start.height == 0:
-            if self.language.judge_low_level(self, self.claims[start.parent].statement, self.gather_claims(start) + [start.statement]):
+            if self.language.judge_low_level(self, self.claims[start.parent].statement,
+                self.gather_claims(start) + [start.statement]):
                 start.status = Status.VALIDATED
             else:
                 start.status = Status.REJECTED
@@ -735,6 +755,7 @@ SPRIG instance:
 
     @staticmethod
     def loads_to_dict(s):
+
         def object_hook(dct: dict):
             if "__class__" in dct:
                 klass = dct.pop("__class__")
@@ -754,6 +775,7 @@ SPRIG instance:
     @classmethod
     def loads(cls, s: str):
         data = json.loads(s)
+
         def mkStatus(d):
             """Recursivelly convert the status to the correct type."""
             if 'status' in d:
@@ -761,16 +783,19 @@ SPRIG instance:
             for k, v in d.items():
                 if isinstance(v, dict):
                     mkStatus(v)
+
         mkStatus(data)
 
         params = Parameters(**data["params"])
         claims = {h: Claim(**claim) for h, claim in data["claims"].items()}
         attempts = {
-            h: [ProofAttempt(**a) for a in attempt] for h, attempt in data["proof_attempts"].items()
+            h: [ProofAttempt(**a) for a in attempt]
+            for h, attempt in data["proof_attempts"].items()
         }
         language = Language.load(data['language'])
 
         return cls(language, params, claims, attempts)
+
 
 def time_passes(sprig, amount=1):
     sprig.distribute_all_bets()
@@ -789,17 +814,11 @@ def time_passes(sprig, amount=1):
         print(f"{address.ljust(padding)} ({fmt(balance, ORANGE)})")
     print()
 
-def play_tictactoe(
-    params: Parameters,
-    MICHAEL, DIEGO, CLEMENT
-):
+
+def play_tictactoe(params: Parameters, MICHAEL, DIEGO, CLEMENT):
     ctx = " O plays X wins"
     sprig = Sprig.start(
-        TicTacToe().dump(),
-        params,
-        Address("Diego"),
-        "...|XX.|... O plays X wins",
-
+        TicTacToe().dump(), params, Address("Diego"), "...|XX.|... O plays X wins",
         """O plays X wins
         O..|XXX|...
         .O.|XXX|...
@@ -807,8 +826,7 @@ def play_tictactoe(
         X..|XXO|...
         ...|XXX|O..
         ...|XXX|.O.
-        ...|XXX|..O"""
-    )
+        ...|XXX|..O""")
 
     time_passes(sprig)
 
@@ -852,17 +870,10 @@ def play_tictactoe(
 
     return sprig
 
-def play_lean(
-    params: Parameters,
-    MICHAEL, DIEGO, CLEMENT
-):
-    sprig = Sprig.start(
-        Lean().dump(),
-        params,
-        Address("Diego"),
-        "lemma add_comm a b : nat) : a + b = b + a",
 
-        """
+def play_lean(params: Parameters, MICHAEL, DIEGO, CLEMENT):
+    sprig = Sprig.start(
+        Lean().dump(), params, Address("Diego"), "lemma add_comm a b : nat) : a + b = b + a", """
         def zero := 0
 
         lemma z_add (n : nat) : zero + n = n :=
@@ -879,8 +890,7 @@ def play_lean(
         begin
             sorry
         end
-        """
-    )
+        """)
 
     time_passes(sprig)
 
@@ -888,31 +898,22 @@ def play_lean(
 
     time_passes(sprig)
 
-    sprig.answer(
-        "3",
-        DIEGO,
-        """false claim""",
-        """false claim => add_comm"""
-    )
+    sprig.answer("3", DIEGO, """false claim""", """false claim => add_comm""")
 
     time_passes(sprig)
 
     sprig.challenge(MICHAEL, "4")
     sprig.answer(
-        "3",
-        CLEMENT,
-        """lemma succ_add (a b : nat) : nat.succ a + b = nat.succ (a + b) :=
+        "3", CLEMENT, """lemma succ_add (a b : nat) : nat.succ a + b = nat.succ (a + b) :=
         begin
             sorry
         end
-        """,
-        """lemma add_comm (a b : nat) : a + b = b + a :=
+        """, """lemma add_comm (a b : nat) : a + b = b + a :=
         begin
         induction b, rw add_zero, rw z_add, refl,
         rw succ_add, rw add_succ, rw b_ih, refl,
         end
-        """
-    )
+        """)
 
     time_passes(sprig)
 
@@ -921,21 +922,19 @@ def play_lean(
     time_passes(sprig)
 
     sprig.answer_low_level(
-        "6",
-        DIEGO,
-        """lemma succ_add (a b : nat) : nat.succ a + b = nat.succ (a + b) :=
+        "6", DIEGO, """lemma succ_add (a b : nat) : nat.succ a + b = nat.succ (a + b) :=
         begin
             induction b, rw add_zero, rw add_zero,
             rw add_succ, rw b_ih,
         end
-        """
-    )
+        """)
 
     time_passes(sprig)
     time_passes(sprig)
     time_passes(sprig)
 
     return sprig
+
 
 def main():
     now(-now())  # reset the time to 0
@@ -963,6 +962,7 @@ def main():
         s = play_lean(params, MICHAEL, DIEGO, CLEMENT)
 
     # print(s.dumps())
+
 
 if __name__ == "__main__":
     main()

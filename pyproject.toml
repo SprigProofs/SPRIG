@@ -25,3 +25,7 @@ warn_return_any = true
 warn_unused_configs = true
 disallow_incomplete_defs = true
 disallow_untyped_defs = true
+
+[tool.yapf]
+column_limit = 100
+continuation_align_style = "fixed"
