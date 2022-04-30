@@ -1,17 +1,20 @@
 import pytest
 import sprig
 
+
 def test_constants():
     assert sprig.ROOT_HASH == '0'
 
 
 common_params = dict(
-        time_for_questions=2,
-        time_for_answers=2,
-        verification_cost=3,
-        root_height=3,
-        max_length=1000,
+    time_for_questions=2,
+    time_for_answers=2,
+    verification_cost=3,
+    root_height=3,
+    max_length=1000,
 )
+
+
 def test_params_nice():
     sprig.Parameters(
         upstakes=[1, 2, 3],

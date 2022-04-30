@@ -706,6 +706,17 @@ SPRIG instance:
                    root_question=root_question)
 
 
+####################################################
+#                                                 #
+#        Example runs on TicTacToe and Lean       #
+#                                                 #
+####################################################
+
+MICHAEL = Address("Michael")
+DIEGO = Address("Diego")
+CLEMENT = Address("Clément")
+
+
 def time_passes(sprig: Sprig, amount: int = 1) -> None:
     sprig.distribute_all_bets()
     print("Time is", fmt(now(), ORANGE))
@@ -724,7 +735,7 @@ def time_passes(sprig: Sprig, amount: int = 1) -> None:
     print()
 
 
-def play_tictactoe(params: Parameters, MICHAEL: Address, DIEGO: Address, CLEMENT: Address) -> Sprig:
+def play_tictactoe(params: Parameters) -> Sprig:
     sprig = Sprig.start(
         TicTacToe().dump(), params, Address("Diego"), "...|XX.|... O plays X wins", """1 -> 6
         2 -> 6
@@ -779,7 +790,7 @@ def play_tictactoe(params: Parameters, MICHAEL: Address, DIEGO: Address, CLEMENT
     return sprig
 
 
-def play_lean(params: Parameters, MICHAEL, DIEGO, CLEMENT):
+def play_lean(params: Parameters) -> Sprig:
     sprig = Sprig.start(
         Lean().dump(), params, Address("Diego"), "lemma add_comm a b : nat) : a + b = b + a", """
         def zero := 0
@@ -802,40 +813,44 @@ def play_lean(params: Parameters, MICHAEL, DIEGO, CLEMENT):
 
     time_passes(sprig)
 
-    sprig.challenge(MICHAEL, "3")
+    add_com = sprig.proofs[ROOT_HASH].challenges[2]
+    c1 = sprig.challenge(MICHAEL, add_com)
 
     time_passes(sprig)
 
-    sprig.answer("3", DIEGO, """false claim""", """false claim => add_comm""")
+    a1 = sprig.answer(c1.hash, DIEGO, "false claim\nfalse claim => add_comm")
 
     time_passes(sprig)
 
-    sprig.challenge(MICHAEL, "4")
-    sprig.answer(
-        "3", CLEMENT, """lemma succ_add (a b : nat) : nat.succ a + b = nat.succ (a + b) :=
-        begin
-            sorry
-        end
-        """, """lemma add_comm (a b : nat) : a + b = b + a :=
-        begin
-        induction b, rw add_zero, rw z_add, refl,
-        rw succ_add, rw add_succ, rw b_ih, refl,
-        end
-        """)
+    sprig.challenge(MICHAEL, a1.hash)
+    a2 = sprig.answer(
+        add_com, CLEMENT, """
+lemma succ_add (a b : nat) : nat.succ a + b = nat.succ (a + b) :=
+begin
+    sorry
+end
+
+/-| `add_comm` is proved trivially by induction -/
+
+lemma add_comm (a b : nat) : a + b = b + a :=
+begin
+    induction b, rw add_zero, rw z_add, refl,
+    rw succ_add, rw add_succ, rw b_ih, refl,
+end""")
 
     time_passes(sprig)
 
-    sprig.challenge(MICHAEL, "6")
+    sprig.challenge(MICHAEL, a2.challenges[-1])
 
     time_passes(sprig)
 
     sprig.answer_low_level(
-        "6", DIEGO, """lemma succ_add (a b : nat) : nat.succ a + b = nat.succ (a + b) :=
-        begin
-            induction b, rw add_zero, rw add_zero,
-            rw add_succ, rw b_ih,
-        end
-        """)
+        a2.challenges[-1], DIEGO, """
+lemma succ_add (a b : nat) : nat.succ a + b = nat.succ (a + b) :=
+    begin
+        induction b, rw add_zero, rw add_zero,
+        rw add_succ, rw b_ih,
+    end""")
 
     for _ in range(3):
         time_passes(sprig)
@@ -846,10 +861,6 @@ def play_lean(params: Parameters, MICHAEL, DIEGO, CLEMENT):
 def main() -> None:
     now(-now())  # reset the time to 0
     BANK.clear()  # reset the bank
-
-    MICHAEL = Address("Michael")
-    DIEGO = Address("Diego")
-    CLEMENT = Address("Clément")
 
     level = 5
     params = Parameters(
@@ -864,11 +875,11 @@ def main() -> None:
     )
 
     if "tictactoe" in sys.argv:
-        s = play_tictactoe(params, MICHAEL, DIEGO, CLEMENT)
+        s = play_tictactoe(params)
     else:
-        s = play_lean(params, MICHAEL, DIEGO, CLEMENT)
+        s = play_lean(params)
 
-    print(s.dumps())
+    # print(s.dumps())
 
 
 if __name__ == "__main__":

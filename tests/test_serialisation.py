@@ -5,13 +5,13 @@ from tests.test_fixtures import instance
 
 
 def test_serialisation(instance: Sprig) -> None:
-        new = Sprig.loads(instance.dumps())
+    new = Sprig.loads(instance.dumps())
 
-        assert new.language == instance.language
-        assert new == instance
+    assert new.language == instance.language
+    assert new == instance
 
-        d = instance.dump_as_dict()
-        assert set(d) == {"language", "params", "proofs", "challenges", "root_question"}
+    d = instance.dump_as_dict()
+    assert set(d) == {"language", "params", "proofs", "challenges", "root_question"}
 
 
 @pytest.mark.parametrize(

@@ -48,7 +48,6 @@ def purge_key(d: dict[str, Any], key: str) -> None:
             purge_key(v, key)
 
 
-
 def fmt(s: Any, fg: Color | None = None, bg: Color | None = None, end: bool = True) -> str:
     """
     Add ANSI escape codes to a string.

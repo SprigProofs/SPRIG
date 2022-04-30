@@ -13,7 +13,7 @@ run:
 
 test:
 	poetry run pytest
-	poetry run mypy sprig.py
+	poetry run mypy .
 	poetry run yapf --diff --recursive .
 
 fmt:

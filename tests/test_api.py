@@ -25,6 +25,7 @@ def test_all_get_are_success(path: str) -> None:
     response = client.get(path)
     assert response.ok
 
+
 @pytest.mark.skip()
 def test_get_all_instances() -> None:
     response = client.get('/instances')
@@ -33,16 +34,31 @@ def test_get_all_instances() -> None:
 
     for instance in instances.values():
         # If this set has changed, one needs to be sure the JS api is updated as well in sprig.ts
-        assert set(instance.keys()) == {'hash', 'params', 'language', 'root_claim', 'counts', 'author', 'bounties'}
-        assert set(instance['counts'].keys()) == {'unchallenged', 'challenged', 'rejected', 'validated'}
+        assert set(instance.keys()) == {
+            'hash',
+            'params',
+            'language',
+            'root_claim',
+            'counts',
+            'author',
+            'bounties',
+        }
+        assert set(instance['counts'].keys()) == {
+            'unchallenged',
+            'challenged',
+            'rejected',
+            'validated',
+        }
         assert Parameters(**instance['params'])
         assert isinstance(instance['language'], str)
         assert ClaimData(**instance['root_claim'])
+
 
 def test_get_everything() -> None:
     response = client.get('/everything')
     data = response.json()
     assert set(data.keys()) == {p.stem for p in all_instances_filenames()}
+
 
 @pytest.mark.skip()
 @pytest.mark.parametrize("hash", [p.stem for p in all_instances_filenames()])
@@ -61,7 +77,6 @@ def test_instance_get(hash: str) -> None:
     assert stored == data
 
 
-
 def test_post_new_instance() -> None:
     creation_data = {
         'params': {
@@ -74,10 +89,14 @@ def test_post_new_instance() -> None:
             'question_bounties': [0, 12, 13, 14, 15],
             'verification_cost': 16,
         },
-        'language': 'TicTacToe',
-        'author': 'diego',
-        'root_claim': 'XO.|.X.|... O plays X wins',
-        'proof': """Win or double attack
+        'language':
+            'TicTacToe',
+        'author':
+            'diego',
+        'root_claim':
+            'XO.|.X.|... O plays X wins',
+        'proof':
+            """Win or double attack
             3 -> 9
             4 -> 9
             6 -> 9

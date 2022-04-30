@@ -95,9 +95,9 @@ class TicTacToe(Language):
         second_player = "XO"[turn == "X"]
 
         strategy = self.parse_attempt(attempt)
-        move_covered = [first for first, second in strategy]
-        moves_possible = [i + 1 for i in range(9) if prev_grid[i] == "."]
-        assert set(move_covered) == set(moves_possible), "The strategy does not cover the available moves."
+        move_covered = {first for first, second in strategy}
+        moves_possible = {i + 1 for i in range(9) if prev_grid[i] == "."}
+        assert move_covered == moves_possible, "The strategy does not cover the available moves."
 
         for move, response in strategy:
             grid = list(prev_grid)
