@@ -1,2 +1,2 @@
-from .tictactoe import TicTacToe
-from .lean import Lean
+from .tictactoe import TicTacToe as TicTacToe
+from .lean import Lean as Lean

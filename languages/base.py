@@ -2,7 +2,6 @@ from dataclasses import dataclass
 from typing import Dict, List, NewType, Optional, Type
 
 
-@dataclass
 class Language:
     """
     The base class for all languages.
@@ -22,20 +21,30 @@ class Language:
 
     # Stores all languages known to the interpreter.
     REGISTER: dict[str, "Type[Language]"] = {}
+    name: str
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
-    def judge_low_level(self, statement: str, machine_proof: List[str]) -> bool:
-        """Perform the machine level verification."""
+    def judge_low_level(self, proof: list[str]) -> bool:
+        """Perform the machine level verification.
+
+        Arguments:
+            proof: A list of all attempt content above the machine proof.
+                The first element is the machine proof, the last is the initial claim.
+        """
         raise NotImplementedError
 
-    def validate_subclaims(self, root_statement: str, common_proof_part: List[str], *sub_claim_statements: str):
+    def validate_attempt(self, parents: list[str], challenge_nb: int, attempt: str) -> bool:
         """Check that a proof attempt is coherent. Raises AssertionError if not."""
         raise NotImplementedError
 
-    def validate_top_level(self, initial_claim: str):
+    def validate_top_level(self, initial_claim: str) -> bool:
         """Check that an initial claim is valid. Raises AssertionError if not."""
+        raise NotImplementedError
+
+    def nb_of_challenges(self, proof: str) -> int:
+        """Return the number of points that a proof can be challenged."""
         raise NotImplementedError
 
     # Serialisation
@@ -50,7 +59,7 @@ class Language:
         Language.REGISTER[id_] = cls
 
     @staticmethod
-    def load(language_type: str):
+    def load(language_type: str) -> "Language":
         cls = Language.REGISTER[language_type]
         return cls()
 

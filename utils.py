@@ -1,6 +1,6 @@
 from operator import attrgetter
 from textwrap import indent
-from typing import Iterator
+from typing import Any, Iterable, Iterator, Sequence, Tuple, TypeVar
 
 CURRENCY = " ₽"
 HEIGHT_SYMBOL = "⛰"
@@ -10,8 +10,11 @@ FG_ORANGE = "\033[38;2;255;165;0m"
 BG_BLUE = "\033[48;2;12;34;56m"
 RESET = "\033[m"
 
+_T = TypeVar("_T")
+Color = Tuple[int, int, int]
 
-def get(iterator, **kwargs):
+
+def get(iterator: Iterable[_T], **kwargs: Any) -> _T | None:
     """Return the first object in iterator that has the correct values for each attribute name in kwargs."""
     getter = attrgetter(*kwargs.keys())
     values = tuple(kwargs.values())
@@ -23,6 +26,7 @@ def get(iterator, **kwargs):
     for obj in iterator:
         if getter(obj) == values:
             return obj
+    return None
 
 
 def all_subclasses(klass: type) -> Iterator[type]:
@@ -32,7 +36,7 @@ def all_subclasses(klass: type) -> Iterator[type]:
     yield klass
 
 
-def purge_key(d: dict, key):
+def purge_key(d: dict[str, Any], key: str) -> None:
     """Recursively remove a key from a dict. Mutates the dict."""
     if isinstance(d, dict):
         if key in d:
@@ -44,7 +48,8 @@ def purge_key(d: dict, key):
             purge_key(v, key)
 
 
-def fmt(s, fg=None, bg=None, end=True):
+
+def fmt(s: Any, fg: Color | None = None, bg: Color | None = None, end: bool = True) -> str:
     """
     Add ANSI escape codes to a string.
 
@@ -67,11 +72,11 @@ def fmt(s, fg=None, bg=None, end=True):
     return f"\033[{flags}m{s}{ending}"
 
 
-def fmt_money(amount):
+def fmt_money(amount: int) -> str:
     return fmt(str(amount) + CURRENCY, ORANGE)
 
 
-def tree_str(iterable):
+def tree_str(iterable: Sequence[Any]) -> str:
     # For future reference for printing tree.
     if not iterable:
         return ""

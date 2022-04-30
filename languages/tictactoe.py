@@ -1,7 +1,6 @@
 import re
 
 from languages.base import Language
-from typing import Dict, List, NewType, Optional
 
 
 class TicTacToe(Language):
@@ -63,7 +62,7 @@ class TicTacToe(Language):
             return True
         return False
 
-    def judge_low_level(self, sprig, statement: str, machine_proof: List[str]) -> bool:
+    def judge_low_level(self, proof: list[str]) -> bool:
         machine_proof = machine_proof[-1]
         if not self.RE_MACHINE_LEVEL.match(machine_proof):
             return False
@@ -85,7 +84,7 @@ class TicTacToe(Language):
             else:
                 return set(grid[3 * i : 3 * i + 3]) == {win}
 
-    def validate_subclaims(self, sprig, root_statement: str, common_proof_part: List[str], *sub_claim_statements: str):
+    def validate_subclaims(self, sprig, root_statement: str, common_proof_part: list[str], *sub_claim_statements: str):
         move_covered = [False] * 9
         prev_grid, prev_turn, prev_win = self.parse_board(root_statement)
         for claim in sub_claim_statements:

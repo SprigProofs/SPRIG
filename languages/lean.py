@@ -30,7 +30,14 @@ class Lean(Language):
     Language that represents Lean proofs
     """
 
-    def judge_low_level(self, sprig, statement: str, machine_proof: List[str]) -> bool:
+    def judge_low_level(self, proof: list[str]) -> bool:
+        """Perform the machine level verification.
+
+        Arguments:
+            proof: A list of all attempt content above the machine proof.
+                The first element is the machine proof, the last is the initial claim.
+        """
+
         # TODO: better check
         if 'sorry' in machine_proof[-1]:
             return False
