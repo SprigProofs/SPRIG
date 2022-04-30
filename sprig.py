@@ -23,6 +23,7 @@ Address = NewType("Address", str)
 # A Type alias to identify claims
 Hash = NewType("Hash", str)
 Time = NewType("Time", int)
+Branch = list[tuple[str, int]]
 
 ROOT_HASH = Hash("0")
 SPRIG_ADDRESS = Address("@SPRIG")
@@ -117,6 +118,9 @@ class Status(str, Enum):
             Status.CHALLENGED: (0, 165, 255),
         }[self]
 
+    def __str__(self) -> str:
+        return fmt(self.value.title(), fg=self.color())
+
 
 class AbstractParameters:
     """Interface that all parametrization of the sprig protocol must follow.
@@ -152,13 +156,13 @@ class AbstractParameters:
         """
         raise NotImplementedError
 
-    def pay_attempt_rejected(self, attempt: ProofAttempt, rejecting: Challenge,
+    def pay_attempt_rejected(self, attempt: ProofAttempt, rejecting: Challenge | None,
                              sprig: Sprig) -> None:
         """Make the transactions when an attempt is rejected.
 
         In particular:downstakes
          - Distribute the upstake to the parent challenge (if any)
-         - Distribute the downstake to the closing challenge
+         - Distribute the downstake to the closing challenge (if not machine)
         """
         raise NotImplementedError
 
@@ -200,7 +204,7 @@ class Parameters(AbstractParameters):
     verification_cost: int
 
     def __post_init__(self) -> None:
-        assert self.root_height > 0
+        assert self.root_height > 1
         assert len(self.upstakes) == self.root_height
         assert len(self.downstakes) == self.root_height
         assert len(self.question_bounties) == self.root_height
@@ -223,7 +227,8 @@ class Parameters(AbstractParameters):
         if challenge.status == Status.UNCHALLENGED:
             return Time(challenge.created_at + self.time_for_questions)
         else:
-            return Time(challenge.created_at + self.time_for_answers)
+            assert challenge.challenged_at is not None  # Sanity check
+            return Time(challenge.challenged_at + self.time_for_answers)
 
     def attempt_passes_constraints(self, attempt: ProofAttempt) -> bool:
         return len(attempt.proof) < self.max_length
@@ -245,6 +250,7 @@ class Parameters(AbstractParameters):
 
         # transfer machine verification cost, which never fails
         if success and attempt.height == 0:
+            attempt.money_held -= self.verification_cost
             transfer_money(SPRIG_ADDRESS, MACHINE_VERIF, self.verification_cost, msg)
 
         return success
@@ -263,16 +269,18 @@ class Parameters(AbstractParameters):
         attempt.money_held -= amount
         transfer_money(SPRIG_ADDRESS, attempt.author, amount, f"attempt validated")
 
-    def pay_attempt_rejected(self, attempt: ProofAttempt, rejecting: Challenge,
+    def pay_attempt_rejected(self, attempt: ProofAttempt, rejecting: Challenge | None,
                              sprig: Sprig) -> None:
 
         # non-machine: downstakes goes to closing claim challenger.
         if attempt.height > 0:
             amount = self.downstakes[attempt.height]
             attempt.money_held -= amount
-            assert rejecting.author  # Sanity check (also for mypy)
+            assert rejecting and rejecting.author  # Sanity check (also for mypy)
             transfer_money(SPRIG_ADDRESS, rejecting.author, amount,
                            f"downstakes to {rejecting.hash}")
+        else:
+            assert rejecting is None
 
         # non-root: upstake goes to challenge that was failed to answer
         if attempt.parent is not None:
@@ -335,7 +343,7 @@ class ProofAttempt:
     #  - The height of a challenge is the same as its parent attempt
     #  - In general, the height of an object is the number of proofs that can bo below it.
     # Example:
-    #  Root question  3
+    #  Root question  3  <- also params.root_height
     #  Proof initial  2
     #  Challenge      2
     #  Proof          1
@@ -350,7 +358,9 @@ class ProofAttempt:
     money_held: int
 
     def __str__(self) -> str:
-        return f"Attempt {self.hash} by {self.author} at {self.created_at} ({self.status} {fmt_money(self.money_held)} {self.height}{HEIGHT_SYMBOL})"
+        return (
+            f"Attempt {self.hash} by {fmt(self.author, (255, 255, 255))} at {self.created_at} " +
+            f"({self.status}, {fmt_money(self.money_held)}, {self.height}{HEIGHT_SYMBOL})")
 
 
 @dataclass
@@ -368,7 +378,9 @@ class Challenge:
     def __str__(self) -> str:
         if self.status is Status.UNCHALLENGED:
             return f"Challenge point {self.hash}"
-        return f"Challenge {self.hash} by {self.author} at {self.created_at}. {self.status}"
+        elif self.author is None:
+            return f"Challenge point {self.hash} {self.status}"
+        return f"Challenge {self.hash} by {self.author} at {self.challenged_at}. {self.status}"
 
 
 @dataclass
@@ -402,21 +414,8 @@ class Sprig:
         """Start a new instance of the SPRIG protocol, originating from a claim."""
 
         height = params.protocol_height()
-        root_attempt = ProofAttempt(hash=ROOT_HASH,
-                                    parent=None,
-                                    author=claimer,
-                                    proof=proof_attempt,
-                                    height=height,
-                                    status=Status.UNCHALLENGED,
-                                    created_at=now(),
-                                    challenges=[],
-                                    money_held=0)
         language = Language.load(language_type)
-        self = cls(language,
-                   params,
-                   proofs={ROOT_HASH: root_attempt},
-                   challenges={},
-                   root_question=claim)
+        self = cls(language, params, proofs={}, challenges={}, root_question=claim)
 
         assert self.language.validate_top_level(claim), "Invalid top level statement"
 
@@ -430,14 +429,11 @@ class Sprig:
         def attempt_str(attempt_hash: Hash) -> str:
             attempt = self.proofs[attempt_hash]
 
-            ret = fmt(attempt, attempt.status.color())
+            ret = f"{attempt}\n"
             for challenge_hash in attempt.challenges:
                 challenge = self.challenges[challenge_hash]
-                # money = f" ({fmt_money(attempt.money_held)})" if attempt.money_held else ""
-                ret += fmt(challenge, challenge.status.color())
-                # ret += (
-                #     fmt(f"Attempt {i + 1} by {attempt.claimer}", attempt.status.color()) + f" {money}:\n"
-                # )
+                ret += f"+ {challenge}\n"
+
                 for child_attempt_hash in challenge.attempts:
                     claim_s = indent(attempt_str(child_attempt_hash), INDENT)
                     ret += "  - " + claim_s[len(INDENT):]
@@ -492,29 +488,35 @@ SPRIG instance:
 
     def answer(self, challenge_hash: Hash, claimer: Address, proof: str) -> ProofAttempt:
         """Answer a challenge with a (non-machine) proof."""
-        self.distribute_all_bets()
 
-        assert challenge_hash in self.challenges, "The claim hash is not valid."
-        challenge = self.challenges[challenge_hash]
-        assert challenge.status is Status.CHALLENGED, f"The challenge is not open: {challenge}"
-        assert challenge.height > 1, "Use answer_low_level instead"
+        if challenge_hash is ROOT_HASH:
+            assert ROOT_HASH not in self.proofs, "The root question has already an attempt."
+            height = self.params.protocol_height() - 1
+            parents: Branch = []
+        else:
+            self.distribute_all_bets()
 
-        parents: list[str] = self.gather_claims(challenge.parent)
-        challenge_idx = self.proofs[challenge.parent].challenges.index(challenge_hash)
-        assert self.language.validate_attempt(parents, challenge_idx,
+            assert challenge_hash in self.challenges, "The claim hash is not valid."
+            challenge = self.challenges[challenge_hash]
+            assert challenge.status is Status.CHALLENGED, f"The challenge is not open: {challenge}"
+            assert challenge.height > 1, "Use answer_low_level instead"
+
+            height = challenge.height - 1
+            parents = self.gather_branch(challenge.hash)
+
+        assert self.language.validate_attempt(self.root_question, parents,
                                               proof), "Invalid proof attempt."
 
         attempt_hash = self.next_hashes()[0]
         nb_of_challenges = self.language.nb_of_challenges(proof)
-        challenges_hashes = self.next_hashes(nb_of_challenges)
+        challenges_hashes = self.next_hashes(nb_of_challenges, for_attempts=False)
 
-        height = challenge.height - 1
         current_time = now()
         attempt = ProofAttempt(hash=attempt_hash,
-                               parent=challenge_hash,
+                               parent=challenge_hash if challenge_hash is not ROOT_HASH else None,
                                author=claimer,
                                proof=proof,
-                               height=challenge.height - 1,
+                               height=height,
                                status=Status.UNCHALLENGED,
                                created_at=current_time,
                                challenges=challenges_hashes,
@@ -534,15 +536,19 @@ SPRIG instance:
                 challenged_at=None,
                 attempts=[],
                 status=Status.UNCHALLENGED,
-                height=challenge.height - 1)
+                height=height)
             challenge.open_until = self.params.challenge_deadline(challenge)
             self.challenges[h] = challenge
+
+        if challenge_hash is not ROOT_HASH:
+            self.challenges[challenge_hash].attempts.append(attempt_hash)
 
         # No need to update anything else in the tree
         # self.distribute_all_bets()
         return attempt
 
-    def answer_low_level(self, challenge_hash: Hash, claimer: Address, machine_proof: str) -> ProofAttempt:
+    def answer_low_level(self, challenge_hash: Hash, claimer: Address,
+                         machine_proof: str) -> ProofAttempt:
         self.distribute_all_bets()
 
         assert challenge_hash in self.challenges, "No such challenge."
@@ -571,18 +577,19 @@ SPRIG instance:
 
     # Updating the state of the tree.
 
-    def gather_claims(self, attempt_hash: Hash) -> list[str]:
-        """Get the content of all proof attempts above (and including) an attempt."""
+    def gather_branch(self, challenge_hash: Hash) -> Branch:
+        """Get the content of the branch above (and including) a challenge."""
 
-        attempt = self.proofs[attempt_hash]
-        result = [attempt.proof]
-        while attempt.parent is not None:
-            challenge = self.challenges[attempt.parent]
+        branch: Branch = []
+        h: Hash | None = challenge_hash
+        while h is not None:
+            challenge = self.challenges[h]
             attempt = self.proofs[challenge.parent]
-            # TODO: append only what is above in the proof ?
-            result.append(attempt.proof)
+            branch.append((attempt.proof, attempt.challenges.index(challenge_hash)))
 
-        return result
+            h = attempt.parent
+
+        return branch
 
     def update_attempt(self, attempt: ProofAttempt) -> None:
         """Update an attempt when it must be modified. Distributes stakes when needed."""
@@ -593,17 +600,21 @@ SPRIG instance:
             return
 
         elif attempt.height == 0:
-            if self.language.judge_low_level(self.gather_claims(attempt.hash)):
+            assert attempt.parent  # sanity check. It Should not be possible to create a sprig instance directly with a machine proof.
+            if self.language.judge_low_level(self.root_question, self.gather_branch(attempt.parent),
+                                             attempt.proof):
                 attempt.status = Status.VALIDATED
+                self.params.pay_attempt_accepted(attempt)
             else:
                 attempt.status = Status.REJECTED
+                self.params.pay_attempt_rejected(attempt, None, self)
 
         elif all(c.status is Status.VALIDATED for c in challenges):
             # If no question came, this claim is valid!
             attempt.status = Status.VALIDATED
             self.params.pay_attempt_accepted(attempt)
 
-        elif (rejecting := get(challenges, status=Status.CHALLENGED)):
+        elif (rejecting := get(challenges, status=Status.REJECTED)):
             # We know the attempt is CHALLENGED here, because
             # decided attempts are handled in the first if
             attempt.status = Status.REJECTED
@@ -621,9 +632,8 @@ SPRIG instance:
 
         elif challenge.status is Status.UNCHALLENGED:
             if now() > challenge.open_until:
-                # If no question came, this claim is valid!
+                # If no question came, this claim is valid and there no one to pay.
                 challenge.status = Status.VALIDATED
-                self.params.pay_challenge_validated(attempt, challenge)
 
         elif challenge.status is Status.CHALLENGED:
             children_attempts = [self.proofs[h] for h in challenge.attempts]
@@ -635,7 +645,9 @@ SPRIG instance:
                 # Distribute the bet from the challenge that just closed
                 # downwards to the successful attempt
                 self.params.pay_challenge_rejected(answer, self)
-            elif now() > challenge.open_until:
+            elif now() > challenge.open_until and all(c.status is Status.REJECTED
+                                                      for c in children_attempts):
+                # If all child attempts are rejected and the time is over, we know the claim is invalid.
                 challenge.status = Status.REJECTED
                 self.params.pay_challenge_validated(attempt, challenge)
 
@@ -655,7 +667,7 @@ SPRIG instance:
             for attempt_hash in challenge.attempts:
                 attempt = self.proofs[attempt_hash]
                 yield from self._dfs(attempt)
-        yield attempt
+        yield start
 
     # Serialisation
 
@@ -694,7 +706,7 @@ SPRIG instance:
                    root_question=root_question)
 
 
-def time_passes(sprig: Sprig, amount: int=1) -> None:
+def time_passes(sprig: Sprig, amount: int = 1) -> None:
     sprig.distribute_all_bets()
     print("Time is", fmt(now(), ORANGE))
     print(sprig)
@@ -713,35 +725,30 @@ def time_passes(sprig: Sprig, amount: int=1) -> None:
 
 
 def play_tictactoe(params: Parameters, MICHAEL: Address, DIEGO: Address, CLEMENT: Address) -> Sprig:
-    ctx = " O plays X wins"
     sprig = Sprig.start(
-        TicTacToe().dump(), params, Address("Diego"), "...|XX.|... O plays X wins",
-        """O plays X wins
-        O..|XXX|...
-        .O.|XXX|...
-        ..O|XXX|...
-        X..|XXO|...
-        ...|XXX|O..
-        ...|XXX|.O.
-        ...|XXX|..O""")
+        TicTacToe().dump(), params, Address("Diego"), "...|XX.|... O plays X wins", """1 -> 6
+        2 -> 6
+        3 -> 6
+        6 -> 1
+        7 -> 6
+        8 -> 6
+        9 -> 6
+        """)
 
     time_passes(sprig)
 
     root = sprig.proofs[ROOT_HASH]
-    c1 = sprig.challenge(MICHAEL, root.challenges[2])
-    c2 = sprig.challenge(MICHAEL, root.challenges[4])
+    c1 = sprig.challenge(MICHAEL, root.challenges[1])
+    c2 = sprig.challenge(MICHAEL, root.challenges[3])
 
     time_passes(sprig)
     a1 = sprig.answer(
-        c1.hash,
-        DIEGO,
-        """O plays X wins
-        XO.|XXO|X..
-        XXO|XXO|...
-        X..|XXO|O.X
-        X..|XXO|XO.
-        X..|XXO|X.O"""
-    )
+        c2.hash, DIEGO, """Case X..|XXO|...
+        2 -> 7
+        3 -> 2
+        7 -> 9
+        8 -> 7
+        9 -> 7""")
 
     time_passes(sprig)
     sprig.answer_low_level(c2.hash, DIEGO, "-2")
@@ -752,21 +759,22 @@ def play_tictactoe(params: Parameters, MICHAEL: Address, DIEGO: Address, CLEMENT
     time_passes(sprig)
 
     sprig.answer(
-        c2.hash,
-        CLEMENT,
-        """O plays X wins
-        XO.|XXO|X..
-        X.O|XXO|X..
-        X..|XXO|O.X
-        X..|XXO|XO.
-        X..|XXO|X.O"""
-    )
+        c2.hash, CLEMENT, """Case X..|XXO|...
+        2 -> 7
+        3 -> 7
+        7 -> 9
+        8 -> 7
+        9 -> 7""")
 
-    time_passes(sprig)
-    time_passes(sprig)
-    time_passes(sprig)
+    for _ in range(5):
+        time_passes(sprig)
 
     # print(sprig.gather_claims(sprig.proofs['4']))
+
+    from pprint import pprint
+    # pprint(sprig)
+
+    pprint(sprig.params)
 
     return sprig
 
@@ -829,9 +837,8 @@ def play_lean(params: Parameters, MICHAEL, DIEGO, CLEMENT):
         end
         """)
 
-    time_passes(sprig)
-    time_passes(sprig)
-    time_passes(sprig)
+    for _ in range(3):
+        time_passes(sprig)
 
     return sprig
 
@@ -848,8 +855,8 @@ def main() -> None:
     params = Parameters(
         root_height=level,
         max_length=1000,
-        time_for_questions=2,
-        time_for_answers=2,
+        time_for_questions=3,
+        time_for_answers=4,
         upstakes=[5, 4, 3, 2, 1],
         downstakes=[0, 1, 2, 3, 4],
         question_bounties=[0, 1, 2, 3, 4],

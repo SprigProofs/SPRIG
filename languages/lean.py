@@ -30,6 +30,8 @@ class Lean(Language):
     Language that represents Lean proofs
     """
 
+    name = "Lean"
+
     def judge_low_level(self, proof: list[str]) -> bool:
         """Perform the machine level verification.
 

@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Dict, List, NewType, Optional, Type
+from typing import Any, Dict, List, NewType, Optional, Type
 
 
 class Language:
@@ -19,27 +19,45 @@ class Language:
     A Language is identified with its class name.
     """
 
-    # Stores all languages known to the interpreter.
-    REGISTER: dict[str, "Type[Language]"] = {}
     name: str
 
     def __str__(self) -> str:
         return self.name
 
-    def judge_low_level(self, proof: list[str]) -> bool:
+    def judge_low_level(self, root_question: str, branch: list[tuple[str, int]],
+                        machine_proof: str) -> bool:
         """Perform the machine level verification.
 
         Arguments:
-            proof: A list of all attempt content above the machine proof.
-                The first element is the machine proof, the last is the initial claim.
+            root_question: the initial claim.
+            branch: A list of (proof_attempt, challenge_nb) tuples.
+                This list gives all information about the branch of the
+                sprig tree. The first element is the initial proof attempt,
+                followed by the number of the challenge that was activated,
+                and so on until the number of the challenge above the machine proof.
+            machine_proof: the low-level proof.
+
+        Returns:
+            True if the proof is correct, False otherwise.
         """
         raise NotImplementedError
 
-    def validate_attempt(self, parents: list[str], challenge_nb: int, attempt: str) -> bool:
-        """Check that a proof attempt is coherent. Raises AssertionError if not."""
+    def validate_attempt(self, root_question: str, branch: list[tuple[str, int]],
+                         attempt: str) -> bool:
+        """Check that a proof attempt is coherent. Raises AssertionError if not.
+
+        Arguments:
+            root_question: the initial claim.
+            branch: A list of (proof_attempt, challenge_nb) tuples.
+                This list gives all information about the branch of the
+                sprig tree. The first element is the initial proof attempt,
+                followed by the number of the challenge that was activated,
+                and so on until the number of the challenge above the machine proof.
+            attempt: the attempt to check for (syntaxic) validity.
+        """
         raise NotImplementedError
 
-    def validate_top_level(self, initial_claim: str) -> bool:
+    def validate_top_level(self, root_question: str) -> bool:
         """Check that an initial claim is valid. Raises AssertionError if not."""
         raise NotImplementedError
 
@@ -49,18 +67,10 @@ class Language:
 
     # Serialisation
 
-    def __init_subclass__(cls, **kwargs):
-        """Registers the subclasses in REGISTER with their class name as key."""
-
-        # Note: This code is duplicated with AbstractConstraints
-        id_ = cls.__name__
-        cls.name = cls.__name__
-        assert id_ not in Language.REGISTER
-        Language.REGISTER[id_] = cls
-
     @staticmethod
     def load(language_type: str) -> "Language":
-        cls = Language.REGISTER[language_type]
+        import languages
+        cls = languages.LANGUAGES[language_type]
         return cls()
 
     def dump(self) -> str:
