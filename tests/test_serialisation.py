@@ -1,28 +1,17 @@
 import pytest
 
 from sprig import *
-from tests import exemples
+from tests.test_fixtures import instance
 
 
-@pytest.mark.parametrize(
-    "sprig",
-    [
-        exemples.sprig_started,  # We pass functions because calling them might raise error and stop test detection early
-        exemples.sprig_challenged,
-        exemples.sprig_answer,
-        exemples.sprig_challenged_2,
-    ],
-)
-def test_serialisation(sprig):
-    with time_mode(DISCRETE_TIME):
-        instance = sprig()
-    new = Sprig.loads(instance.dumps())
+def test_serialisation(instance: Sprig) -> None:
+        new = Sprig.loads(instance.dumps())
 
-    assert new.language == instance.language
-    assert new == instance
+        assert new.language == instance.language
+        assert new == instance
 
-    d = instance.dump_as_dict()
-    assert set(d) == {"language", "params", "claims", "proof_attempts"}
+        d = instance.dump_as_dict()
+        assert set(d) == {"language", "params", "proofs", "challenges", "root_question"}
 
 
 @pytest.mark.parametrize(

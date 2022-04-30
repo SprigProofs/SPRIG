@@ -24,6 +24,15 @@ class Language:
     def __str__(self) -> str:
         return self.name
 
+    def __eq__(self, __o: object) -> bool:
+        if isinstance(__o, Language):
+            return self.name == __o.name
+        else:
+            return False
+
+    def __hash__(self) -> int:
+        return hash(self.name)
+
     def judge_low_level(self, root_question: str, branch: list[tuple[str, int]],
                         machine_proof: str) -> bool:
         """Perform the machine level verification.

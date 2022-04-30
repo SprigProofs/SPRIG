@@ -12,7 +12,7 @@ dayjs.extend(relativeTime);
 
 import { ElNotification } from "element-plus";
 
-/** 
+/**
  * Constants
 */
 
@@ -94,8 +94,8 @@ class Claim {
             return instance.params.downstakes[this.height];
         }
     }
-    possibleReward(instance: Sprig): number { 
-        return this.status == Status.CHALLENGED 
+    possibleReward(instance: Sprig): number {
+        return this.status == Status.CHALLENGED
             ? this.challengeBounty(instance.params)
             : this.possibleDownstake(instance);
     }
@@ -121,7 +121,7 @@ interface StatusCounts {
 
 interface SprigSummary {
     language: string;
-    root_claim: Claim;
+    root_question: string;
     counts: StatusCounts;
     hash: string;
     params: Parameters;

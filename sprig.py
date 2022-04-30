@@ -694,8 +694,8 @@ SPRIG instance:
         mkStatus(data)
 
         params = Parameters(**data["params"])
-        proofs = {h: ProofAttempt(**attempt) for h, attempt in data["attempts"].items()}
-        challenges = {h: Challenge(**challenge) for h, challenge in data["challenge"].items()}
+        proofs = {h: ProofAttempt(**attempt) for h, attempt in data["proofs"].items()}
+        challenges = {h: Challenge(**challenge) for h, challenge in data["challenges"].items()}
         language = Language.load(data['language'])
         root_question = data["root_question"]
 
@@ -868,7 +868,7 @@ def main() -> None:
     else:
         s = play_lean(params, MICHAEL, DIEGO, CLEMENT)
 
-    # print(s.dumps())
+    print(s.dumps())
 
 
 if __name__ == "__main__":
