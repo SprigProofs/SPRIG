@@ -1,3 +1,6 @@
+
+.PHONY: backend frontend run test fmt install install-dev
+
 PORT=8600
 BACKEND_PORT=8601
 
@@ -5,7 +8,7 @@ backend:
 	DEV=true poetry run uvicorn api:api --port $(BACKEND_PORT) --reload
 
 frontend:
-	cd frontend && PORT=$(PORT) npm run serve
+	cd frontend && PORT=$(PORT) npm run dev
 
 run:
 	poetry run uvicorn api:api --port $(BACKEND_PORT) &

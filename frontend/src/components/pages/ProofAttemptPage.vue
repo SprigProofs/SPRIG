@@ -1,10 +1,10 @@
 <template>
     <div>
     <div class="max-w-7xl mx-auto">
-        <header class="p-8 pb-2"> 
+        <header class="p-8 pb-2">
 
             <div class="flex">
-                <StatusTag status="unchallenged" /> 
+                <StatusTag status="unchallenged" />
                 <div class="ml-4 font-bold rounded-md">
                     Bounty <Price :amount="100"/>
                 </div>
@@ -14,19 +14,19 @@
             </h1>
             <div class="flex space-x-4">
                 <div>
-                    <v-icon name="md-person-round" class="mr-1"/> 
+                    <v-icon name="md-person-round" class="mr-1"/>
                     <User :name="attempt.claimer" />
                 </div>
                 <div>
-                    <v-icon name="md-accesstime-round" class="mr-1"/> 
+                    <v-icon name="md-accesstime-round" class="mr-1"/>
                     <Time :time="claim.last_modification" />
                 </div>
                 <div>
-                    <v-icon name="md-lockclock" class="mr-1"/> 
+                    <v-icon name="md-lockclock" class="mr-1"/>
                     <Time :time="claim.open_until" />
                 </div>
                 <div>
-                    <v-icon name="fa-mountain" class="mr-1"/> 
+                    <v-icon name="fa-mountain" class="mr-1"/>
                     <span>{{ claim.height }} / {{ params.root_height }}</span>
                 </div>
             </div>
@@ -34,19 +34,19 @@
         </header>
 
         <div class="p-8 flex xl:flex-row-reverse xl:justify-between flex-col">
-            
+
             <section class="xl:w-[32rem]">
                 <h2 class="small-title pb-2">Actions log</h2>
                 <el-timeline>
-                    <el-timeline-item timestamp="15.04.22 20:46" class="" > 
-                        <User name="cozyfractal"/> posted this proof attempt with a bounty of <Price amount="100"/> 
+                    <el-timeline-item timestamp="15.04.22 20:46" class="" >
+                        <User name="cozyfractal"/> posted this proof attempt with a bounty of <Price amount="100"/>
                         <div class="bg-slate-100 p-4 mt-2 rounded-md flex flex-col shadow-sm">
                             <h3 class="font-semibold">Doubtful ? Challenge a claim.</h3>
                             <ul class="list-disc list-inside">
                                 <li>Lock a bounty of <Price :amount="params.question_bounties[claim.height]"/> </li>
                                 <li>For 10 days, proof attempts can be submitted for <price :amount="params.upstakes[claim.height-1] + params.downstakes[claim.height-1]"/> </li>
                                 <li>The first accepted proof attempt is rewarded with your bounty of <Price :amount="params.question_bounties[claim.height]"/> </li>
-                                <li>If all proof attempts are rejected, you get your locked bounty back, 
+                                <li>If all proof attempts are rejected, you get your locked bounty back,
                                     If your challenge is the first to invalidate <User name="cozyfractal" />'s proof, you get their <Price :amount="params.downstakes[claim.height]" /> bounty. </li>
                             </ul>
                             <button class="bg-white rounded-md px-2 py-1 mt-3 self-end shadow">
@@ -150,20 +150,16 @@ const props = defineProps({
         type: String,
         required: true,
     },
-    claimHash: {
+    hash: {
         type: String,
-        required: true,
-    },
-    attemptNb: {
-        type: Number,
         required: true,
     },
 })
 
 const instance = store.instances[props.instanceHash];
 const language = LANGUAGES[instance.language];
-const attempt = instance.proof_attempts[props.claimHash][props.attemptNb];
-const claim = instance.claims[props.claimHash];
+const attempt = instance.proofs[props.hash];
+// const claim = instance.claims[props.hash];
 const params = instance.params;
 
 const showPreviousDefinitions = ref(false);

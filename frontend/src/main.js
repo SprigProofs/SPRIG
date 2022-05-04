@@ -13,8 +13,8 @@ import Search from './components/pages/SearchInput.vue'
 import ProofAttemptPage from './components/pages/ProofAttemptPage.vue'
 import { OhVueIcon, addIcons } from "oh-vue-icons";
 import { MdClearRound, MdCheckRound, MdMenu, MdModeedit, MdCancel, MdCheckcircle, MdOfflineboltSharp, MdKeyboarddoublearrowdown, MdKeyboarddoublearrowup, MdBolt, MdOfflinebolt, MdQuestionmarkRound, MdInfoRound, MdAccesstimeRound, MdPersonRound, FaMountain, MdLockclock, MdLockopenRound, MdPriorityhighRound, MdCloseRound, MdDownload, MdDownloading } from "oh-vue-icons/icons";
-import { PiPikachu } from 'oh-vue-icons/icons' 
-import { CiAlgo } from 'oh-vue-icons/icons' 
+import { PiPikachu } from 'oh-vue-icons/icons'
+import { CiAlgo } from 'oh-vue-icons/icons'
 
 // Browse icons at https://oh-vue-icons.js.org/
 // Don't forget to add the icon below too.
@@ -22,13 +22,13 @@ addIcons(
     MdClearRound,
     MdCheckRound,
     MdQuestionmarkRound,
-    MdMenu, 
-    PiPikachu, 
-    MdModeedit, 
-    MdOfflineboltSharp, 
+    MdMenu,
+    PiPikachu,
+    MdModeedit,
+    MdOfflineboltSharp,
     MdOfflinebolt,
-    CiAlgo, 
-    MdKeyboarddoublearrowdown, 
+    CiAlgo,
+    MdKeyboarddoublearrowdown,
     MdKeyboarddoublearrowup,
     MdCancel,
     MdCheckcircle,
@@ -56,7 +56,7 @@ addIcons({
 const routes = [
     { path: '/', component: Home },
     { path: '/search', component: Search },
-    { path: '/i/:instanceHash/a/:claimHash/:attemptNb', component: ProofAttemptPage, props: true, name: 'proofAttempt' },
+    { path: '/i/:instanceHash/:hash', component: ProofAttemptPage, props: true, name: 'proofAttempt' },
 ]
 const router = VueRouter.createRouter({
     history: VueRouter.createWebHashHistory(),

@@ -14,17 +14,17 @@
                 <img class="w-full"
                     src="/sprig.svg" alt="SPRIG">
             </div>
-            <p class="home-rectangle w-60 h-60 ml-auto -mt-16 mr-12 
+            <p class="home-rectangle w-60 h-60 ml-auto -mt-16 mr-12
                 bg-blue-500/30 text-right text-2xl font-semibold">
                 Building trust in mathematical proofs
                 through blockchain technology and game theory.
             </p>
 
                 <p class="relative mx-16 -mt-24 bg-red-600/30 home-rectangle w-48 h-48">
-                    Lorem ipsum dolor sit amet consectetur adipisicing elit. Suscipit assumenda maxime nostrum officia earum consequatur deleniti 
-                    <div class="absolute 
-                        top-[calc(100%-1rem)] left-[calc(100%-1rem)] w-16 h-16 
-                        hover:animate-spin-square 
+                    Lorem ipsum dolor sit amet consectetur adipisicing elit. Suscipit assumenda maxime nostrum officia earum consequatur deleniti
+                    <div class="absolute
+                        top-[calc(100%-1rem)] left-[calc(100%-1rem)] w-16 h-16
+                        hover:animate-spin-square
                         shadow home-rectangle bg-green-600/30"></div>
                 </p>
 
@@ -54,7 +54,7 @@
                     <Price :amount="totalBounties"/></LabeledData>
             </li>
         </ul>
-    
+
         <div class="mx-12 flex flex-col space-y-8 ">
             <div class="even:self-end even:text-right">
                 <h2 class="font-title font-bold text-2xl
@@ -77,10 +77,10 @@
 
         </div>
     </div>
-    
+
     <div class="
         my-8
-        border-y border-black hover:hue-rotate-180 transition duration-1000
+        border-y border-black
         bg-gradient-to-tr to-purple-200 from-blue-200">
         <div class="max-w-3xl mx-auto px-12 pt-8">
             <h2 class="font-title font-bold text-2xl
@@ -99,18 +99,18 @@
             </ul>
 
             <div class="flex bg-white -mb-12 border shadow -mx6 p-6 items-center justify-between mt-10 ">
-                
+
                 <div>
                     <h3 class="font-title font-bold text-xl">We are hiring</h3>
                     <p class="max-w-xs text-gray-700 pt-1">
-                        We are looking for a curious and ambitious part-time developer. 
+                        We are looking for a curious and ambitious part-time developer.
                         Experience with blockchain technologies is not required.
                     </p>
                 </div>
-                    
+
                     <div></div>
                 <a href="mailto:info@sprig.ch"
-                    class="flex flex-col items-center mt-2 mr-6 border-2 border-slate-500 bg-white py-3 px-6 shadow 
+                    class="flex flex-col items-center mt-2 mr-6 border-2 border-slate-500 bg-white py-3 px-6 shadow
                     hover:shadow-md transition hover:bg-blue-50 ">
                     <span class="font-semibold">Work together</span>
                     <span class="text-sm text-gray-600"
@@ -136,9 +136,9 @@ import { reactive, ref, computed } from 'vue';
 const instances = _.values(store.instances);
 const stats = computed( () => {
     return {
-        Claims: _.sumBy(instances, s => _.size(s.claims)),
-        Challenges: _.sumBy(instances, s => 1 + _.size(_.filter(s.claims, c => c.skeptic !== null))),
-        Proofs: _.sumBy(instances, s => _.size(s.proof_attempts)),
+        Claims: _.sumBy(instances, s => _.size(s.challenges)),
+        Challenges: _.sumBy(instances, s => _.size(_.filter(s.challenges, c => c.author !== null))),
+        Proofs: _.sumBy(instances, s => _.size(s.proofs)),
     };
 });
 const totalBounties = computed(() => _.sumBy(instances, s => s.totalBounties()));
@@ -149,27 +149,32 @@ const team = [
         name: 'Diego Dorn',
         title: 'Lead developer',
         image: '/diego.jpg',
-    }, {
+    },
+    {
         name: 'Yann Aguettaz',
         title: 'Developer',
         image: 'https://people.epfl.ch/private/common/photos/links/337335.jpg?ts=1650665060',
-    }, {
+    },
+    {
         name: 'Clément Hongler',
         title: 'Research',
         image: 'https://www.hongler.org/clement-2015.jpg',
-    }, {
+    },
+    {
         name: 'Franck Gabriel',
         title: 'Cool kid',
         image: 'https://www.iliketowastemytime.com/sites/default/files/fractal-art-silvia-cordedda3.png',
-    }, {
+    },
+    {
         name: 'Sylvain Carré',
         title: 'Economist',
         image: 'https://www.iliketowastemytime.com/sites/default/files/fractal-art-silvia-cordedda3.png',
-    }, {
-        name: 'Christophe Nussbaumer',
+    },
+    {
+        name: ' Christophe Nussbaumer',
         title: 'Cool kid',
         image: 'https://www.iliketowastemytime.com/sites/default/files/fractal-art-silvia-cordedda3.png',
-    }, 
+    },
 ]
 
 

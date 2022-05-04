@@ -3,8 +3,8 @@ This contains all the logic of sprig, from the communication with the server
 to the processing of the data.
 */
 
-import * as _ from "lodash";
-import * as dayjs from 'dayjs';
+import _ from "lodash";
+import dayjs from 'dayjs';
 import * as duration from 'dayjs/plugin/duration';
 import * as relativeTime from 'dayjs/plugin/relativeTime';  // for .humanize(  / fromNow()
 dayjs.extend(duration);
@@ -16,6 +16,7 @@ import { ElNotification } from "element-plus";
  * Constants
 */
 
+const ROOT_HASH = "0";
 enum Status {
     CHALLENGED = "challenged",
     UNCHALLENGED = "unchallenged",
@@ -35,204 +36,6 @@ function decided(status: Status) {
     return status === Status.VALIDATED || status === Status.REJECTED;
 }
 
-
-class Claim {
-    statement: string;
-    height: number;
-    hash: string;
-    instance_hash: string;
-    parent: string;
-    status: Status;
-    open_until: dayjs.Dayjs;
-    last_modification: dayjs.Dayjs;
-    // created_at: dayjs.Dayjs;
-    skeptic: string | null;
-
-    constructor(claim: Record<string, any>) {
-        this.statement = claim.statement;
-        this.height = claim.height;
-        this.hash = claim.hash;
-        this.instance_hash = claim.instance_hash;
-        this.parent = claim.parent;
-        this.status = claim.status;
-        this.open_until = dayjs(claim.open_until);
-        this.last_modification = dayjs(claim.last_modification);
-        // this.created_at = dayjs(claim.created_at);
-        this.skeptic = claim.skeptic;
-    }
-
-    isRoot(): boolean {
-        return this.parent === null;
-    }
-    decided() { return decided(this.status); }
-    uid(): string { return '#' + this.instance_hash + '/' + this.hash; }
-    attempt(instance: Sprig): ProofAttempt | null {
-        if (!this.parent) {
-            return null;
-        }
-        const attempts = instance.proof_attempts[this.parent];
-        return attempts.find(a => _.includes(a.claims, this.hash));
-    }
-
-    challengeBounty(params: Parameters): number {
-        if (this.isRoot()) {
-            return 0;
-        } else if (this.status === Status.CHALLENGED) {
-            return params.question_bounties[this.height];
-        } else {
-            return 0;
-        }
-    }
-    possibleDownstake(instance: Sprig): number {
-        if (this.decided()) {
-            return 0;
-        } else if (this.isRoot()) {
-            return 0;
-        } else if (this.attempt(instance)?.decided()) {
-            return 0;
-        } else {
-            return instance.params.downstakes[this.height];
-        }
-    }
-    possibleReward(instance: Sprig): number {
-        return this.status == Status.CHALLENGED
-            ? this.challengeBounty(instance.params)
-            : this.possibleDownstake(instance);
-    }
-    costAddAttempt(params: Parameters): number | null {
-        const attemptHeight = this.height - 1;
-        if (attemptHeight == 0) {
-            return params.verification_cost + params.upstakes[attemptHeight];
-        } else if (this.height >= params.root_height || this.height <= 0) {
-            return null;
-        } else {
-            return params.upstakes[attemptHeight] + params.downstakes[attemptHeight];
-        }
-    }
-
-}
-
-interface StatusCounts {
-    challenged: number;
-    unchallenged: number;
-    validated: number;
-    rejected: number;
-}
-
-interface SprigSummary {
-    language: string;
-    root_question: string;
-    counts: StatusCounts;
-    hash: string;
-    params: Parameters;
-    author: string;
-    bounties: number;
-}
-
-class ProofAttempt {
-    claimer: string;
-    claims: string[];
-    height: number;
-    // time: dayjs.Dayjs;
-    status: Status;
-    instance_hash: string;
-    claim_hash: string;
-    attemptNb: number;
-
-    constructor(attempt: Record<string, any>) {
-        this.claimer = attempt.claimer;
-        this.claims = attempt.claims;
-        this.height = attempt.height;
-        // this.time = dayjs(attempt.time);
-        this.status = attempt.status;
-        this.instance_hash = attempt.instance_hash;
-        this.claim_hash = attempt.hash;
-        this.attemptNb = attempt.attemptNb;
-    }
-
-    uid(): string { return '#' + this.instance_hash + '/' + this.claim_hash + '.' + this.attemptNb; }
-    decided() { return decided(this.status); }
-    stakeHeld(params: Parameters): number {
-        if (!decided(this.status)) {
-            return params.upstakes[this.height] + params.downstakes[this.height];
-        } else {
-            return 0;
-        }
-    }
-    /**
-     * How much one can expect to win by challenging or submiting a proof.
-     */
-    possibleReward(params: Parameters): number {
-        if (this.status === Status.CHALLENGED) {
-            return params.question_bounties[this.height];
-        } else if (this.status === Status.UNCHALLENGED) {
-            return this.stakeHeld(params);
-        } else {
-            return 0;
-        }
-    }
-    parentClaim(instance: Sprig): Claim { return instance.claims[this.claim_hash]; }
-}
-
-class Sprig {
-    claims: Record<string, Claim>;
-    language: string;
-    proof_attempts: Record<string, ProofAttempt[]>;
-    params: Parameters;
-    hash: string;
-
-    constructor(sprig: Record<string, any>) {
-        this.hash = sprig.hash;
-        this.claims = _.mapValues(sprig.claims, (claim) => {
-            claim.instance_hash = this.hash;
-            return new Claim(claim);
-        });
-        this.language = sprig.language;
-        this.proof_attempts = _.mapValues(sprig.proof_attempts, (attempts, claimHash) => _.map(attempts, (attempt, attemptNb) => {
-            attempt.instance_hash = this.hash;
-            attempt.hash = claimHash;
-            attempt.attemptNb = attemptNb;
-            return new ProofAttempt(attempt);
-        }));
-        this.params = new Parameters(sprig.params);
-    }
-
-    uid(): string { return '#' + this.hash; }
-    totalBounties() {
-        const open_challenges = _.sumBy(_.values(this.claims),
-            (claim) => claim.challengeBounty(this.params));
-        const open_attempts = _.sumBy(_.values(this.proof_attempts),
-            (attempts) => _.sumBy(attempts, a => a.stakeHeld(this.params)));
-
-        return open_challenges + open_attempts;
-    }
-    rootClaim() {
-        return this.claims['0'];
-    }
-    author() {
-        return this.proof_attempts['0'][0].claimer;
-    }
-    count(status: Status) {
-        return _.sum(_.map(this.claims, (claim) => claim.status === status ? 1 : 0));
-    }
-    counts() {
-        return {
-            [Status.CHALLENGED]: this.count(Status.CHALLENGED),
-            [Status.UNCHALLENGED]: this.count(Status.UNCHALLENGED),
-            [Status.VALIDATED]: this.count(Status.VALIDATED),
-            [Status.REJECTED]: this.count(Status.REJECTED),
-        };
-    }
-}
-
-interface ChallengeRecord {
-    balance: number;
-    claim: Claim;
-}
-
-interface AnswerRecord {
-    balance: number;
-}
 
 class Parameters {
     readonly root_height: number;
@@ -256,69 +59,211 @@ class Parameters {
     }
 }
 
+
+class ProofAttempt {
+    hash: string;
+    parent?: string;  // hash of the parent challenge, if any
+    author: string;
+    proof: string;
+    height: number;
+    status: Status;
+    createdAt: dayjs.Dayjs;
+    challenges: string[];
+    instanceHash: string;
+
+    constructor(attempt: Record<string, any>) {
+        this.hash = attempt.hash;
+        this.parent = attempt.parent;
+        this.author = attempt.author;
+        this.proof = attempt.proof;
+        this.height = attempt.height;
+        this.status = attempt.status;
+        this.createdAt = dayjs(attempt.created_at || attempt.createdAt);
+        this.challenges = attempt.challenges;
+        this.instanceHash = attempt.instance_hash || attempt.instanceHash;
+    }
+
+    uid(): string { return '#' + this.instanceHash + '/' + this.hash; }
+    isRoot(): boolean { return this.parent === null; }
+    decided() { return decided(this.status); }
+    /**
+     * Return the total stake on the attempt (up + down)
+     * @param params Parameters of the sprig instance
+     */
+    stakeHeld(params: Parameters): number {
+        if (!decided(this.status)) {
+            return params.upstakes[this.height] + params.downstakes[this.height];
+        } else {
+            return 0;
+        }
+    }
+    /**
+     * How much one can expect to win by challenging or submiting a proof.
+     * @param params Parameters of the sprig instance
+     */
+    possibleReward(params: Parameters): number {
+        if (this.status === Status.CHALLENGED) {
+            return params.question_bounties[this.height];
+        } else if (this.status === Status.UNCHALLENGED) {
+            return params.downstakes[this.height];
+        } else {
+            return 0;
+        }
+    }
+}
+
+class Challenge {
+    hash: string;
+    parent: string;  // hash of the parent proot attempt, if any
+    author?: string;
+    createdAt: dayjs.Dayjs;
+    challengedAt: dayjs.Dayjs;
+    openUntil: dayjs.Dayjs;
+    attempts: string[];
+    status: Status;
+    height: number;
+    instanceHash: string;
+
+    constructor(challenge: Record<string, any>) {
+        this.hash = challenge.hash;
+        this.parent = challenge.parent;
+        this.author = challenge.author;
+        this.createdAt = dayjs(challenge.created_at || challenge.createdAt);
+        this.challengedAt = dayjs(challenge.challenged_at || challenge.challengedAt);
+        this.openUntil = dayjs(challenge.open_until || challenge.openUntil);
+        this.attempts = challenge.attempts;
+        this.status = challenge.status;
+        this.height = challenge.height;
+        this.instanceHash = challenge.instance_hash || challenge.instanceHash;
+    }
+    uid(): string { return '#' + this.instanceHash + '/' + this.hash; }
+    possibleReward(params: Parameters): number {
+        return this.status === Status.CHALLENGED
+            ? params.question_bounties[this.height]
+            : 0;
+    }
+    costAddAttempt(params: Parameters): number | null {
+        const attemptHeight = this.height - 1;
+        if (attemptHeight == 0) {
+            return params.verification_cost + params.upstakes[attemptHeight];
+        } else if (this.height >= params.root_height || this.height <= 0) {
+            return null;
+        } else {
+            return params.upstakes[attemptHeight] + params.downstakes[attemptHeight];
+        }
+    }
+
+}
+
+
+class Sprig {
+    hash: string;
+    language: string;
+    params: Parameters;
+    proofs: Record<string, ProofAttempt>;
+    challenges: Record<string, Challenge>;
+    root_question: string;
+
+    constructor(sprig: Record<string, any>) {
+        this.hash = sprig.hash;
+        this.language = sprig.language;
+        this.params = new Parameters(sprig.params);
+        this.proofs = _.mapValues(sprig.proofs, (proof) => {
+            proof.instanceHash = sprig.hash;
+            console.log("proof", proof);
+            return new ProofAttempt(proof);
+        });
+        this.challenges = _.mapValues(sprig.challenges, (challenge) => {
+            challenge.instanceHash = sprig.hash;
+            return new Challenge(challenge);
+        });
+        this.root_question = sprig.root_question;
+    }
+
+    uid(): string { return '#' + this.hash; }
+    totalBounties() {
+        const openAttempts = _.sumBy(_.values(this.proofs),
+            (proof) => proof.stakeHeld(this.params));
+        const openChallenges = _.sumBy(_.values(this.challenges),
+            (challenge) => challenge.possibleReward(this.params));
+        return openAttempts + openChallenges;
+    }
+    rootAttempt() {
+        return this.proofs[ROOT_HASH];
+    }
+    author() {
+        return this.rootAttempt().author;
+    }
+    count(status: Status) {
+        return _.sum(_.map(this.challenges, (challenge) => challenge.status === status ? 1 : 0));
+    }
+    counts() {
+        return {
+            [Status.CHALLENGED]: this.count(Status.CHALLENGED),
+            [Status.UNCHALLENGED]: this.count(Status.UNCHALLENGED),
+            [Status.VALIDATED]: this.count(Status.VALIDATED),
+            [Status.REJECTED]: this.count(Status.REJECTED),
+        };
+    }
+}
+
+enum Descr {
+    TITLE = -1,
+    SHORT = 0,
+    LONG = 1
+}
+
 interface Language {
     name: string;
-    title: (claim: Claim) => string;
-    shortDescription: (claim: Claim) => string;
-    longDescription: (claim: Claim) => string;
+    describe: (object: ProofAttempt | Challenge, instance: Sprig, details: Descr) => string;
 }
 
 
 const LANGUAGES: Record<string, Language> = {
     Lean: {
         name: "Lean",
-        title(claim: Claim) {
-            const m = claim.statement.match(/(theorem|lemma) \S+\s/m, );
-            if (m) {
-                return m[0].trim();
+        describe: (object: ProofAttempt | Challenge, instance: Sprig, details: Descr) => {
+            if (details === Descr.TITLE) {
+                return object.uid();
+            } else if (details === Descr.SHORT) {
+                return object.uid();
             } else {
-                console.warn("Cannot parse title", claim);
-                return "Cannot parse title";
+                return object.uid();
             }
         },
-        shortDescription(claim: Claim) {
-            return claim.statement;
-            const m = claim.statement.match(/(?:theorem|lemma) \S+\s(.*):=/m);
-            if (m) {
-                return m[1].trim();
-            } else {
-                console.warn("Cannot make shortDescription", claim);
-                return "Cannot parse statement";
-            }
-        },
-        longDescription(claim: Claim) {
-            return claim.statement;
-        }
+        // title(claim: ProofAttempt) {
+        //     const m = claim.statement.match(/(theorem|lemma) \S+\s/m,);
+        //     if (m) {
+        //         return m[0].trim();
+        //     } else {
+        //         console.warn("Cannot parse title", claim);
+        //         return "Cannot parse title";
+        //     }
+        // },
+        // shortDescription(claim: Claim) {
+        //     return claim.statement;
+        //     const m = claim.statement.match(/(?:theorem|lemma) \S+\s(.*):=/m);
+        //     if (m) {
+        //         return m[1].trim();
+        //     } else {
+        //         console.warn("Cannot make shortDescription", claim);
+        //         return "Cannot parse statement";
+        //     }
+        // },
+        // longDescription(claim: Claim) {
+        //     return claim.statement;
+        // }
     },
     TicTacToe: {
         name: "TicTacToe",
-        title(claim: Claim) {
-            return claim.statement;
+        describe(attempt: ProofAttempt | Challenge, instance: Sprig, details: Descr) {
+            return `${attempt.uid()} ${attempt.status}`;
         },
-        shortDescription(claim: Claim) {
-            return claim.statement;
-        },
-        longDescription(claim: Claim) {
-            return claim.statement;
-        }
     }
 };
 
 const API_BASE = "http://localhost:8601/";
 
-const convert = {
-    sprigSummary(summary: Record<string, any>): SprigSummary {
-        return {
-            language: summary.language,
-            params: summary.params,
-            root_claim: new Claim(summary.root_claim),
-            counts: summary.counts,
-            hash: summary.hash,
-            author: summary.author,
-            bounties: summary.bounties,
-        };
-    }
-};
 function logFail(title: string, data: Object) {
     console.error(title, data);
     ElNotification.error({
@@ -345,19 +290,15 @@ const api = {
             throw new Error(`Server returned error ${resp.status}`);
         }
     },
-    async fetchInstanceList(): Promise<Record<string, SprigSummary>> {
-        return await this.get(["instances"])
-            .then(data => _.mapValues(data, convert.sprigSummary));
-    },
-    async fetchInstance(hash: string): Promise<Sprig> {
-        return await this.get([hash])
-            .then(data => new Sprig(data));
-    },
     async fetchAllInstances(): Promise<Record<string, Sprig>> {
         return await this.get(["everything"])
             .then(data => _.mapValues(data, s => new Sprig(s)));
     },
 
+    // async fetchInstance(hash: string): Promise<Sprig> {
+    //     return await this.get([hash])
+    //         .then(data => new Sprig(data));
+    // },
     // post(path: string[], query: Record<string, string>, body: any, callback: FetchCallback<any>) {
     //     const url = new URL(API_BASE + path.join("/"))
     //     for (const key of Object.keys(query)) {
@@ -390,6 +331,6 @@ const api = {
 
 export {
     api, STATUSES, STATUS_DISPLAY_NAME, LANGUAGES, Language,
-    decided, Claim, SprigSummary, Sprig, Status,
-    StatusCounts, ProofAttempt, Parameters
+    decided, Challenge, Sprig, Status, Descr,
+    ProofAttempt, Parameters
 };
