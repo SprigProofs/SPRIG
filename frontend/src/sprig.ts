@@ -170,7 +170,6 @@ class Sprig {
         this.params = new Parameters(sprig.params);
         this.proofs = _.mapValues(sprig.proofs, (proof) => {
             proof.instanceHash = sprig.hash;
-            console.log("proof", proof);
             return new ProofAttempt(proof);
         });
         this.challenges = _.mapValues(sprig.challenges, (challenge) => {
@@ -219,18 +218,66 @@ interface Language {
 }
 
 
-const LANGUAGES: Record<string, Language> = {
-    Lean: {
-        name: "Lean",
-        describe: (object: ProofAttempt | Challenge, instance: Sprig, details: Descr) => {
-            if (details === Descr.TITLE) {
-                return object.uid();
-            } else if (details === Descr.SHORT) {
-                return object.uid();
-            } else {
-                return object.uid();
+const TicTacToe = {
+    name: 'TicTacToe',
+    describe(object: ProofAttempt | Challenge, instance: Sprig, details: Descr) {
+        const state =
+            object instanceof ProofAttempt
+                ? TicTacToe.getState(object.parent, instance)
+                : TicTacToe.getState(object.hash, instance);
+
+        switch (details) {
+            case Descr.TITLE:
+                const board = state.board[0] + state.board[1] + state.board[2] + "|" + state.board[3] + state.board[4] + state.board[5] + "|" + state.board[6] + state.board[7] + state.board[8];
+                return `${board} ${state.plays} plays ${state.wins} wins`;
+            case Descr.SHORT:
+                return state;
+            case Descr.LONG:
+                return state;
+        }
+    },
+    getState(challengeHash: string | null, instance: Sprig) {
+        if (challengeHash === null) {
+            const m = instance.root_question.match(/([XO.]{3})\|([XO.]{3})\|([XO.]{3}) ([XO]) plays ([XO.]) wins/);
+            return {
+                plays: m[4],
+                wins: m[5],
+                board: [...m[1], ...m[2], ...m[3]],
+            };
+        } else {
+            const attempt = instance.proofs[instance.challenges[challengeHash].parent];
+            const state = TicTacToe.getState(attempt.parent, instance);
+            const challengeNb = attempt.challenges.indexOf(challengeHash);
+            const moves = [...attempt.proof.matchAll(/([1-9])\s*->\s*([1-9])/g)];
+            const move = moves[challengeNb];
+            console.log(move, challengeNb, state, attempt.proof, moves);
+
+            const newBoard = state.board;
+            newBoard[+move[1] - 1] = state.plays;
+            if (move[2] !== '.') {
+                newBoard[+move[2] - 1] = "XO"[state.plays === "X" ? 1 : 0];
             }
-        },
+            return {
+                plays: state.plays,
+                wins: state.wins,
+                board: newBoard,
+            };
+        }
+    }
+};
+
+const LANGUAGES: Record<string, Language> = { TicTacToe };
+    // Lean: {
+        // name: "Lean",
+        // describe: (object: ProofAttempt | Challenge, instance: Sprig, details: Descr) => {
+        //     if (details === Descr.TITLE) {
+        //         return object.uid();
+        //     } else if (details === Descr.SHORT) {
+        //         return object.uid();
+        //     } else {
+        //         return object.uid();
+        //     }
+        // },
         // title(claim: ProofAttempt) {
         //     const m = claim.statement.match(/(theorem|lemma) \S+\s/m,);
         //     if (m) {
@@ -253,14 +300,7 @@ const LANGUAGES: Record<string, Language> = {
         // longDescription(claim: Claim) {
         //     return claim.statement;
         // }
-    },
-    TicTacToe: {
-        name: "TicTacToe",
-        describe(attempt: ProofAttempt | Challenge, instance: Sprig, details: Descr) {
-            return `${attempt.uid()} ${attempt.status}`;
-        },
-    }
-};
+    // }
 
 const API_BASE = "http://localhost:8601/";
 

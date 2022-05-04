@@ -764,6 +764,8 @@ def play_tictactoe(params: Parameters) -> Sprig:
     time_passes(sprig)
     sprig.answer_low_level(c2.hash, DIEGO, "-2")
 
+    print(sprig.dumps())
+    quit()
     time_passes(sprig)
     c3 = sprig.challenge(MICHAEL, a1.challenges[2])
 

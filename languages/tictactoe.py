@@ -37,7 +37,7 @@ class TicTacToe(Language):
     name = "TicTacToe"
 
     RE_BOARD = re.compile(r"[.XO]{3}\|[.XO]{3}\|[.XO]{3} ([XO]) plays ([.XO]) wins")
-    RE_ATTEMPT = re.compile(r"(([1-9])\s*->\s*([1-9.])){1,5}", re.M)
+    RE_ATTEMPT = re.compile(r"([1-9])\s*->\s*([1-9.])", re.M)
     RE_MACHINE_LEVEL = re.compile(r"[./\\]|[|-][123]")
 
     def judge_low_level(self, root_question: str, branch: list[tuple[str, int]],
@@ -133,7 +133,8 @@ class TicTacToe(Language):
             matches = self.RE_ATTEMPT.findall(proof_attempt)
             next_move = matches[challenge_nb]
             board[int(next_move[1]) - 1] = turn
-            board[int(next_move[2]) - 1] = "XO"[turn == "X"]
+            if next_move[2] != '.':
+                board[int(next_move[2]) - 1] = "XO"[turn == "X"]
 
         return ''.join(board), turn, win
 

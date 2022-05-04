@@ -10,24 +10,24 @@
                 </div>
             </div>
             <h1 class="text-3xl font-bold font-title py-2">
-                {{ language.title(claim) }}
+                {{ language.describe(attempt, instance, Descr.TITLE) }}
             </h1>
             <div class="flex space-x-4">
                 <div>
                     <v-icon name="md-person-round" class="mr-1"/>
-                    <User :name="attempt.claimer" />
+                    <User :name="attempt.author" />
                 </div>
                 <div>
                     <v-icon name="md-accesstime-round" class="mr-1"/>
-                    <Time :time="claim.last_modification" />
+                    <Time :time="attempt.createdAt" />
                 </div>
                 <div>
                     <v-icon name="md-lockclock" class="mr-1"/>
-                    <Time :time="claim.open_until" />
+                    <Time :time="attempt.createdAt" />
                 </div>
                 <div>
                     <v-icon name="fa-mountain" class="mr-1"/>
-                    <span>{{ claim.height }} / {{ params.root_height }}</span>
+                    <span>{{ attempt.height }} / {{ params.root_height }}</span>
                 </div>
             </div>
 
@@ -43,11 +43,11 @@
                         <div class="bg-slate-100 p-4 mt-2 rounded-md flex flex-col shadow-sm">
                             <h3 class="font-semibold">Doubtful ? Challenge a claim.</h3>
                             <ul class="list-disc list-inside">
-                                <li>Lock a bounty of <Price :amount="params.question_bounties[claim.height]"/> </li>
-                                <li>For 10 days, proof attempts can be submitted for <price :amount="params.upstakes[claim.height-1] + params.downstakes[claim.height-1]"/> </li>
-                                <li>The first accepted proof attempt is rewarded with your bounty of <Price :amount="params.question_bounties[claim.height]"/> </li>
+                                <li>Lock a bounty of <Price :amount="params.question_bounties[attempt.height]"/> </li>
+                                <li>For 10 days, proof attempts can be submitted for <price :amount="params.upstakes[attempt.height-1] + params.downstakes[attempt.height-1]"/> </li>
+                                <li>The first accepted proof attempt is rewarded with your bounty of <Price :amount="params.question_bounties[attempt.height]"/> </li>
                                 <li>If all proof attempts are rejected, you get your locked bounty back,
-                                    If your challenge is the first to invalidate <User name="cozyfractal" />'s proof, you get their <Price :amount="params.downstakes[claim.height]" /> bounty. </li>
+                                    If your challenge is the first to invalidate <User name="cozyfractal" />'s proof, you get their <Price :amount="params.downstakes[attempt.height]" /> bounty. </li>
                             </ul>
                             <button class="bg-white rounded-md px-2 py-1 mt-3 self-end shadow">
                                 Start a challenge
@@ -91,7 +91,7 @@
                     </button>
                 </div>
 
-                <code class="mt-2"><pre class="overflow-auto">{{ claim.statement }}</pre>
+                <code class="mt-2"><pre class="overflow-auto">{{ attempt.proof }}</pre>
                 </code>
             </section>
         </div>
@@ -100,7 +100,7 @@
     <section class="m-8">
         <el-collapse>
             <el-collapse-item title="Instance parameters">
-                    <Parameters :params="params" :highlight="claim.height" />
+                    <Parameters :params="params" :highlight="attempt.height" />
             </el-collapse-item>
             <el-collapse-item title="Previous designs">
                 <section>
@@ -128,7 +128,7 @@
             </el-collapse-item>
             <el-collapse-item title="Raw data">
                 <div class="text-sm text-gray-500">
-                    {{ claim }}
+                    {{ attempt }}
                 </div>
             </el-collapse-item>
         </el-collapse>
@@ -139,7 +139,7 @@
 <script setup lang="ts">
 
 import { ref } from 'vue';
-import { LANGUAGES } from '../../sprig';
+import { LANGUAGES, Descr } from '../../sprig';
 import { store } from '../../store';
 import { Price, StatusTag, Time } from "../small";
 import User from '../medium/User.vue';
