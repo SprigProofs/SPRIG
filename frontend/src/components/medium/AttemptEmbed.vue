@@ -18,9 +18,9 @@
           <User :name="attempt.author" />
         </span>
       </h3>
-      <code class="text-sm flex-grow">
-        <pre class="whitespace-pre-wrap">{{ language.describe(attempt, instance, Descr.SHORT) }}</pre>
-      </code>
+      <!-- <component :is="language.name + '.' + 'ShortDescription'"/> -->
+      <Language.TicTacToe.StatementDisplay :instance="instance" :challenge-hash="attempt.parent"
+        class="self-start "/>
     </div>
 
       <div class="grid grid-cols-[auto_auto] min-w-max h-min gap-y-4 gap-x-8 ml-4">
@@ -35,11 +35,12 @@
 <script setup lang="ts">
 import _ from 'lodash';
 import dayjs from 'dayjs';
-import { Status, Descr, Sprig, Challenge, Language, LANGUAGES, ProofAttempt, Parameters } from '../../sprig';
+import { Status, Descr, Sprig, Challenge, LANGUAGES, ProofAttempt, Parameters } from '../../sprig';
 import { store } from '../../store';
 import { LabeledData, StatusTag, Price, LanguageTag } from "../small";
 import User from './User.vue';
 import UidTag from '../small/UidTag.vue';
+import * as Language from '../languages'
 
 const props = defineProps({
   instanceHash: {
@@ -56,7 +57,7 @@ const instance: Sprig = store.instances[props.instanceHash];
 const params: Parameters = instance.params;
 // const claim: Claim = instance.claims[props.claimHash];
 const attempt: ProofAttempt = instance.proofs[props.hash];
-const language: Language = LANGUAGES[instance.language];
+const language = LANGUAGES[instance.language];
 
 const challenges = attempt.challenges.map(c => instance.challenges[c]);
 

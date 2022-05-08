@@ -66,6 +66,10 @@ function toggle() {
     <div class="flex group w-full ">
       <p>
 
+        <v-icon v-if="title" name="md-expandmore-round"
+          class="mr-1 transform transition duration-500 text-gray-600 group-hover:scale-125 group-hover:text-gray-900"
+          :class="{ '-rotate-90': collapsed }" />
+
         <span v-if="action.type === Action.PARENT_CHALLENGED">
           <User :name="action.author" /> challenged the parent claim
           <UidTag :object="parentChallenge" />
@@ -80,7 +84,7 @@ function toggle() {
           with this proof attempt and a bounty of
           <Price :amount="params.downstakes[attempt.height]" />
         </span><span v-else-if="action.type === Action.CHALLENGE_ACTIVATED">
-          <User :name="action.author" /> challenged
+          <User :name="action.author" /> opened the challenge
           <UidTag :object="action.challenge" />
           with a bounty of
           <Price :amount="action.cost" />
@@ -100,9 +104,6 @@ function toggle() {
           {{ action.type }} needs more work...
         </span>
 
-        <v-icon v-if="title" name="md-expandmore-round"
-          class="mx-2 transform transition duration-500 text-gray-600 group-hover:scale-125 group-hover:text-gray-900"
-          :class="{ '-rotate-90': collapsed }" />
       </p>
 
       <button v-if="buttonText" @click.stop="takeAction()"
@@ -112,7 +113,7 @@ function toggle() {
 
     <Transition>
       <div v-if="collapsable" v-show="!collapsed" @click.stop>
-        <div class="bg-slate-100 p-4 mt-2 rounded-md flex flex-col shadow-sm cursor-auto">
+        <div class="bg-slate-100 p-4 my-2 rounded-md flex flex-col shadow-sm cursor-auto">
           <h3 class="font-semibold ">{{ title }}</h3>
           <ul v-if="action.type === Action.ROOT_CREATED || action.type === Action.ATTEMPT_CREATED">
             <li>Lock a bounty of
@@ -158,7 +159,7 @@ function toggle() {
       </div>
     </Transition>
 
-    <Time :time="action.time" suffix class="block w-fit text-xs text-gray-400 mt-2 -mb-4" />
+    <Time :time="action.time" suffix class="block w-fit text-xs text-gray-400 -mb-4" />
 
   </div>
 </template>

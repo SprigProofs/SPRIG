@@ -1,20 +1,19 @@
 <template>
   <!-- TODO: Route to a instance page, not the root proof attempt. -->
-  <router-link :to="{ name: 'proofAttempt', params: { instanceHash: instance.hash, claimHash: '0', attemptNb: 0 } }"
-    class="w-full border rounded-sm shadow-sm hover:shadow-md group flex">
+  <div class="flex">
     <!-- First part of the card -->
     <div class="p-4 flex flex-col flex-grow">
       <!-- First row -->
       <div class="flex flex-row justify-between ">
         <!-- Top left -->
         <div class="space-x-2">
-          <StatusTag class="" :status="claim.status" />
+          <StatusTag class="" :status="rootAttempt.status" />
           <LanguageTag :lang="instance.language"/>
           <UidTag :tooltip="false" :object="instance" />
         </div>
       </div>
       <h3 class="text-lg pt-2  ">
-        <span class="small-title break-all">{{ language.title(claim) }}</span>
+        <span class="small-title break-all">{{ language.describe(rootAttempt, instance, Descr.TITLE) }}</span>
         <span class="text-sm text-gray-700">
           by
           <User :name="instance.author()" />
@@ -57,12 +56,12 @@
       </div> -->
     </div>
 
-  </router-link>
+  </div>
 
 </template>
 
 <script setup lang="ts">
-import { Status, Sprig, Claim, Language, LANGUAGES } from '../../sprig';
+import { Descr, Status, Sprig, Language, LANGUAGES, ProofAttempt } from '../../sprig';
 import { store } from '../../store';
 import { Price, StatusIcon, StatusTag, Time, LanguageTag } from '../small';
 import User from '../medium/User.vue';
@@ -78,7 +77,7 @@ const props = defineProps({
 });
 
 const instance: Sprig = store.instances[props.hash];
-const claim: Claim = instance.claims['0'];
+const rootAttempt: ProofAttempt = instance.rootAttempt();
 const language: Language = LANGUAGES[instance.language];
 
 </script>

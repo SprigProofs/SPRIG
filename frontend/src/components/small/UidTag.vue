@@ -21,7 +21,7 @@ const type = props.object instanceof Sprig ? 'sprig' : props.object instanceof P
 </script>
 
 <template>
-    <Tooltip v-if="tooltip" width="200">
+    <Tooltip v-if="tooltip === true" width="200">
         <template #reference>
             <RouterLink :to="link" class="text-gray-500 italic text-sm font-mono"
                 >{{ object.uid()}}</RouterLink>

@@ -45,9 +45,9 @@
             </section>
 
             <section class="flex flex-col flex-grow max-w-prose">
-                <h2 class="small-title ">Proof attempt</h2>
+                <h2 class="small-title mb-2 mt-4">Proof attempt</h2>
 
-                <button
+                <!-- <button
                     v-if="!showPreviousDefinitions"
                     class="self-center text-slate-600 text-sm hover:underline"
                     @click="showPreviousDefinitions = !showPreviousDefinitions">
@@ -73,10 +73,11 @@
                         Hide previous definitions and lemmas
                         <v-icon name="md-keyboarddoublearrowup"/>
                     </button>
-                </div>
+                </div> -->
 
-                <code class="mt-2"><pre class="overflow-auto">{{ attempt.proof }}</pre>
-                </code>
+                <!-- <code class="mt-2"><pre class="overflow-auto">{{ attempt.proof }}</pre>
+                </code> -->
+                <Language.TicTacToe.ProofDisplay :instance="instance" :attemptHash="hash" />
             </section>
         </div>
     </div>
@@ -130,6 +131,7 @@ import User from '../medium/User.vue';
 import Parameters from '../medium/Parameters.vue';
 import Action from '../medium/Action/Action.vue';
 import { useRoute } from 'vue-router';
+import * as Language from '../languages'
 
 const props = defineProps({
     instanceHash: {
