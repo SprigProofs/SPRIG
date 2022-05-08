@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Tooltip from './Tooltip.vue';
 
 // TODO: Replace conversion rate by live data
 const ALGO_TO_USD = 0.67;
@@ -13,11 +14,11 @@ defineProps({
 </script>
 
 <template>
-    <el-popover placement="bottom-start" :show-arrow="false" transition="">
+    <Tooltip>
         Currently {{ (amount * ALGO_TO_USD).toFixed(2) }}$
 
         <template #reference>
             <span class="inline-block">{{ amount }}<Algo class="ml-0.5"></Algo></span>
         </template>
-    </el-popover>
+    </Tooltip>
 </template>
