@@ -170,7 +170,15 @@ enum Action {
     ATTEMPT_REJECTED = "attempt_rejected",
 }
 
-type ActionList = {time: Dayjs, type: Action, author?: string, cost?: number, challenge?: Challenge, challenges?: Challenge[]}[]
+type ActionList = {
+    time: Dayjs,
+    type: Action,
+    author?: string,
+    cost?: number,
+    attempt?: ProofAttempt;
+    challenge?: Challenge,
+    challenges?: Challenge[];
+}[];
 
 class Sprig {
     hash: string;
@@ -281,6 +289,7 @@ class Sprig {
                     author: this.proofs[attempt].author,
                     cost: this.params.downstakes[this.proofs[attempt].height] + this.params.upstakes[this.proofs[attempt].height],
                     challenge,
+                    attempt: this.proofs[attempt],
                 });
             });
         });
@@ -382,7 +391,6 @@ const TicTacToe = {
             const challengeNb = attempt.challenges.indexOf(challengeHash);
             const moves = [...attempt.proof.matchAll(/([1-9])\s*->\s*([1-9])/g)];
             const move = moves[challengeNb];
-            console.log(move, challengeNb, state, attempt.proof, moves);
 
             const newBoard = state.board;
             newBoard[+move[1] - 1] = state.plays;
@@ -399,40 +407,40 @@ const TicTacToe = {
 };
 
 const LANGUAGES: Record<string, Language> = { TicTacToe };
-    // Lean: {
-        // name: "Lean",
-        // describe: (object: ProofAttempt | Challenge, instance: Sprig, details: Descr) => {
-        //     if (details === Descr.TITLE) {
-        //         return object.uid();
-        //     } else if (details === Descr.SHORT) {
-        //         return object.uid();
-        //     } else {
-        //         return object.uid();
-        //     }
-        // },
-        // title(claim: ProofAttempt) {
-        //     const m = claim.statement.match(/(theorem|lemma) \S+\s/m,);
-        //     if (m) {
-        //         return m[0].trim();
-        //     } else {
-        //         console.warn("Cannot parse title", claim);
-        //         return "Cannot parse title";
-        //     }
-        // },
-        // shortDescription(claim: Claim) {
-        //     return claim.statement;
-        //     const m = claim.statement.match(/(?:theorem|lemma) \S+\s(.*):=/m);
-        //     if (m) {
-        //         return m[1].trim();
-        //     } else {
-        //         console.warn("Cannot make shortDescription", claim);
-        //         return "Cannot parse statement";
-        //     }
-        // },
-        // longDescription(claim: Claim) {
-        //     return claim.statement;
-        // }
-    // }
+// Lean: {
+// name: "Lean",
+// describe: (object: ProofAttempt | Challenge, instance: Sprig, details: Descr) => {
+//     if (details === Descr.TITLE) {
+//         return object.uid();
+//     } else if (details === Descr.SHORT) {
+//         return object.uid();
+//     } else {
+//         return object.uid();
+//     }
+// },
+// title(claim: ProofAttempt) {
+//     const m = claim.statement.match(/(theorem|lemma) \S+\s/m,);
+//     if (m) {
+//         return m[0].trim();
+//     } else {
+//         console.warn("Cannot parse title", claim);
+//         return "Cannot parse title";
+//     }
+// },
+// shortDescription(claim: Claim) {
+//     return claim.statement;
+//     const m = claim.statement.match(/(?:theorem|lemma) \S+\s(.*):=/m);
+//     if (m) {
+//         return m[1].trim();
+//     } else {
+//         console.warn("Cannot make shortDescription", claim);
+//         return "Cannot parse statement";
+//     }
+// },
+// longDescription(claim: Claim) {
+//     return claim.statement;
+// }
+// }
 
 const API_BASE = "http://localhost:8601/";
 
@@ -500,9 +508,18 @@ const api = {
 
 };
 
+function linkTo(obj: ProofAttempt | Challenge | Sprig) {
+    if (obj instanceof Sprig) {
+        return { name: "proofAttempt", params: { instanceHash: obj.hash, hash: ROOT_HASH } };
+    } else if (obj instanceof ProofAttempt) {
+        return { name: "proofAttempt", params: { instanceHash: obj.instanceHash, hash: obj.hash } };
+    } else {
+        return { name: "proofAttempt", params: { instanceHash: obj.instanceHash, hash: obj.parent } };
+    }
+}
 
 export {
     api, STATUSES, STATUS_DISPLAY_NAME, LANGUAGES, Language,
     decided, Challenge, Sprig, Status, Descr,
-    ProofAttempt, Parameters, Action
+    ProofAttempt, Parameters, Action, linkTo,
 };

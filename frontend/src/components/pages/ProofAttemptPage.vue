@@ -122,13 +122,14 @@
 
 <script setup lang="ts">
 
-import { reactive, ref } from 'vue';
+import { reactive, ref, watch } from 'vue';
 import { LANGUAGES, Descr } from '../../sprig';
 import { store } from '../../store';
 import { Price, StatusTag, Time } from "../small";
 import User from '../medium/User.vue';
 import Parameters from '../medium/Parameters.vue';
 import Action from '../medium/Action/Action.vue';
+import { useRoute } from 'vue-router';
 
 const props = defineProps({
     instanceHash: {
@@ -141,11 +142,11 @@ const props = defineProps({
     },
 })
 
-const instance = store.instances[props.instanceHash];
-const language = LANGUAGES[instance.language];
-const attempt = instance.proofs[props.hash];
+const instance = reactive(store.instances[props.instanceHash]);
+const language = reactive(LANGUAGES[instance.language]);
+const attempt = reactive(instance.proofs[props.hash]);
 // const claim = instance.claims[props.hash];
-const params = instance.params;
+const params = reactive(instance.params);
 
 const showPreviousDefinitions = ref(false);
 
@@ -156,6 +157,12 @@ const actions = reactive(instance.actions(attempt).map(action => {
         };
     }));
 
+
+const route = useRoute();
+watch(
+    () => route.params,
+    () => {}
+)
 </script>
 
 <style>

@@ -8,3 +8,4 @@ export { default as Time } from './Time.vue';
 export { default as LanguageTag } from './LanguageTag.vue';
 export { default as Duration } from './Duration.vue';
 export { default as UidTag } from './UidTag.vue';
+export { default as Tooltip } from './Tooltip.vue';

@@ -1,16 +1,14 @@
 <template>
-  <!-- TODO: Route to a instance page, not the root proof attempt. -->
-  <router-link :to="{ name: 'proofAttempt', params: { instanceHash, hash } }"
-    class="w-full border rounded-sm shadow-sm hover:shadow-md group flex">
+  <div class="flex">
     <!-- First part of the card -->
-    <div class="p-4 flex flex-col flex-grow">
+    <div class="flex flex-col flex-grow">
       <!-- First row -->
       <div class="flex flex-row justify-between ">
         <!-- Top left -->
         <div class="space-x-2">
           <StatusTag class="" :status="attempt.status" />
           <LanguageTag :lang="instance.language" />
-          <UidTag :object="attempt" />
+          <UidTag  :tooltip="false" :object="attempt" />
         </div>
       </div>
       <h3 class="text-lg pt-2  ">
@@ -23,33 +21,15 @@
       <code class="text-sm flex-grow">
         <pre class="whitespace-pre-wrap">{{ language.describe(attempt, instance, Descr.SHORT) }}</pre>
       </code>
-
-
-      <!-- <pre>{{ attempt }}</pre> -->
-
     </div>
-    <!-- Right of the card -->
-    <!-- <div v-if="!decided(attempt.status)" class=" p-4 flex-shrink-0
-          flex flex-col space-y-2 items-end"> -->
-      <!-- <div class="text-black font-semibold rounded-sm">
-        Bounty
-        <Price :amount="attempt.possibleReward(params)" />
-      </div>
-      <div class="text-xs text-slate-700 flex-grow">
-        {{ claim.open_until.fromNow() }} left
-      </div> -->
 
-      <div class="grid grid-cols-[auto_auto] min-w-max h-min gap-y-4 gap-x-8 m-4">
+      <div class="grid grid-cols-[auto_auto] min-w-max h-min gap-y-4 gap-x-8 ml-4">
         <LabeledData label="Bounty"><Price :amount="attempt.possibleReward(params)"/></LabeledData>
         <LabeledData :label="expires.isBefore(dayjs()) ? 'Expired' : 'Expires' ">{{ expires.fromNow() }}</LabeledData>
         <LabeledData label="Claims">{{ _.size(attempt.challenges )}}</LabeledData>
         <LabeledData label="Height">{{ attempt.height }} / {{ params.root_height - 1 }}</LabeledData>
       </div>
-
-    <!-- </div> -->
-
-  </router-link>
-
+  </div>
 </template>
 
 <script setup lang="ts">

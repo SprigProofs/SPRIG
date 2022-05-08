@@ -9,7 +9,7 @@
         <div class="space-x-2">
           <StatusTag class="" :status="claim.status" />
           <LanguageTag :lang="instance.language" />
-          <UidTag :object="claim" />
+          <UidTag :tooltip="false" :object="claim" />
         </div>
       </div>
       <h3 class="text-lg pt-2  ">

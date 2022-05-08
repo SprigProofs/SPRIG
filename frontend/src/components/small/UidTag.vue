@@ -1,19 +1,38 @@
 <script setup lang="ts">
-import { Challenge, ProofAttempt, Sprig } from '../../sprig';
+import { RouterLink } from 'vue-router';
+import { Challenge, ProofAttempt, Sprig, linkTo } from '../../sprig';
+import AttemptEmbed from '../medium/AttemptEmbed.vue';
+import Tooltip from './Tooltip.vue';
 
-const props = defineProps<{
+
+interface Props {
     object: ProofAttempt|Challenge|Sprig
-}>()
+    tooltip?: boolean,
+}
 
-const link = props.object instanceof Sprig
-    ? '#'  // TODO add link to instance page
-    : props.object instanceof ProofAttempt
-        ? { name: 'proofAttempt', params: {hash: props.object.hash, instanceHash: props.object.instanceHash}}
-        : '#' // TODO add link to challenge page
+const props = withDefaults(defineProps<Props>(), {
+    tooltip: false,
+});
+
+const link = linkTo(props.object);
+
+const type = props.object instanceof Sprig ? 'sprig' : props.object instanceof ProofAttempt ? 'attempt' : 'challenge';
 
 </script>
 
 <template>
-    <rounter-link :to="link"
-        class="text-gray-500 italic text-sm font-mono">{{ object.uid()}}</rounter-link>
+    <Tooltip v-if="tooltip" width="200">
+        <template #reference>
+            <RouterLink :to="link" class="text-gray-500 italic text-sm font-mono"
+                >{{ object.uid()}}</RouterLink>
+        </template>
+
+        <AttemptEmbed v-if="tooltip && type === 'attempt'"
+            :instance-hash="object.instanceHash"
+            :hash="object.hash" ></AttemptEmbed>
+    </Tooltip>
+    <RouterLink v-else
+        :to="link" class="text-gray-500 italic text-sm font-mono"
+        >{{ object.uid()}}</RouterLink>
+
 </template>
