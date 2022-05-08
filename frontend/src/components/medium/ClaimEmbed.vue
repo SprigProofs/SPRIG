@@ -9,7 +9,7 @@
         <div class="space-x-2">
           <StatusTag class="" :status="claim.status" />
           <LanguageTag :lang="instance.language" />
-          <span class="text-gray-500 italic text-sm font-mono">{{ claim.uid() }}</span>
+          <UidTag :object="claim" />
         </div>
       </div>
       <h3 class="text-lg pt-2  ">

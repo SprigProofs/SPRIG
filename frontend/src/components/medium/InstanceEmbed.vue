@@ -10,7 +10,7 @@
         <div class="space-x-2">
           <StatusTag class="" :status="claim.status" />
           <LanguageTag :lang="instance.language"/>
-          <span class="text-gray-500 italic text-sm font-mono">{{ instance.uid() }}</span>
+          <UidTag :object="instance" />
         </div>
       </div>
       <h3 class="text-lg pt-2  ">
@@ -67,6 +67,7 @@ import { store } from '../../store';
 import { Price, StatusIcon, StatusTag, Time, LanguageTag } from '../small';
 import User from '../medium/User.vue';
 import LabeledData from '../small/LabeledData.vue';
+import UidTag from '../small/UidTag.vue';
 
 
 const props = defineProps({

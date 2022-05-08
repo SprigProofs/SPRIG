@@ -3,8 +3,8 @@ This contains all the logic of sprig, from the communication with the server
 to the processing of the data.
 */
 
-import _ from "lodash";
-import dayjs from 'dayjs';
+import _, { at } from "lodash";
+import dayjs, { Dayjs } from 'dayjs';
 import * as duration from 'dayjs/plugin/duration';
 import * as relativeTime from 'dayjs/plugin/relativeTime';  // for .humanize(  / fromNow()
 dayjs.extend(duration);
@@ -155,6 +155,22 @@ class Challenge {
 
 }
 
+enum Action {
+    PARENT_CHALLENGED = "parent_challenged",
+    ROOT_CREATED = "root_created",
+    ATTEMPT_CREATED = "attempt_created",
+    MACHINE_VERIFIED = "machine_verified",
+    MACHINE_REJECTED = "machine_rejected",
+    CHALLENGE_ACTIVATED = "challenge_activated",
+    CHALLENGE_ANSWERED = "challenge_answered",
+    CHALLENGE_REJECTED = "challenge_rejected",
+    CHALLENGE_VALIDATED = "challenge_validated",
+    AUTO_VALIDATION = "auto_validation",
+    ATTEMPT_VALIDATED = "attempt_validated",
+    ATTEMPT_REJECTED = "attempt_rejected",
+}
+
+type ActionList = {time: Dayjs, type: Action, author?: string, cost?: number, challenge?: Challenge, challenges?: Challenge[]}[]
 
 class Sprig {
     hash: string;
@@ -203,6 +219,122 @@ class Sprig {
             [Status.VALIDATED]: this.count(Status.VALIDATED),
             [Status.REJECTED]: this.count(Status.REJECTED),
         };
+    }
+    actions(attempt: ProofAttempt): ActionList {
+        const actions: ActionList = [];
+
+        if (attempt.parent) {
+            // The first action is the creation of the parent challenge, if any
+            const challenge = this.challenges[attempt.parent];
+            actions.push({
+                time: challenge.createdAt,
+                type: Action.PARENT_CHALLENGED,
+                author: challenge.author,
+                cost: this.params.question_bounties[challenge.height],
+            });
+
+            // The second action is the creation of the attempt
+            actions.push({
+                time: attempt.createdAt,
+                type: Action.ATTEMPT_CREATED,
+                author: attempt.author,
+                cost: this.params.upstakes[attempt.height] + this.params.downstakes[attempt.height],
+            });
+        } else {
+            // This attempt is the root, so the first action is just the creation of the attempt
+            actions.push({
+                time: attempt.createdAt,
+                type: Action.ROOT_CREATED,
+                author: attempt.author,
+                cost: this.params.downstakes[attempt.height],
+            });
+        }
+
+        // If it is machine attempt, it is then validated or rejected immediately
+        if (attempt.challenges.length === 0) {
+            actions.push({
+                time: attempt.createdAt,
+                type: attempt.status === Status.VALIDATED
+                    ? Action.MACHINE_VERIFIED
+                    : Action.MACHINE_REJECTED,
+            });
+            return actions;
+        }
+
+        // Then there are all the activated challenges
+        const challenges = attempt.challenges.map((challenge) => this.challenges[challenge]);
+        const activatedChallenges = challenges.filter((challenge) => challenge.author !== null);
+        actions.push(...activatedChallenges.map((challenge) => ({
+            time: challenge.challengedAt,
+            type: Action.CHALLENGE_ACTIVATED,
+            author: challenge.author,
+            cost: this.params.question_bounties[challenge.height],
+            challenge,
+        })));
+
+        // Then some challenges have been answered
+        activatedChallenges.forEach((challenge) => {
+            challenge.attempts.forEach((attempt) => {
+                actions.push({
+                    time: this.proofs[attempt].createdAt,
+                    type: Action.CHALLENGE_ANSWERED,
+                    author: this.proofs[attempt].author,
+                    cost: this.params.downstakes[this.proofs[attempt].height] + this.params.upstakes[this.proofs[attempt].height],
+                    challenge,
+                });
+            });
+        });
+
+        // Then some challenges have been validated without being activated
+        const autoValidated = challenges.filter((challenge) => challenge.status === Status.VALIDATED && challenge.author === null);
+        if (autoValidated.length > 0) {
+            actions.push({
+                time: autoValidated[0].openUntil,
+                type: Action.AUTO_VALIDATION,
+                challenges: autoValidated,
+            });
+        }
+
+        // Some challenges might have been validated
+        const validated = challenges.filter((challenge) => challenge.status === Status.VALIDATED && challenge.author !== null);
+        actions.push(...validated.map((challenge) => ({
+            time: dayjs(),  // TODO: find a way to get the time of the validation
+            type: Action.CHALLENGE_VALIDATED,
+            author: challenge.author,
+            cost: this.params.question_bounties[challenge.height],
+            challenge,
+        })));
+
+        // Some challenges have been rejected
+        const rejected = challenges.filter((challenge) => challenge.status === Status.REJECTED);
+        actions.push(...rejected.map((challenge) => ({
+            time: challenge.openUntil,
+            type: Action.CHALLENGE_REJECTED,
+            author: null,
+            cost: this.params.question_bounties[challenge.height],
+            challenge,
+        })));
+
+        // Finally the attempt can be validated or rejected
+        if (attempt.status === Status.VALIDATED) {
+            actions.push({
+                time: dayjs(),  // TODO: find a way to get the time of the validation
+                type: Action.ATTEMPT_VALIDATED,
+                author: attempt.author,
+                cost: 0,  // TODO: handle the non-root case
+            });
+        } else if (attempt.status === Status.REJECTED) {
+            const rejecting = _.minBy(rejected, (challenge) => challenge.openUntil);
+            actions.push({
+                time: rejecting.openUntil,
+                type: Action.ATTEMPT_REJECTED,
+                author: rejecting.author,
+                cost: 0,  // TODO: handle the non-root casAe
+                challenge: rejecting,
+            });
+        }
+
+        return _.sortBy(actions, (action) => action.time);
     }
 }
 
@@ -372,5 +504,5 @@ const api = {
 export {
     api, STATUSES, STATUS_DISPLAY_NAME, LANGUAGES, Language,
     decided, Challenge, Sprig, Status, Descr,
-    ProofAttempt, Parameters
+    ProofAttempt, Parameters, Action
 };

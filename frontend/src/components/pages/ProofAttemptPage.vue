@@ -4,9 +4,9 @@
         <header class="p-8 pb-2">
 
             <div class="flex">
-                <StatusTag status="unchallenged" />
+                <StatusTag :status="attempt.status" />
                 <div class="ml-4 font-bold rounded-md">
-                    Bounty <Price :amount="100"/>
+                    Bounty <Price :amount="attempt.possibleReward(params)"/>
                 </div>
             </div>
             <h1 class="text-3xl font-bold font-title py-2">
@@ -38,24 +38,8 @@
             <section class="xl:w-[32rem]">
                 <h2 class="small-title pb-2">Actions log</h2>
                 <el-timeline>
-                    <el-timeline-item timestamp="15.04.22 20:46" class="" >
-                        <User name="cozyfractal"/> posted this proof attempt with a bounty of <Price amount="100"/>
-                        <div class="bg-slate-100 p-4 mt-2 rounded-md flex flex-col shadow-sm">
-                            <h3 class="font-semibold">Doubtful ? Challenge a claim.</h3>
-                            <ul class="list-disc list-inside">
-                                <li>Lock a bounty of <Price :amount="params.question_bounties[attempt.height]"/> </li>
-                                <li>For 10 days, proof attempts can be submitted for <price :amount="params.upstakes[attempt.height-1] + params.downstakes[attempt.height-1]"/> </li>
-                                <li>The first accepted proof attempt is rewarded with your bounty of <Price :amount="params.question_bounties[attempt.height]"/> </li>
-                                <li>If all proof attempts are rejected, you get your locked bounty back,
-                                    If your challenge is the first to invalidate <User name="cozyfractal" />'s proof, you get their <Price :amount="params.downstakes[attempt.height]" /> bounty. </li>
-                            </ul>
-                            <button class="bg-white rounded-md px-2 py-1 mt-3 self-end shadow">
-                                Start a challenge
-                            </button>
-                        </div>
-                    </el-timeline-item>
-                    <el-timeline-item timestamp="14.04.22 16:24">
-                        <User name="Michael" /> challenged the parent claim.
+                    <el-timeline-item v-for="action in actions">
+                        <Action :action="action" :attempt="attempt" :instance="instance" />
                     </el-timeline-item>
                 </el-timeline>
             </section>
@@ -138,12 +122,13 @@
 
 <script setup lang="ts">
 
-import { ref } from 'vue';
+import { reactive, ref } from 'vue';
 import { LANGUAGES, Descr } from '../../sprig';
 import { store } from '../../store';
 import { Price, StatusTag, Time } from "../small";
 import User from '../medium/User.vue';
 import Parameters from '../medium/Parameters.vue';
+import Action from '../medium/Action/Action.vue';
 
 const props = defineProps({
     instanceHash: {
@@ -164,4 +149,21 @@ const params = instance.params;
 
 const showPreviousDefinitions = ref(false);
 
+const actions = reactive(instance.actions(attempt).map(action => {
+    return {
+        open: true,
+        ...action,
+        };
+    }));
+
 </script>
+
+<style>
+
+/* .group:hover .el-timeline-item__node,
+.group:hover .el-timeline-item__tail {
+    border-left-color: #fef3c7;
+    background-color: #ffdea1;
+} */
+
+</style>

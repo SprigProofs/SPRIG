@@ -12,7 +12,7 @@ import Home from './components/pages/Home.vue'
 import Search from './components/pages/SearchInput.vue'
 import ProofAttemptPage from './components/pages/ProofAttemptPage.vue'
 import { OhVueIcon, addIcons } from "oh-vue-icons";
-import { MdClearRound, MdCheckRound, MdMenu, MdModeedit, MdCancel, MdCheckcircle, MdOfflineboltSharp, MdKeyboarddoublearrowdown, MdKeyboarddoublearrowup, MdBolt, MdOfflinebolt, MdQuestionmarkRound, MdInfoRound, MdAccesstimeRound, MdPersonRound, FaMountain, MdLockclock, MdLockopenRound, MdPriorityhighRound, MdCloseRound, MdDownload, MdDownloading } from "oh-vue-icons/icons";
+import { MdClearRound, MdCheckRound, MdMenu, MdModeedit, MdCancel, MdCheckcircle, MdOfflineboltSharp, MdKeyboarddoublearrowdown, MdKeyboarddoublearrowup, MdBolt, MdOfflinebolt, MdQuestionmarkRound, MdInfoRound, MdAccesstimeRound, MdPersonRound, FaMountain, MdLockclock, MdLockopenRound, MdPriorityhighRound, MdCloseRound, MdDownload, MdDownloading, MdExpandmoreRound } from "oh-vue-icons/icons";
 import { PiPikachu } from 'oh-vue-icons/icons'
 import { CiAlgo } from 'oh-vue-icons/icons'
 
@@ -42,6 +42,7 @@ addIcons(
     MdPriorityhighRound,
     MdCloseRound,
     MdDownloading,
+    MdExpandmoreRound,
 );
 
 addIcons({

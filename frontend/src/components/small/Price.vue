@@ -6,14 +6,14 @@ const ALGO_TO_USD = 0.67;
 defineProps({
     amount: {
         required: true,
-        type: Number,
+        // type: Number,
     },
 })
 
 </script>
 
 <template>
-    <el-popover placement="top">
+    <el-popover placement="bottom-start" :show-arrow="false" transition="">
         Currently {{ (amount * ALGO_TO_USD).toFixed(2) }}$
 
         <template #reference>

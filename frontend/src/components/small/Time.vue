@@ -2,17 +2,13 @@
 
 import dayjs from 'dayjs';
 
-defineProps({
-  time: {
-    required: true,
-    type: dayjs.Dayjs,
-  },
-  suffix: {
-    type: Boolean,
-    default: true,
-  },
+interface Props {
+  time: dayjs.Dayjs,
+  suffix?: boolean,
+}
+const props = withDefaults(defineProps<Props>(), {
+  suffix: false
 });
-
 </script>
 
 <template>
