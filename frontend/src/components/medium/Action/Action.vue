@@ -12,7 +12,8 @@ const props = withDefaults(defineProps<{
   action: ActionData,
   instance: Sprig,
   startOpen?: boolean,
-}>(), { startOpen: false });
+  last?: boolean
+}>(), { startOpen: false, last: false });
 
 const collapsed = ref(!props.startOpen);
 
@@ -38,12 +39,12 @@ if (props.action.target instanceof Challenge) {
 
 const buttonTexts = {
   // [Action.PARENT_CHALLENGED]: 'Submit proof',
-  [Action.ROOT_CREATED]: 'Start a challenge',
-  [Action.ATTEMPT_CREATED]: 'Start a challenge',
-  [Action.CHALLENGE_ACTIVATED]: 'Submit proof',
+  [Action.ROOT_CREATED]: !attempt?.decided() ? 'Start a challenge' : undefined,
+  [Action.ATTEMPT_CREATED]: !attempt?.decided() ? 'Start a challenge' : undefined,
+  [Action.CHALLENGE_ACTIVATED]: !challenge?.decided() ? 'Submit proof' : undefined,
   // [Action.CHALLENGE_ANSWERED]: 'See the proof',
 };
-const buttonText = buttonTexts[props.action.type];
+const buttonText = buttonTexts[props.action.type] ;
 const title = {
   // [Action.PARENT_CHALLENGED]: "",
   [Action.ROOT_CREATED]: "Doubtful? Challenge a claim.",
@@ -60,7 +61,25 @@ const title = {
 
 }[props.action.type];
 
-const collapsable = title !== undefined;
+const addIcon = { name: 'md-add-round', class: 'bg-blue-200' };
+const challengeIcon = { name: 'md-bolt', class: 'bg-yellow-200' };
+const validatedIcon = { name: 'md-check-round', class: 'bg-green-200' };
+const rejectedIcon = { name: 'md-close-round', class: 'bg-red-200' };
+const lockIcon = { name: 'md-lockoutline', class: 'bg-gray-200' };
+const icon = {
+    [Action.ROOT_CREATED]: addIcon,
+    [Action.ATTEMPT_CREATED]: addIcon,
+    [Action.CHALLENGE_ACTIVATED]: challengeIcon,
+    [Action.AUTO_VALIDATION]: lockIcon,
+    [Action.CHALLENGE_REJECTED]: rejectedIcon,
+    [Action.CHALLENGE_VALIDATED]: validatedIcon,
+    [Action.ATTEMPT_VALIDATED]: validatedIcon,
+    [Action.ATTEMPT_REJECTED]: rejectedIcon,
+    [Action.MACHINE_VALIDATED]: validatedIcon,
+    [Action.MACHINE_REJECTED]: rejectedIcon,
+}[props.action.type];
+
+const collapsable = title && buttonText;
 
 function takeAction() {
 
@@ -76,17 +95,27 @@ function toggle() {
 </script>
 
 <template>
-  <div class="group" @click="toggle()" :class="{ 'cursor-pointer': collapsable }">
+  <div class="flex group" @click="toggle()" :class="{ 'cursor-pointer': collapsable }" >
+
+  <div class="w-6 mr-2 flex-shrink-0 relative
+    flex flex-col items-center">
+    <div v-if="!last" class="h-full absolute border-l-2 border-slate-200 mt-1
+      group-hover:border-slate-400"></div>
+    <v-icon :name="icon.name" :class="icon.class" class="absolute border shadow border-gray-500 w-6 h-6 p-1 rounded-full bg-blue-200 mt-0.5" />
+  </div>
+
+  <div >
+
     <div class="flex group w-full ">
       <p>
 
-        <v-icon v-if="title" name="md-expandmore-round"
+        <v-icon v-if="collapsable" name="md-expandmore-round"
           class="mr-1 transform transition duration-500 text-gray-600 group-hover:scale-125 group-hover:text-gray-900"
           :class="{ '-rotate-90': collapsed }" />
 
         <span v-if="action.type === Action.ROOT_CREATED">
           <User :name="instance.author()" /> created a new SPRIG instance with a bounty of
-          <Price :amount="params.downstakes[params.root_height]" />.
+          <Price :amount="params.downstakes[params.root_height-1]" />.
         <!-- </span><span v-else-if="action.type === Action.PARENT_CHALLENGED">
           <User :name="action.author" /> challenged the parent claim
           <UidTag :object="parentChallenge" />
@@ -174,9 +203,12 @@ function toggle() {
       </div>
     </Transition>
 
-    <Time :time="action.time" suffix class="block w-fit text-xs text-gray-400 -mb-4" />
+    <Time :time="action.time" suffix class="block mb-2 w-fit text-xs text-gray-400" />
 
   </div>
+
+  </div>
+
 </template>
 
 <style scoped>

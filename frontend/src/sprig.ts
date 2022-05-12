@@ -150,6 +150,7 @@ class Challenge {
         this.instanceHash = challenge.instance_hash || challenge.instanceHash;
     }
     uid(): string { return '#' + this.instanceHash + '/' + this.hash; }
+    decided(): boolean { return decided(this.status); }
     possibleReward(params: Parameters): number {
         return this.status === Status.CHALLENGED
             ? params.question_bounties[this.height]
