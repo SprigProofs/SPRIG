@@ -11,6 +11,7 @@ import ClaimEmbed from '../medium/ClaimEmbed.vue';
 import AttemptEmbed from '../medium/AttemptEmbed.vue';
 import { StatusTag } from '../small';
 import LanguageTag from '../small/LanguageTag.vue';
+import ChallengeEmbed from '../medium/ChallengeEmbed.vue';
 
 const statuses = reactive({
   [Status.CHALLENGED]: true,
@@ -32,8 +33,8 @@ enum Types {
 }
 const types = [Types.CHALLENGE, Types.ATTEMPT, Types.INSTANCE, Types.USER];
 const selectedTypes = reactive({
-  [Types.CHALLENGE]: false,
-  [Types.ATTEMPT]: false,
+  [Types.CHALLENGE]: true,
+  [Types.ATTEMPT]: true,
   [Types.INSTANCE]: true,
   [Types.USER]: false,
 });
@@ -149,7 +150,7 @@ const results = computed<{ key: string, challenge?: Challenge, instance?: Sprig,
         .filter(challenge => languages[store.instances[challenge.instanceHash].language])
         .map(challenge => ({
           key: challenge.uid(),
-          claim: challenge,
+          challenge,
         })));
   }
 
@@ -175,7 +176,7 @@ const results = computed<{ key: string, challenge?: Challenge, instance?: Sprig,
   }
 
   const getType = o => o.attempt ? Types.ATTEMPT : o.instance ? Types.INSTANCE : Types.CHALLENGE;
-  const getItem = o => o.attempt || o.instance || o.claim;
+  const getItem = o => o.attempt || o.instance || o.challenge;
 
   all.sort((a, b) => (
     combineWeights(getWeights(getItem(a), getType(a)))
@@ -232,23 +233,25 @@ const results = computed<{ key: string, challenge?: Challenge, instance?: Sprig,
         </label>
       </section>
     </div>
-    <!-- <pre>{{ store }}</pre> -->
+
     <h2 class="mt-4 py-4">
       {{ results.length }} Result{{ results.length != 1 ? 's' : '' }}
     </h2>
+
     <TransitionGroup tag="ol" class="space-y-6">
       <li v-for="result in results" :key="result.key" class="transition">
         <router-link :to="linkTo(result.attempt || result.challenge || result.instance)"
           class="p-4 block bg-white rounded-sm shadow-sm hover:shadow-md w-full border">
-          <!-- <ClaimEmbed v-if="result.claim" :claim-hash="result.claim.hash" :instance-hash="result.claim.instance_hash" /> -->
           <AttemptEmbed v-if="result.attempt" :instance-hash="result.attempt.instanceHash" :hash="result.attempt.hash" />
           <InstanceEmbed v-else-if="result.instance" :hash="result.instance.hash"></InstanceEmbed>
-          <div v-else>{{ result }}</div>
+          <ChallengeEmbed v-else-if="result.challenge" :challenge-hash="result.challenge.hash" :instance-hash="result.challenge.instanceHash" />
+          <pre v-else>{{ result }}</pre>
           <!-- <pre>{{ weightDebug(result.attempt || result.claim || result.instance, selectedType) }}</pre> -->
 
         </router-link>
       </li>
     </TransitionGroup>
+
     <section v-if="results.length === 0">
       <el-empty description="Nothing to show here. Try broadening your search.">
         <button class="rounded border bg-blue-100 pl-2 pr-4 py-2 border-blue-700 shadow hover:-translate-y-0.5 hover:shadow-md transition transform">
