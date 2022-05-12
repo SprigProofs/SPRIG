@@ -11,7 +11,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-    tooltip: false,
+    tooltip: true,
 });
 
 const link = linkTo(props.object);

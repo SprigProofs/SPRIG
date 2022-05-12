@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ProofAttempt, Sprig, Action } from '../../../sprig';
+import { ProofAttempt, Sprig, Action, ActionData, Challenge } from '../../../sprig';
 import ActionChallengeParent from './ActionChallengeParent.vue';
 import User from '../User.vue';
 import { Time, Duration } from '../../small';
@@ -9,8 +9,7 @@ import Time1 from '../../small/Time.vue';
 
 
 const props = withDefaults(defineProps<{
-  action: any,
-  attempt: ProofAttempt,
+  action: ActionData,
   instance: Sprig,
   startOpen?: boolean,
 }>(), { startOpen: false });
@@ -18,20 +17,35 @@ const props = withDefaults(defineProps<{
 const collapsed = ref(!props.startOpen);
 
 const params = props.instance.params;
-const parentChallenge = props.attempt.parent
-  ? props.instance.challenges[props.attempt.parent]
-  : null;
+
+
+const instance: Sprig = props.instance;
+let attempt: ProofAttempt | null = null;
+let challenge: Challenge | null = null;
+
+if (props.action.target instanceof Challenge) {
+  challenge = props.action.target;
+  attempt = instance.proofs[challenge.parent];
+} else if (props.action.target instanceof ProofAttempt) {
+  attempt = props.action.target;
+  if (attempt.parent !== null) {
+    challenge = instance.challenges[attempt.parent]
+  }
+} else if (props.action.target instanceof Sprig) {
+  attempt = instance.rootAttempt();
+}
+
 
 const buttonTexts = {
-  [Action.PARENT_CHALLENGED]: 'Submit proof',
+  // [Action.PARENT_CHALLENGED]: 'Submit proof',
   [Action.ROOT_CREATED]: 'Start a challenge',
   [Action.ATTEMPT_CREATED]: 'Start a challenge',
   [Action.CHALLENGE_ACTIVATED]: 'Submit proof',
-  [Action.CHALLENGE_ANSWERED]: 'See the proof',
+  // [Action.CHALLENGE_ANSWERED]: 'See the proof',
 };
 const buttonText = buttonTexts[props.action.type];
 const title = {
-  [Action.PARENT_CHALLENGED]: "",
+  // [Action.PARENT_CHALLENGED]: "",
   [Action.ROOT_CREATED]: "Doubtful? Challenge a claim.",
   [Action.ATTEMPT_CREATED]: "Doubtful? Challenge a claim.",
   [Action.CHALLENGE_ACTIVATED]: "Can you prove it?",
@@ -70,36 +84,37 @@ function toggle() {
           class="mr-1 transform transition duration-500 text-gray-600 group-hover:scale-125 group-hover:text-gray-900"
           :class="{ '-rotate-90': collapsed }" />
 
-        <span v-if="action.type === Action.PARENT_CHALLENGED">
+        <span v-if="action.type === Action.ROOT_CREATED">
+          <User :name="instance.author()" /> created a new SPRIG instance with a bounty of
+          <Price :amount="params.downstakes[params.root_height]" />.
+        <!-- </span><span v-else-if="action.type === Action.PARENT_CHALLENGED">
           <User :name="action.author" /> challenged the parent claim
           <UidTag :object="parentChallenge" />
           with a bounty of
-          <Price :amount="action.cost" />
-        </span><span v-else-if="action.type === Action.ROOT_CREATED">
-          <User :name="action.author" /> created a new SPRIG instance with a bounty of
-          <Price :amount="action.cost" />.
+          <Price :amount="action.cost" /> -->
         </span><span v-else-if="action.type === Action.ATTEMPT_CREATED">
-          <User :name="action.author" /> answered
-          <UidTag :object="parentChallenge" />
+          <User :name="attempt.author" /> answered
+          <!-- Note: challenge is always defined here, because ATTEMPT_CREATED does not happen on the root -->
+          <UidTag :object="challenge" />
           with this proof attempt and a bounty of
           <Price :amount="params.downstakes[attempt.height]" />
         </span><span v-else-if="action.type === Action.CHALLENGE_ACTIVATED">
-          <User :name="action.author" /> opened the challenge
-          <UidTag :object="action.challenge" />
+          <User :name="challenge.author" /> opened challenge
+          <UidTag :object="challenge" /> on <UidTag :object="attempt" />
           with a bounty of
-          <Price :amount="action.cost" />
-        </span><span v-else-if="action.type === Action.CHALLENGE_ANSWERED">
+          <Price :amount="params.costToChallenge(attempt)" />
+        <!-- </span><span v-else-if="action.type === Action.CHALLENGE_ANSWERED">
           Challenge
           <UidTag :object="action.challenge" /> was answered by
           <User :name="action.author" />
           with
-          <UidTag :object="action.attempt" :tooltip="true" />
+          <UidTag :object="action.attempt" :tooltip="true" /> -->
         </span><span v-else-if="action.type === Action.AUTO_VALIDATION">
-          Time for questions has elapsed, and no new challenges can be added.
+          Time for questions has elapsed for <UidTag :object="instance.proofs[action.target[0].parent]" />, and no new challenges can be added.
         </span><span v-else-if="action.type === Action.MACHINE_REJECTED">
-          This machine proof was rejected.
-        </span><span v-else-if="action.type === Action.MACHINE_VERIFIED">
-          This machine proof was accepted.
+          This machine proof <UidTag :object="attempt" /> rejected.
+        </span><span v-else-if="action.type === Action.MACHINE_VALIDATED">
+          This machine proof <UidTag :object="attempt" /> was accepted.
         </span><span v-else>
           {{ action.type }} needs more work...
         </span>
@@ -117,14 +132,14 @@ function toggle() {
           <h3 class="font-semibold ">{{ title }}</h3>
           <ul v-if="action.type === Action.ROOT_CREATED || action.type === Action.ATTEMPT_CREATED">
             <li>Lock a bounty of
-              <Price :amount="params.question_bounties[attempt.height]" />
+              <Price :amount="params.costToChallenge(attempt)" />
             </li>
             <li>For
               <Duration :duration="params.time_for_questions" />, proof attempts can be submitted for
               <price :amount="params.upstakes[attempt.height - 1] + params.downstakes[attempt.height - 1]" />
             </li>
             <li>The first accepted proof attempt is rewarded with your bounty of
-              <Price :amount="params.question_bounties[attempt.height]" />
+              <Price :amount="params.costToChallenge(attempt)" />
             </li>
             <li>If all proof attempts are rejected, you get your locked bounty back,
               If your challenge is the first to invalidate
@@ -133,20 +148,20 @@ function toggle() {
             </li>
           </ul>
           <ul v-else-if="action.type === Action.CHALLENGE_ACTIVATED">
-            <li>Before <Time :time="action.challenge.openUntil" />, submit a proof for
-              <Price :amount="action.challenge.costAddAttempt(params)" />.
+            <li>Before <Time :time="challenge.openUntil" />, submit a proof for
+              <Price :amount="challenge.costAddAttempt(params)" />.
             </li>
             <li>For
               <Duration :duration="params.time_for_questions" /> challenges can be submitted.
             </li>
             <li>If the proof passes all challenges, you get your
-              <Price :amount="action.challenge.costAddAttempt(params)" /> back, and also
-              <User :name="action.challenge.author" />'s bounty of
-              <Price :amount="action.cost" />
+              <Price :amount="challenge.costAddAttempt(params)" /> back, and also
+              <User :name="challenge.author" />'s bounty of
+              <Price :amount="params.costToChallenge(attempt)" />
             </li>
             <li>If some challenge invalidates the proof, they get
               <Price :amount="params.downstakes[attempt.height - 1]" /> and
-              <User :name="action.author" /> gets
+              <User :name="challenge.author" /> gets
               <Price :amount="params.upstakes[attempt.height - 1]" /> for their good question.
             </li>
           </ul>

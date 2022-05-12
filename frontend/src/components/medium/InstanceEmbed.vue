@@ -1,8 +1,7 @@
 <template>
-  <!-- TODO: Route to a instance page, not the root proof attempt. -->
-  <div class="flex">
+  <div class="flex space-x-4">
     <!-- First part of the card -->
-    <div class="p-4 flex flex-col flex-grow">
+    <div class="flex flex-col flex-grow">
       <!-- First row -->
       <div class="flex flex-row justify-between ">
         <!-- Top left -->
@@ -19,26 +18,22 @@
           <User :name="instance.author()" />
         </span>
       </h3>
-      <code class="text-sm flex-grow">
-        <pre class="whitespace-pre-wrap">{{ language.shortDescription(claim) }}</pre>
-      </code>
-      <div class="leading-none rounded border-gray-200 p-2">
+      <Language.TicTacToe.StatementDisplay :instance="instance" :challenge-hash="null"/>
+      <!-- <div class="leading-none rounded border-gray-200 p-2">
         <div class="text-xs text-gray-600">Last action</div>
         <p class="text-sm">Michael challenged claim #1a209b for 70</p>
-      </div>
+      </div> -->
 
     </div>
     <!-- Right of the card -->
-    <div  class=" p-4 flex-shrink-0
+    <div  class=" flex-shrink-0
           flex flex-col space-y-2 items-end">
       <div class="grid grid-cols-[auto_auto] gap-4">
         <LabeledData label="Bounties">
           <span class="font-extralight text-gray-600 text-sm pr-1.5">Σ</span>
           <Price :amount="instance.totalBounties()"/>
         </LabeledData>
-        <LabeledData :label="claim.decided() ? 'Expired' : 'Expires'">
-          <Time :time="claim.open_until" />
-        </LabeledData>
+        <LabeledData :label="expires.isBefore(dayjs()) ? 'Expired' : 'Expires' "><Time :time="expires" /></LabeledData>
 
         <LabeledData
           v-for="(count, status) in instance.counts()" :key="status"
@@ -61,12 +56,14 @@
 </template>
 
 <script setup lang="ts">
-import { Descr, Status, Sprig, Language, LANGUAGES, ProofAttempt } from '../../sprig';
+import { Descr, Status, Sprig, LANGUAGES, ProofAttempt } from '../../sprig';
 import { store } from '../../store';
 import { Price, StatusIcon, StatusTag, Time, LanguageTag } from '../small';
 import User from '../medium/User.vue';
 import LabeledData from '../small/LabeledData.vue';
 import UidTag from '../small/UidTag.vue';
+import * as Language from '../languages';
+import dayjs from 'dayjs';
 
 
 const props = defineProps({
@@ -78,6 +75,7 @@ const props = defineProps({
 
 const instance: Sprig = store.instances[props.hash];
 const rootAttempt: ProofAttempt = instance.rootAttempt();
-const language: Language = LANGUAGES[instance.language];
+const language = LANGUAGES[instance.language];
+const expires = rootAttempt.expires(instance);
 
 </script>

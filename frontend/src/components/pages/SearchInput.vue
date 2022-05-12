@@ -33,8 +33,8 @@ enum Types {
 const types = [Types.CHALLENGE, Types.ATTEMPT, Types.INSTANCE, Types.USER];
 const selectedTypes = reactive({
   [Types.CHALLENGE]: false,
-  [Types.ATTEMPT]: true,
-  [Types.INSTANCE]: false,
+  [Types.ATTEMPT]: false,
+  [Types.INSTANCE]: true,
   [Types.USER]: false,
 });
 const search = ref("");
@@ -135,7 +135,7 @@ function weightDebug(o, type: Types) {
   return weights;
 }
 
-const results = computed<{ key: string, claim?: Claim, instance?: Sprig, attempt?: ProofAttempt; }[]>(() => {
+const results = computed<{ key: string, challenge?: Challenge, instance?: Sprig, attempt?: ProofAttempt; }[]>(() => {
   const sortKey = (type) => (a, b) => combineWeights(getWeights(a, type))
     - combineWeights(getWeights(b, type));
 
@@ -238,12 +238,10 @@ const results = computed<{ key: string, claim?: Claim, instance?: Sprig, attempt
     </h2>
     <TransitionGroup tag="ol" class="space-y-6">
       <li v-for="result in results" :key="result.key" class="transition">
-        <router-link :to="linkTo(result.attempt || result.claim || result.instance)"
+        <router-link :to="linkTo(result.attempt || result.challenge || result.instance)"
           class="p-4 block bg-white rounded-sm shadow-sm hover:shadow-md w-full border">
-          <ClaimEmbed v-if="result.claim" :claim-hash="result.claim.hash" :instance-hash="result.claim.instance_hash">
-          </ClaimEmbed>
-          <AttemptEmbed v-else-if="result.attempt" :instance-hash="result.attempt.instanceHash"
-            :hash="result.attempt.hash" />
+          <!-- <ClaimEmbed v-if="result.claim" :claim-hash="result.claim.hash" :instance-hash="result.claim.instance_hash" /> -->
+          <AttemptEmbed v-if="result.attempt" :instance-hash="result.attempt.instanceHash" :hash="result.attempt.hash" />
           <InstanceEmbed v-else-if="result.instance" :hash="result.instance.hash"></InstanceEmbed>
           <div v-else>{{ result }}</div>
           <!-- <pre>{{ weightDebug(result.attempt || result.claim || result.instance, selectedType) }}</pre> -->
@@ -251,5 +249,12 @@ const results = computed<{ key: string, claim?: Claim, instance?: Sprig, attempt
         </router-link>
       </li>
     </TransitionGroup>
+    <section v-if="results.length === 0">
+      <el-empty description="Nothing to show here. Try broadening your search.">
+        <button class="rounded border bg-blue-100 pl-2 pr-4 py-2 border-blue-700 shadow hover:-translate-y-0.5 hover:shadow-md transition transform">
+          <v-icon name="md-add-round" class="fill-blue-800"/>
+          New SPRIG instance</button>
+      </el-empty>
+    </section>
   </div>
 </template>

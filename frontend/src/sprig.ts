@@ -57,6 +57,13 @@ class Parameters {
         this.question_bounties = params.question_bounties;
         this.verification_cost = params.verification_cost;
     }
+    costToChallenge(attempt: ProofAttempt): number {
+        if (attempt.height === 0) {
+            return undefined;
+        } else {
+            return this.question_bounties[attempt.height];
+        }
+    }
 }
 
 
@@ -110,6 +117,12 @@ class ProofAttempt {
             return 0;
         }
     }
+    expires(instance: Sprig): dayjs.Dayjs {
+        const challenges = this.challenges.map(c => instance.challenges[c]);
+        // If there are no challenges, it is a machine claim, decided as soon as it is created.
+        // otherwise, we take the earliest deadline.
+        return _.minBy(challenges, c => c.openUntil.millisecond())?.openUntil || this.createdAt;
+    }
 }
 
 class Challenge {
@@ -156,18 +169,18 @@ class Challenge {
 }
 
 enum Action {
-    PARENT_CHALLENGED = "parent_challenged",
     ROOT_CREATED = "root_created",
+    // PARENT_CHALLENGED = "parent_challenged",
     ATTEMPT_CREATED = "attempt_created",
-    MACHINE_VERIFIED = "machine_verified",
-    MACHINE_REJECTED = "machine_rejected",
     CHALLENGE_ACTIVATED = "challenge_activated",
-    CHALLENGE_ANSWERED = "challenge_answered",
+    // CHALLENGE_ANSWERED = "challenge_answered",
+    AUTO_VALIDATION = "auto_validation",
     CHALLENGE_REJECTED = "challenge_rejected",
     CHALLENGE_VALIDATED = "challenge_validated",
-    AUTO_VALIDATION = "auto_validation",
     ATTEMPT_VALIDATED = "attempt_validated",
     ATTEMPT_REJECTED = "attempt_rejected",
+    MACHINE_VALIDATED = "machine_verified",
+    MACHINE_REJECTED = "machine_rejected",
 }
 
 type ActionList = {
@@ -263,7 +276,7 @@ class Sprig {
             actions.push({
                 time: attempt.createdAt,
                 type: attempt.status === Status.VALIDATED
-                    ? Action.MACHINE_VERIFIED
+                    ? Action.MACHINE_VALIDATED
                     : Action.MACHINE_REJECTED,
             });
             return actions;
@@ -345,7 +358,111 @@ class Sprig {
 
         return _.sortBy(actions, (action) => action.time);
     }
+    /**
+     * Return a list of all the actions that happened in the sprig instance.
+     */
+    allActions(): ActionData[] {
+        const actions: ActionData[] = [];
+
+        // Creation of the instance
+        actions.push({
+            time: this.rootAttempt().createdAt,
+            type: Action.ROOT_CREATED,
+            target: this,
+        });
+
+        // Creation of attempts
+        _.forEach(this.proofs, (proof) => {
+            if (proof.parent) {  // The root proof attempt uses ROOT_CREATED
+                actions.push({
+                    time: proof.createdAt,
+                    type: Action.ATTEMPT_CREATED,
+                    target: proof,
+                });
+            }
+        });
+
+        // Activation of the challenges
+        _.forEach(this.challenges, (challenge) => {
+            if (challenge.author !== null) {
+                actions.push({
+                    time: challenge.challengedAt,
+                    type: Action.CHALLENGE_ACTIVATED,
+                    target: challenge,
+                });
+            }
+        });
+
+        // Challenge auto-validation
+        _.forEach(this.proofs, (proof) => {
+            const challenges = proof.challenges.map((challenge) => this.challenges[challenge]);
+            const autoValidated = challenges.filter((challenge) => challenge.author === null && challenge.status === Status.VALIDATED);
+            if (autoValidated.length > 0) {
+                actions.push({
+                    time: autoValidated[0].openUntil,  // All should have the same openUntil
+                    type: Action.AUTO_VALIDATION,
+                    target: autoValidated,
+                });
+            }
+        });
+
+        // Challenge validation and rejection
+        _.forEach(this.challenges, (challenge) => {
+            if (challenge.author !== null && decided(challenge.status)) {
+                actions.push({
+                    time: dayjs(),  // TODO: find a way to get the time of the validation
+                    type: challenge.status === Status.VALIDATED
+                        ? Action.CHALLENGE_VALIDATED
+                        : Action.CHALLENGE_REJECTED,
+                    target: challenge,
+                });
+            }
+        });
+
+        // Attempt validation and rejection
+        _.forEach(this.proofs, (proof) => {
+            if (proof.height === 0) {
+                actions.push({
+                    time: proof.createdAt,
+                    type: proof.status === Status.VALIDATED
+                        ? Action.MACHINE_VALIDATED
+                        : Action.MACHINE_REJECTED,
+                    target: proof,
+                });
+            } else {
+                if (proof.status === Status.VALIDATED) {
+                    actions.push({
+                        time: dayjs(),  // TODO: find a way to get the time of the validation
+                        type: Action.ATTEMPT_VALIDATED,
+                        target: proof,
+                    });
+                } else if (proof.status === Status.REJECTED) {
+                    const rejected = proof.challenges.map((challenge) => this.challenges[challenge])
+                        .filter((challenge) => challenge.status === Status.REJECTED);
+                    const rejecting = _.minBy(rejected, (challenge) => challenge.openUntil);
+                    actions.push({
+                        time: rejecting.openUntil,
+                        type: Action.ATTEMPT_REJECTED,
+                        target: rejecting,
+                    });
+                }
+            }
+        });
+
+        // Machine validation and rejection
+        _.forEach(this.proofs, (proof) => {
+        });
+
+        return _.sortBy(actions, (action) => action.time);
+    }
 }
+
+interface ActionData {
+    time: dayjs.Dayjs;
+    type: Action;
+    target: Challenge | ProofAttempt | Sprig | Challenge[];
+}
+
 
 enum Descr {
     TITLE = -1,
@@ -510,7 +627,7 @@ const api = {
 
 function linkTo(obj: ProofAttempt | Challenge | Sprig) {
     if (obj instanceof Sprig) {
-        return { name: "proofAttempt", params: { instanceHash: obj.hash, hash: ROOT_HASH } };
+        return { name: "instance", params: { instanceHash: obj.hash } };
     } else if (obj instanceof ProofAttempt) {
         return { name: "proofAttempt", params: { instanceHash: obj.instanceHash, hash: obj.hash } };
     } else {
@@ -521,5 +638,5 @@ function linkTo(obj: ProofAttempt | Challenge | Sprig) {
 export {
     api, STATUSES, STATUS_DISPLAY_NAME, LANGUAGES, Language,
     decided, Challenge, Sprig, Status, Descr,
-    ProofAttempt, Parameters, Action, linkTo,
+    ProofAttempt, Parameters, Action, ActionData, linkTo,
 };

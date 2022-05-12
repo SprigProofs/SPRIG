@@ -25,7 +25,7 @@
 
       <div class="grid grid-cols-[auto_auto] min-w-max h-min gap-y-4 gap-x-8 ml-4">
         <LabeledData label="Bounty"><Price :amount="attempt.possibleReward(params)"/></LabeledData>
-        <LabeledData :label="expires.isBefore(dayjs()) ? 'Expired' : 'Expires' ">{{ expires.fromNow() }}</LabeledData>
+        <LabeledData :label="expires.isBefore(dayjs()) ? 'Expired' : 'Expires' "><Time :time="expires" /></LabeledData>
         <LabeledData label="Claims">{{ _.size(attempt.challenges )}}</LabeledData>
         <LabeledData label="Height">{{ attempt.height }} / {{ params.root_height - 1 }}</LabeledData>
       </div>
@@ -37,9 +37,8 @@ import _ from 'lodash';
 import dayjs from 'dayjs';
 import { Status, Descr, Sprig, Challenge, LANGUAGES, ProofAttempt, Parameters } from '../../sprig';
 import { store } from '../../store';
-import { LabeledData, StatusTag, Price, LanguageTag } from "../small";
+import { LabeledData, StatusTag, Price, LanguageTag, Time, UidTag } from "../small";
 import User from './User.vue';
-import UidTag from '../small/UidTag.vue';
 import * as Language from '../languages'
 
 const props = defineProps({
@@ -59,10 +58,6 @@ const params: Parameters = instance.params;
 const attempt: ProofAttempt = instance.proofs[props.hash];
 const language = LANGUAGES[instance.language];
 
-const challenges = attempt.challenges.map(c => instance.challenges[c]);
-
-// If there are no challenges, it is a machine claim, decided as soon as it is created.
-// otherwise, we take the earliest deadline.
-const expires = _.minBy(challenges, c => c.openUntil.millisecond())?.openUntil || attempt.createdAt;
+const expires = attempt.expires(instance);
 
 </script>
