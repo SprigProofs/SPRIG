@@ -144,6 +144,12 @@ function toggle() {
           This machine proof <UidTag :object="attempt" /> rejected.
         </span><span v-else-if="action.type === Action.MACHINE_VALIDATED">
           This machine proof <UidTag :object="attempt" /> was accepted.
+        </span><span v-else-if="action.type === Action.ATTEMPT_REJECTED">
+          <UidTag :object="attempt" /> was rejected by challenge <UidTag :object="challenge" />.
+        </span><span v-else-if="action.type === Action.ATTEMPT_VALIDATED">
+          <UidTag :object="attempt" /> was validated.
+        </span><span v-else-if="action.type === Action.CHALLENGE_REJECTED">
+          <UidTag :object="challenge" /> was rejected by attempt <UidTag :object="attempt" />.
         </span><span v-else>
           {{ action.type }} needs more work...
         </span>

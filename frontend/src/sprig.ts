@@ -242,8 +242,23 @@ class Sprig {
             [Status.REJECTED]: this.count(Status.REJECTED),
         };
     }
-    actions(attempt: ProofAttempt): ActionList {
+    actions(attempt: ProofAttempt): ActionData[] {
         const actions: ActionList = [];
+
+        return this.allActions().filter(action => {
+            if (action.target instanceof ProofAttempt) {
+                return action.target.hash === attempt.hash
+                    || action.target.parent === attempt.hash;
+            } else if (action.target instanceof Challenge) {
+                return action.target.hash === attempt.parent
+                    || attempt.challenges.includes(action.target.hash);
+            } else if (action.target instanceof Sprig) {
+                return action.target.rootAttempt().hash === attempt.hash;
+            } else {
+                return action.target[0].parent === attempt.hash;
+            }
+
+        });
 
         if (attempt.parent) {
             // The first action is the creation of the parent challenge, if any
@@ -409,12 +424,22 @@ class Sprig {
 
         // Challenge validation and rejection
         _.forEach(this.challenges, (challenge) => {
-            if (challenge.author !== null && decided(challenge.status)) {
+            if (challenge.author === null) return;
+
+            if (challenge.status === Status.VALIDATED) {
+                const validated = challenge.attempts
+                    .map((attempt) => this.proofs[attempt])
+                    .filter((proof) => proof.status === Status.VALIDATED);
+                const validating = _.minBy(validated, (attempt) => attempt.expires(this));
                 actions.push({
-                    time: dayjs(),  // TODO: find a way to get the time of the validation
-                    type: challenge.status === Status.VALIDATED
-                        ? Action.CHALLENGE_VALIDATED
-                        : Action.CHALLENGE_REJECTED,
+                    time: validating.expires(this),
+                    type: Action.CHALLENGE_VALIDATED,
+                    target: validating,
+                });
+            } else if (challenge.status === Status.REJECTED) {
+                actions.push({
+                    time: challenge.openUntil,
+                    type: Action.CHALLENGE_REJECTED,
                     target: challenge,
                 });
             }
@@ -433,7 +458,7 @@ class Sprig {
             } else {
                 if (proof.status === Status.VALIDATED) {
                     actions.push({
-                        time: dayjs(),  // TODO: find a way to get the time of the validation
+                        time: proof.expires(this),
                         type: Action.ATTEMPT_VALIDATED,
                         target: proof,
                     });

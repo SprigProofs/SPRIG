@@ -37,11 +37,11 @@
 
             <section class="xl:w-[32rem]">
                 <h2 class="small-title pb-2">Actions log</h2>
-                <el-timeline>
-                    <el-timeline-item v-for="action in actions">
-                        <Action :action="action" :attempt="attempt" :instance="instance" />
-                    </el-timeline-item>
-                </el-timeline>
+                    <ol>
+                        <li v-for="(action, idx) in actions">
+                            <Action :action="action" :instance="instance" :last="idx === actions.length - 1" />
+                        </li>
+                    </ol>
             </section>
 
             <section class="flex flex-col flex-grow max-w-prose">
