@@ -5,6 +5,7 @@
 
                 <div class="flex">
                     <StatusTag :status="attempt.status" />
+                    <LanguageTag :lang="instance.language" />
                     <div class="ml-4 font-bold rounded-md">
                         Bounty
                         <Price :amount="attempt.possibleReward(params)" />
@@ -13,7 +14,7 @@
                 <h1 class="text-3xl font-bold font-title py-2">
                     {{ language.describe(attempt, instance, Descr.TITLE) }}
                 </h1>
-                <div class="flex space-x-4">
+                <div class="flex space-x-4 text-gray-800">
                     <div>
                         <v-icon name="md-person-round" class="mr-1" />
                         <User :name="attempt.author" />
@@ -114,6 +115,7 @@ import Parameters from '../medium/Parameters.vue';
 import Action from '../medium/Action/Action.vue';
 import { useRoute } from 'vue-router';
 import * as Language from '../languages';
+import LanguageTag from '../small/LanguageTag.vue';
 
 const props = defineProps({
     instanceHash: {
