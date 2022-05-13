@@ -67,7 +67,7 @@ function redraw(): void {
     for (const x of [0, 1, 2]) {
         for (const y of [0, 1, 2]) {
             const c = get(x, y)
-            const [center_x, center_y] = caseCenter(x, y);
+            const [centerX, centerY] = caseCenter(x, y);
             ctx.beginPath();
             ctx.lineWidth = 2;
             if (props.color.includes(3 * y + x + 1)) {
@@ -75,12 +75,12 @@ function redraw(): void {
                 ctx.strokeStyle = c == "O" ? "red" : "blue";
             }
             if (c == "O") {
-                ctx.arc(center_x, center_y, Math.min(w, h) / 12, 0, Math.PI * 2);
+                ctx.arc(centerX, centerY, Math.min(w, h) / 12, 0, Math.PI * 2);
             } else if (c == "X") {
-                ctx.moveTo(center_x - w / 12, center_y - h / 12);
-                ctx.lineTo(center_x + w / 12, center_y + h / 12);
-                ctx.moveTo(center_x - w / 12, center_y + h / 12);
-                ctx.lineTo(center_x + w / 12, center_y - h / 12);
+                ctx.moveTo(centerX - w / 12, centerY - h / 12);
+                ctx.lineTo(centerX + w / 12, centerY + h / 12);
+                ctx.moveTo(centerX - w / 12, centerY + h / 12);
+                ctx.lineTo(centerX + w / 12, centerY - h / 12);
             }
             ctx.stroke();
             if (props.color.includes(3 * y + x + 1)) {

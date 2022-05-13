@@ -27,7 +27,7 @@
         <LabeledData label="Bounty"><Price :amount="attempt.possibleReward(params)"/></LabeledData>
         <LabeledData :label="expires.isBefore(dayjs()) ? 'Expired' : 'Expires' "><Time :time="expires" /></LabeledData>
         <LabeledData label="Claims">{{ _.size(attempt.challenges )}}</LabeledData>
-        <LabeledData label="Height">{{ attempt.height }} / {{ params.root_height - 1 }}</LabeledData>
+        <LabeledData label="Height">{{ attempt.height }} / {{ params.rootHeight - 1 }}</LabeledData>
       </div>
   </div>
 </template>

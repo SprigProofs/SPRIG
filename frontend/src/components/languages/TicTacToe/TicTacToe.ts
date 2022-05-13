@@ -30,7 +30,7 @@ function getMove(challengeHash: string, instance: Sprig): [number, number | null
  */
 function getState(challengeHash: string | null, instance: Sprig) {
     if (challengeHash === null) {
-        const m = instance.root_question.match(/([XO.]{3})\|([XO.]{3})\|([XO.]{3}) ([XO]) plays ([XO.]) wins/);
+        const m = instance.rootQuestion.match(/([XO.]{3})\|([XO.]{3})\|([XO.]{3}) ([XO]) plays ([XO.]) wins/);
         return {
             plays: m[4],
             wins: m[5],

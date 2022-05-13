@@ -115,7 +115,7 @@ function toggle() {
 
         <span v-if="action.type === Action.ROOT_CREATED">
           <User :name="instance.author()" /> created a new SPRIG instance with a bounty of
-          <Price :amount="params.downstakes[params.root_height-1]" />.
+          <Price :amount="params.downstakes[params.rootHeight-1]" />.
         <!-- </span><span v-else-if="action.type === Action.PARENT_CHALLENGED">
           <User :name="action.author" /> challenged the parent claim
           <UidTag :object="parentChallenge" />
@@ -170,7 +170,7 @@ function toggle() {
               <Price :amount="params.costToChallenge(attempt)" />
             </li>
             <li>For
-              <Duration :duration="params.time_for_questions" />, proof attempts can be submitted for
+              <Duration :duration="params.timeForQuestions" />, proof attempts can be submitted for
               <price :amount="params.upstakes[attempt.height - 1] + params.downstakes[attempt.height - 1]" />
             </li>
             <li>The first accepted proof attempt is rewarded with your bounty of
@@ -187,7 +187,7 @@ function toggle() {
               <Price :amount="challenge.costAddAttempt(params)" />.
             </li>
             <li>For
-              <Duration :duration="params.time_for_questions" /> challenges can be submitted.
+              <Duration :duration="params.timeForQuestions" /> challenges can be submitted.
             </li>
             <li>If the proof passes all challenges, you get your
               <Price :amount="challenge.costAddAttempt(params)" /> back, and also

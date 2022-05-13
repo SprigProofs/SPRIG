@@ -24,7 +24,7 @@ const REWARD = "Reward";
 const OPEN_UNTIL = "Open until";
 const RELEVANCE = "Relevance";
 const NEW = "New";
-const sort_methods = reactive([NEW, REWARD, OPEN_UNTIL]);
+const sortMethods = reactive([NEW, REWARD, OPEN_UNTIL]);
 enum Types {
   CHALLENGE = "Challenges",
   ATTEMPT = "Proof Attempts",
@@ -59,7 +59,7 @@ function endDrag(event, method) {
 function dragEnter(event, method) {
   const dragged = event.dataTransfer.getData("method");
   if (method !== dragged) {
-    if (sort_methods.indexOf(dragged) > sort_methods.indexOf(method)) {
+    if (sortMethods.indexOf(dragged) > sortMethods.indexOf(method)) {
       event.target.classList.add("border-t-4", "border-t-gray-600");
     } else {
       event.target.classList.add("border-b-4", "border-b-gray-600");
@@ -74,12 +74,12 @@ function drop(event, droppedMethod) {
   event.target.classList.remove("border-t-4", "border-b-4");
 
   const draggedMethod = event.dataTransfer.getData("method");
-  const idxDropped = sort_methods.indexOf(draggedMethod);
-  const idxCurrent = sort_methods.indexOf(droppedMethod);
+  const idxDropped = sortMethods.indexOf(draggedMethod);
+  const idxCurrent = sortMethods.indexOf(droppedMethod);
 
   // Remove the moved method
-  sort_methods.splice(idxDropped, 1);
-  sort_methods.splice(idxCurrent, 0, draggedMethod);
+  sortMethods.splice(idxDropped, 1);
+  sortMethods.splice(idxCurrent, 0, draggedMethod);
 }
 
 function getWeights(o, type: Types) {
@@ -124,8 +124,8 @@ function getWeights(o, type: Types) {
 
 function combineWeights(weights): number {
   var weight = 0;
-  for (let i = 0; i < sort_methods.length; i++) {
-    const method = sort_methods[i];
+  for (let i = 0; i < sortMethods.length; i++) {
+    const method = sortMethods[i];
     weight += weights[method] * 0.3 ** i;
   }
   return weight;
@@ -215,7 +215,7 @@ const results = computed<{ key: string, challenge?: Challenge, instance?: Sprig,
         <TransitionGroup tag="ol" class="flex flex-col items-start
                     list-inside list-decimal
                     ">
-          <li v-for="method in sort_methods" :key="method" :draggable="true" @dragstart="startDrag($event, method)"
+          <li v-for="method in sortMethods" :key="method" :draggable="true" @dragstart="startDrag($event, method)"
             @drop="drop($event, method)" @dragend="endDrag($event, method)" @dragenter="dragEnter($event, method)"
             @dragexit="dragExit($event, method)" @dragover.prevent @dragenter.prevent class="cursor-move select-none
                         hover:bg-gray-200 border-l-2 hover:border-l-gray-600 border-l-transparent border-y-gray-600

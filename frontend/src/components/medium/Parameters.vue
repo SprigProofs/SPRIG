@@ -14,17 +14,17 @@ const props = defineProps({
 })
 
 const costsData = [];
-for (let h = props.params.root_height - 1; h >= 0; h--) {
+for (let h = props.params.rootHeight - 1; h >= 0; h--) {
     costsData.push({
         height: h === props.highlight ? h + " - current" : h,
         upstake: props.params.upstakes[h],
         downstake: props.params.downstakes[h],
-        bounty: props.params.question_bounties[h],
+        bounty: props.params.questionBounties[h],
     });
 }
 
 function rowHighlight(data) {
-    if (props.highlight === props.params.root_height - data.rowIndex - 1) {
+    if (props.highlight === props.params.rootHeight - data.rowIndex - 1) {
         return "highlighted-row";
     }
     return "";
@@ -36,10 +36,10 @@ function rowHighlight(data) {
 
     <div>
     <div class="flex space-x-12 pb-4">
-        <LabeledData label="Max depth">{{ params.root_height }}</LabeledData>
-        <LabeledData label="Time for questions">{{ params.time_for_questions.humanize() }}</LabeledData>
-        <LabeledData label="Time for answers">{{ params.time_for_answers.humanize() }}</LabeledData>
-        <LabeledData label="Machine verification"><Price :amount="params.verification_cost" /> </LabeledData>
+        <LabeledData label="Max depth">{{ params.rootHeight }}</LabeledData>
+        <LabeledData label="Time for questions">{{ params.timeForQuestions.humanize() }}</LabeledData>
+        <LabeledData label="Time for answers">{{ params.timeForAnswers.humanize() }}</LabeledData>
+        <LabeledData label="Machine verification"><Price :amount="params.verificationCost" /> </LabeledData>
     </div>
 
     <div class="max-w-lg">
@@ -48,16 +48,16 @@ function rowHighlight(data) {
                 <template #header>
                     Height <Hint>
                         The height of a proof attempt represents the <b>distance to the machine level proof</b>.
-                        A formal proof always has a height of 0, whereas the root has (here) a height of {{ params.root_height }}.
+                        A formal proof always has a height of 0, whereas the root has (here) a height of {{ params.rootHeight }}.
                     </Hint>
                 </template>
             </el-table-column>
-            
+
             <el-table-column>
                 <template #header>
                     Upstake <Hint>
                         The 'upstake' is locked by the claimer when submitting a proof attempt.
-                        If the proof attempt is rejected, it is used to <b>reward the question 
+                        If the proof attempt is rejected, it is used to <b>reward the question
                         that the proof attempt was trying to solve</b>. Otherwise, it is refunded.
                     </Hint>
                 </template>
@@ -99,6 +99,6 @@ function rowHighlight(data) {
 
 <style>
 .highlighted-row {
-    --el-table-tr-bg-color: var(--el-color-warning-light-9);  
+    --el-table-tr-bg-color: var(--el-color-warning-light-9);
 }
 </style>

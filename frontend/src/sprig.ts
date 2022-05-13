@@ -38,30 +38,30 @@ function decided(status: Status) {
 
 
 class Parameters {
-    readonly root_height: number;
-    readonly max_length: number;
-    readonly time_for_questions: duration.Duration;
-    readonly time_for_answers: duration.Duration;
+    readonly rootHeight: number;
+    readonly maxLength: number;
+    readonly timeForQuestions: duration.Duration;
+    readonly timeForAnswers: duration.Duration;
     readonly upstakes: number[];
     readonly downstakes: number[];
-    readonly question_bounties: number[];
-    readonly verification_cost: number;
+    readonly questionBounties: number[];
+    readonly verificationCost: number;
 
     constructor(params: Record<string, any>) {
-        this.root_height = params.root_height;
-        this.max_length = params.max_length;
-        this.time_for_questions = dayjs.duration(params.time_for_questions);
-        this.time_for_answers = dayjs.duration(params.time_for_answers);
+        this.rootHeight = params.rootHeight || params.root_height;
+        this.maxLength = params.maxLength || params.max_length;
+        this.timeForQuestions = dayjs.duration(params.timeForQuestions || params.time_for_questions);
+        this.timeForAnswers = dayjs.duration(params.timeForAnswers || params.time_for_answers);
         this.upstakes = params.upstakes;
         this.downstakes = params.downstakes;
-        this.question_bounties = params.question_bounties;
-        this.verification_cost = params.verification_cost;
+        this.questionBounties = params.questionBounties || params.question_bounties;
+        this.verificationCost = params.verificationCost || params.verification_cost;
     }
     costToChallenge(attempt: ProofAttempt): number {
         if (attempt.height === 0) {
             return undefined;
         } else {
-            return this.question_bounties[attempt.height];
+            return this.questionBounties[attempt.height];
         }
     }
 }
@@ -110,7 +110,7 @@ class ProofAttempt {
      */
     possibleReward(params: Parameters): number {
         if (this.status === Status.CHALLENGED) {
-            return params.question_bounties[this.height];
+            return params.questionBounties[this.height];
         } else if (this.status === Status.UNCHALLENGED) {
             return params.downstakes[this.height];
         } else {
@@ -153,14 +153,14 @@ class Challenge {
     decided(): boolean { return decided(this.status); }
     possibleReward(params: Parameters): number {
         return this.status === Status.CHALLENGED
-            ? params.question_bounties[this.height]
+            ? params.questionBounties[this.height]
             : 0;
     }
     costAddAttempt(params: Parameters): number | null {
         const attemptHeight = this.height - 1;
         if (attemptHeight == 0) {
-            return params.verification_cost + params.upstakes[attemptHeight];
-        } else if (this.height >= params.root_height || this.height <= 0) {
+            return params.verificationCost + params.upstakes[attemptHeight];
+        } else if (this.height >= params.rootHeight || this.height <= 0) {
             return null;
         } else {
             return params.upstakes[attemptHeight] + params.downstakes[attemptHeight];
@@ -200,7 +200,7 @@ class Sprig {
     params: Parameters;
     proofs: Record<string, ProofAttempt>;
     challenges: Record<string, Challenge>;
-    root_question: string;
+    rootQuestion: string;
 
     constructor(sprig: Record<string, any>) {
         this.hash = sprig.hash;
@@ -214,7 +214,7 @@ class Sprig {
             challenge.instanceHash = sprig.hash;
             return new Challenge(challenge);
         });
-        this.root_question = sprig.root_question;
+        this.rootQuestion = sprig.rootQuestion || sprig.root_question;
     }
 
     uid(): string { return '#' + this.hash; }
@@ -267,7 +267,7 @@ class Sprig {
                 time: challenge.createdAt,
                 type: Action.PARENT_CHALLENGED,
                 author: challenge.author,
-                cost: this.params.question_bounties[challenge.height],
+                cost: this.params.questionBounties[challenge.height],
             });
 
             // The second action is the creation of the attempt
@@ -305,7 +305,7 @@ class Sprig {
             time: challenge.challengedAt,
             type: Action.CHALLENGE_ACTIVATED,
             author: challenge.author,
-            cost: this.params.question_bounties[challenge.height],
+            cost: this.params.questionBounties[challenge.height],
             challenge,
         })));
 
@@ -339,7 +339,7 @@ class Sprig {
             time: dayjs(),  // TODO: find a way to get the time of the validation
             type: Action.CHALLENGE_VALIDATED,
             author: challenge.author,
-            cost: this.params.question_bounties[challenge.height],
+            cost: this.params.questionBounties[challenge.height],
             challenge,
         })));
 
@@ -349,7 +349,7 @@ class Sprig {
             time: challenge.openUntil,
             type: Action.CHALLENGE_REJECTED,
             author: null,
-            cost: this.params.question_bounties[challenge.height],
+            cost: this.params.questionBounties[challenge.height],
             challenge,
         })));
 
@@ -522,7 +522,7 @@ const TicTacToe = {
     },
     getState(challengeHash: string | null, instance: Sprig) {
         if (challengeHash === null) {
-            const m = instance.root_question.match(/([XO.]{3})\|([XO.]{3})\|([XO.]{3}) ([XO]) plays ([XO.]) wins/);
+            const m = instance.rootQuestion.match(/([XO.]{3})\|([XO.]{3})\|([XO.]{3}) ([XO]) plays ([XO.]) wins/);
             return {
                 plays: m[4],
                 wins: m[5],

@@ -29,7 +29,7 @@
                     </div>
                     <div>
                         <v-icon name="fa-mountain" class="mr-1" />
-                        <span>{{ attempt.height }} / {{ params.root_height }}</span>
+                        <span>{{ attempt.height }} / {{ params.rootHeight }}</span>
                     </div>
                 </div>
 
