@@ -802,10 +802,13 @@ def play_lean(params: Parameters) -> Sprig:
             sorry
         end
 
+        <!- Claim ->
+
         lemma add_succ (a b : nat) : a + nat.succ(b) = nat.succ(a + b) :=
         begin
             sorry
         end
+        <!- end of claim ->
 
         lemma add_comm (a b : nat) : a + b = b + a :=
         begin
@@ -868,8 +871,8 @@ def main() -> None:
     params = Parameters(
         root_height=level,
         max_length=1000,
-        time_for_questions=3,
-        time_for_answers=4,
+        time_for_questions=3 * 1000 * 3600 * 24,
+        time_for_answers=4 * 1000 * 3600 * 24,
         upstakes=[5, 4, 3, 2, 1],
         downstakes=[0, 1, 2, 3, 4],
         question_bounties=[0, 1, 2, 3, 4],
@@ -881,7 +884,7 @@ def main() -> None:
     else:
         s = play_lean(params)
 
-    # print(s.dumps())
+    print(s.dumps())
 
 
 if __name__ == "__main__":
