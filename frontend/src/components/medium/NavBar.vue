@@ -4,7 +4,12 @@
             <ul class="flex space-x-6 py-3 px-12 max-w-3xl mx-auto">
                 <li><router-link to="/">Home</router-link></li>
                 <li><router-link to="/search">Explore</router-link></li>
-                <li class="flex-grow text-right">Login</li>
+                <li class="flex-grow text-right">
+                    <input class="text-right mr-4"
+                        type="text"
+                        v-model="store.user">
+                    <Price :amount="store.bank[store.user]" />
+                </li>
             </ul>
         </header>
         <div class="h-12">
@@ -12,3 +17,9 @@
         </div>
     </div>
 </template>
+
+<script setup lang="ts">
+import { store } from '../../store';
+
+
+</script>
