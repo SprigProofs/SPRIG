@@ -12,8 +12,8 @@ import * as calendar from 'dayjs/plugin/calendar';  // for .calendar()
 import * as advancedFormat from 'dayjs/plugin/advancedFormat';
 dayjs.extend(duration);
 dayjs.extend(relativeTime);
-dayjs.extend(calendar)
-dayjs.extend(advancedFormat)
+dayjs.extend(calendar);
+dayjs.extend(advancedFormat);
 
 import { ElNotification } from "element-plus";
 
@@ -171,21 +171,6 @@ class Challenge {
             return params.upstakes[attemptHeight] + params.downstakes[attemptHeight];
         }
     }
-    /**
-     * Return all data about whether and how the challenge can be
-     * activated. The return value is an object with the following properties:
-     * - canBeActivated: true if the challenge can be activated
-     * - cost: the cost of activating the challenge
-     * - deadline: the date until that challenge can be activated
-     */
-    activateData(): { canBeActivated: boolean, deadline: dayjs, cost: number } {
-        return {
-            canBeActivated: this.status === Status.UNCHALLENGED,
-            deadline: this.openUntil,
-            cost: this.costAddAttempt(this.instance.params),
-        }
-    }
-
 }
 
 enum Action {
@@ -278,120 +263,6 @@ class Sprig {
             }
 
         });
-
-        if (attempt.parent) {
-            // The first action is the creation of the parent challenge, if any
-            const challenge = this.challenges[attempt.parent];
-            actions.push({
-                time: challenge.createdAt,
-                type: Action.PARENT_CHALLENGED,
-                author: challenge.author,
-                cost: this.params.questionBounties[challenge.height],
-            });
-
-            // The second action is the creation of the attempt
-            actions.push({
-                time: attempt.createdAt,
-                type: Action.ATTEMPT_CREATED,
-                author: attempt.author,
-                cost: this.params.upstakes[attempt.height] + this.params.downstakes[attempt.height],
-            });
-        } else {
-            // This attempt is the root, so the first action is just the creation of the attempt
-            actions.push({
-                time: attempt.createdAt,
-                type: Action.ROOT_CREATED,
-                author: attempt.author,
-                cost: this.params.downstakes[attempt.height],
-            });
-        }
-
-        // If it is machine attempt, it is then validated or rejected immediately
-        if (attempt.challenges.length === 0) {
-            actions.push({
-                time: attempt.createdAt,
-                type: attempt.status === Status.VALIDATED
-                    ? Action.MACHINE_VALIDATED
-                    : Action.MACHINE_REJECTED,
-            });
-            return actions;
-        }
-
-        // Then there are all the activated challenges
-        const challenges = attempt.challenges.map((challenge) => this.challenges[challenge]);
-        const activatedChallenges = challenges.filter((challenge) => challenge.author !== null);
-        actions.push(...activatedChallenges.map((challenge) => ({
-            time: challenge.challengedAt,
-            type: Action.CHALLENGE_ACTIVATED,
-            author: challenge.author,
-            cost: this.params.questionBounties[challenge.height],
-            challenge,
-        })));
-
-        // Then some challenges have been answered
-        activatedChallenges.forEach((challenge) => {
-            challenge.attempts.forEach((attempt) => {
-                actions.push({
-                    time: this.proofs[attempt].createdAt,
-                    type: Action.CHALLENGE_ANSWERED,
-                    author: this.proofs[attempt].author,
-                    cost: this.params.downstakes[this.proofs[attempt].height] + this.params.upstakes[this.proofs[attempt].height],
-                    challenge,
-                    attempt: this.proofs[attempt],
-                });
-            });
-        });
-
-        // Then some challenges have been validated without being activated
-        const autoValidated = challenges.filter((challenge) => challenge.status === Status.VALIDATED && challenge.author === null);
-        if (autoValidated.length > 0) {
-            actions.push({
-                time: autoValidated[0].openUntil,
-                type: Action.AUTO_VALIDATION,
-                challenges: autoValidated,
-            });
-        }
-
-        // Some challenges might have been validated
-        const validated = challenges.filter((challenge) => challenge.status === Status.VALIDATED && challenge.author !== null);
-        actions.push(...validated.map((challenge) => ({
-            time: dayjs(),  // TODO: find a way to get the time of the validation
-            type: Action.CHALLENGE_VALIDATED,
-            author: challenge.author,
-            cost: this.params.questionBounties[challenge.height],
-            challenge,
-        })));
-
-        // Some challenges have been rejected
-        const rejected = challenges.filter((challenge) => challenge.status === Status.REJECTED);
-        actions.push(...rejected.map((challenge) => ({
-            time: challenge.openUntil,
-            type: Action.CHALLENGE_REJECTED,
-            author: null,
-            cost: this.params.questionBounties[challenge.height],
-            challenge,
-        })));
-
-        // Finally the attempt can be validated or rejected
-        if (attempt.status === Status.VALIDATED) {
-            actions.push({
-                time: dayjs(),  // TODO: find a way to get the time of the validation
-                type: Action.ATTEMPT_VALIDATED,
-                author: attempt.author,
-                cost: 0,  // TODO: handle the non-root case
-            });
-        } else if (attempt.status === Status.REJECTED) {
-            const rejecting = _.minBy(rejected, (challenge) => challenge.openUntil);
-            actions.push({
-                time: rejecting.openUntil,
-                type: Action.ATTEMPT_REJECTED,
-                author: rejecting.author,
-                cost: 0,  // TODO: handle the non-root casAe
-                challenge: rejecting,
-            });
-        }
-
-        return _.sortBy(actions, (action) => action.time);
     }
     /**
      * Return a list of all the actions that happened in the sprig instance.
@@ -625,32 +496,41 @@ const api = {
     },
     async fetchBank(): Promise<Record<string, number>> {
         return await this.get(["users"]);
-    }
+    },
 
     // async fetchInstance(hash: string): Promise<Sprig> {
     //     return await this.get([hash])
     //         .then(data => new Sprig(data));
     // },
-    // post(path: string[], query: Record<string, string>, body: any, callback: FetchCallback<any>) {
-    //     const url = new URL(API_BASE + path.join("/"))
-    //     for (const key of Object.keys(query)) {
-    //         url.searchParams.append(key, query[key])
-    //     }
-    //     console.log("post url", url, "body", body)
-    //     fetch(url.toString(), {
-    //         method: "POST",
-    //         body: body ? JSON.stringify(body) : "",
-    //     }).then(resp => {
-    //         if (resp.ok) {
-    //             resp.json().then(data => {
-    //                 callback(data)
-    //             })
-    //         }
-    //     })
-    // },
-    // challenge(instance: string, claim: string, skeptic: string, callback: FetchCallback<ChallengeRecord>) {
-    //     this.post([instance, claim, "challenge"], {skeptic: skeptic}, null, callback)
-    // },
+    async post(path: string[], query: Record<string, string>, body: any) {
+        const url = new URL(API_BASE + path.join("/"));
+        for (const key of Object.keys(query)) {
+            url.searchParams.append(key, query[key]);
+        }
+        console.log("post url", url, "body", body);
+        const resp = await fetch(url.toString(), {
+            method: "POST",
+            body: body ? JSON.stringify(body) : "",
+        }).catch(err => {
+            logFail("Error posting data", { url, err, body });
+            return Promise.reject(err);
+        });
+
+        if (resp.ok) {
+            return await resp.json()
+                .catch(err => {
+                    logFail("Failed to parse JSON", { url, err, body, resp });
+                    return Promise.reject(err);
+                });
+        } else {
+            logFail("Server returned error", { url, resp, body });
+            throw new Error(`Server returned error ${resp.status}`);
+        }
+    },
+
+    async challenge(instanceHash: string, challengeHash: string, skeptic: string) {
+        return await this.post(['challenge', instanceHash, challengeHash], {}, { skeptic });
+    },
     // answer(instance: string, claim: string, claimer: string, claims: string[], lowLevel: boolean, callback: FetchCallback<AnswerRecord>) {
     //     this.post([instance, claim, "proof_attempts"], {}, {
     //         claimer, claims, machine_level: lowLevel
@@ -672,7 +552,7 @@ function linkTo(obj: ProofAttempt | Challenge | Sprig | string) {
     } else if (obj instanceof Challenge) {
         return { name: "proofAttempt", params: { instanceHash: obj.instanceHash, hash: obj.parent } };
     } else {
-        return { name: "user", params: { user: obj }}
+        return { name: "user", params: { user: obj } };
     }
 }
 

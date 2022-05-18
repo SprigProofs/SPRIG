@@ -6,12 +6,15 @@ export const store = reactive<{
     bank: Record<string, number>,
     loaded: boolean,
     fail: boolean,
+    user: string
     reload: () => void,
+    challenge: (instance: string, challenge: string, skeptic: string) => void,
 }>({
     instances: {},
     bank: {},
     loaded: false,
     fail: false,
+    user: 'Diego',
     reload() {
         store.fail = false;
         Promise.all(
@@ -30,6 +33,11 @@ export const store = reactive<{
         }, () => {
             store.fail = true;
             store.loaded = false;
+        })
+    },
+    challenge(instance: string, challenge: string, skeptic: string) {
+        api.challenge(instance, challenge, skeptic).then(() => {
+            store.reload();
         })
     }
 });

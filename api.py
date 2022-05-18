@@ -141,6 +141,23 @@ def get_users() -> dict[sprig.Address, int]:
 class ChallengeCreatedData(BaseModel):
     balance: int
     challenge: sprig.Challenge
+    parent: sprig.ProofAttempt
+
+@api.post("/challenge/{instance_hash}/{claim_hash}")
+def new_challenge(skeptic: sprig.Address, claim_hash: sprig.Hash, instance_hash: sprig.Hash) -> ChallengeCreatedData:
+    """Challenge a claim that isn't yet challenged and still active."""
+
+    instance = load(instance_hash)
+
+    instance.challenge(skeptic, claim_hash)
+
+    save(instance, instance_hash)
+
+    return ChallengeCreatedData(
+        balance=sprig.BANK[skeptic],
+        claim=instance.challenges[claim_hash],
+        parent=instance.proofs[claim_hash].parent,
+    )
 
 
 if False:
