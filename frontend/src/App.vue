@@ -12,7 +12,6 @@ watch(store, () => nextTick( () => {
 </script>
 
 <template>
-
   <div v-if="store.loaded">
     <NavBar />
     <!-- The key makes that the view re-renders every time the route changes.

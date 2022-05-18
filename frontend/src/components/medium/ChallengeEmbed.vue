@@ -13,8 +13,8 @@
         </div>
       </div>
       <h3 class="text-lg pt-2  ">
-        <span class="small-title break-all">{{ language.describe(challenge, instance, Descr.TITLE) }}</span>
-        <span class="text-sm text-gray-700"> by TODO </span>
+        <span class="small-title break-all">{{ language.describe(challenge, instance) }}</span>
+        <span v-if="challenge.author" class="text-sm text-gray-700"> challenged by <User :name="challenge.author"/></span>
       </h3>
       <Language.TicTacToe.StatementDisplay :instance="instance" :challenge-hash="challengeHash" />
     </div>
@@ -47,13 +47,14 @@
 </template>
 
 <script setup lang="ts">
-import { decided, Status, Parameters, LANGUAGES, Descr } from '../../sprig';
-import { Price, StatusTag } from '../small';
+import { decided, Status, Parameters, LANGUAGES } from '../../sprig';
+import { Price, StatusTag, UidTag } from '../small';
 import { store } from '../../store';
 import LanguageTag from '../small/LanguageTag.vue';
 import Time from '../small/Time.vue';
 import LabeledData from '../small/LabeledData.vue';
 import * as Language from '../languages';
+import User from './User.vue';
 
 const props = defineProps({
   instanceHash: {

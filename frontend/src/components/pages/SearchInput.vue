@@ -7,7 +7,6 @@ import dayjs from 'dayjs';
 import { Status, decided, Sprig, ProofAttempt, Parameters, Challenge, linkTo } from '../../sprig';
 import { store } from '../../store';
 import InstanceEmbed from '../medium/InstanceEmbed.vue';
-import ClaimEmbed from '../medium/ClaimEmbed.vue';
 import AttemptEmbed from '../medium/AttemptEmbed.vue';
 import { StatusTag } from '../small';
 import LanguageTag from '../small/LanguageTag.vue';
@@ -136,7 +135,7 @@ function weightDebug(o, type: Types) {
   return weights;
 }
 
-const results = computed<{ key: string, challenge?: Challenge, instance?: Sprig, attempt?: ProofAttempt; }[]>(() => {
+const results = computed<{ key: string, challenge?: Challenge, instance?: Sprig, attempt?: ProofAttempt; user: number }[]>(() => {
   const sortKey = (type) => (a, b) => combineWeights(getWeights(a, type))
     - combineWeights(getWeights(b, type));
 
@@ -175,8 +174,20 @@ const results = computed<{ key: string, challenge?: Challenge, instance?: Sprig,
       })));
   }
 
-  const getType = o => o.attempt ? Types.ATTEMPT : o.instance ? Types.INSTANCE : Types.CHALLENGE;
-  const getItem = o => o.attempt || o.instance || o.challenge;
+  if (selectedTypes[Types.USER]) {
+    all = all.concat(_.values(store.instances)
+      .flatMap(instance => _.values(instance.proofs)
+        .map(p => p.author)
+        .concat(_.values(instance.challenges)
+          .map(c => c.author)))
+      .filter(user => user !== null && user.toLowerCase().includes(search.value.toLocaleLowerCase()))
+      .map(user => ({ key: user, user }))
+
+    )
+  }
+
+  const getType = o => o.attempt ? Types.ATTEMPT : o.instance ? Types.INSTANCE : o.challenge ? Types.CHALLENGE : Types.USER;
+  const getItem = o => o.attempt || o.instance || o.challenge || o.user;
 
   all.sort((a, b) => (
     combineWeights(getWeights(getItem(a), getType(a)))
@@ -240,7 +251,7 @@ const results = computed<{ key: string, challenge?: Challenge, instance?: Sprig,
 
     <TransitionGroup tag="ol" class="space-y-6">
       <li v-for="result in results" :key="result.key" class="transition">
-        <router-link :to="linkTo(result.attempt || result.challenge || result.instance)"
+        <router-link :to="linkTo(result.attempt || result.challenge || result.instance || result.user)"
           class="p-4 block bg-white rounded-sm shadow-sm hover:shadow-md w-full border">
           <AttemptEmbed v-if="result.attempt" :instance-hash="result.attempt.instanceHash" :hash="result.attempt.hash" />
           <InstanceEmbed v-else-if="result.instance" :hash="result.instance.hash"></InstanceEmbed>

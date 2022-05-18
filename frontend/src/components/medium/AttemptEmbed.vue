@@ -12,7 +12,7 @@
         </div>
       </div>
       <h3 class="text-lg pt-2  ">
-        <span class="small-title break-all">{{ language.describe(attempt, instance, Descr.TITLE) }}</span>
+        <span class="small-title break-all">{{ language.describe(attempt, instance) }}</span>
         <span class="text-sm text-gray-700">
           by
           <User :name="attempt.author" />
@@ -35,7 +35,7 @@
 <script setup lang="ts">
 import _ from 'lodash';
 import dayjs from 'dayjs';
-import { Status, Descr, Sprig, Challenge, LANGUAGES, ProofAttempt, Parameters } from '../../sprig';
+import { Status, Sprig, Challenge, LANGUAGES, ProofAttempt, Parameters } from '../../sprig';
 import { store } from '../../store';
 import { LabeledData, StatusTag, Price, LanguageTag, Time, UidTag } from "../small";
 import User from './User.vue';

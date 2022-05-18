@@ -1,3 +1,4 @@
+import { dayjs } from 'dayjs';
 /*
 This contains all the logic of sprig, from the communication with the server
 to the processing of the data.
@@ -7,8 +8,12 @@ import _, { at } from "lodash";
 import dayjs, { Dayjs } from 'dayjs';
 import * as duration from 'dayjs/plugin/duration';
 import * as relativeTime from 'dayjs/plugin/relativeTime';  // for .humanize(  / fromNow()
+import * as calendar from 'dayjs/plugin/calendar';  // for .calendar()
+import * as advancedFormat from 'dayjs/plugin/advancedFormat';
 dayjs.extend(duration);
 dayjs.extend(relativeTime);
+dayjs.extend(calendar)
+dayjs.extend(advancedFormat)
 
 import { ElNotification } from "element-plus";
 
@@ -164,6 +169,20 @@ class Challenge {
             return null;
         } else {
             return params.upstakes[attemptHeight] + params.downstakes[attemptHeight];
+        }
+    }
+    /**
+     * Return all data about whether and how the challenge can be
+     * activated. The return value is an object with the following properties:
+     * - canBeActivated: true if the challenge can be activated
+     * - cost: the cost of activating the challenge
+     * - deadline: the date until that challenge can be activated
+     */
+    activateData(): { canBeActivated: boolean, deadline: dayjs, cost: number } {
+        return {
+            canBeActivated: this.status === Status.UNCHALLENGED,
+            deadline: this.openUntil,
+            cost: this.costAddAttempt(this.instance.params),
         }
     }
 
@@ -490,35 +509,22 @@ interface ActionData {
 }
 
 
-enum Descr {
-    TITLE = -1,
-    SHORT = 0,
-    LONG = 1
-}
-
 interface Language {
     name: string;
-    describe: (object: ProofAttempt | Challenge, instance: Sprig, details: Descr) => string;
+    describe: (object: ProofAttempt | Challenge, instance: Sprig) => string;
 }
 
 
 const TicTacToe = {
     name: 'TicTacToe',
-    describe(object: ProofAttempt | Challenge, instance: Sprig, details: Descr) {
+    describe(object: ProofAttempt | Challenge, instance: Sprig) {
         const state =
             object instanceof ProofAttempt
                 ? TicTacToe.getState(object.parent, instance)
                 : TicTacToe.getState(object.hash, instance);
 
-        switch (details) {
-            case Descr.TITLE:
-                const board = state.board[0] + state.board[1] + state.board[2] + "|" + state.board[3] + state.board[4] + state.board[5] + "|" + state.board[6] + state.board[7] + state.board[8];
-                return `${board} ${state.plays} plays ${state.wins} wins`;
-            case Descr.SHORT:
-                return state;
-            case Descr.LONG:
-                return state;
-        }
+        const board = state.board[0] + state.board[1] + state.board[2] + "|" + state.board[3] + state.board[4] + state.board[5] + "|" + state.board[6] + state.board[7] + state.board[8];
+        return `${board} ${state.plays} plays ${state.wins} wins`;
     },
     getState(challengeHash: string | null, instance: Sprig) {
         if (challengeHash === null) {
@@ -617,6 +623,9 @@ const api = {
         return await this.get(["everything"])
             .then(data => _.mapValues(data, s => new Sprig(s)));
     },
+    async fetchBank(): Promise<Record<string, number>> {
+        return await this.get(["users"]);
+    }
 
     // async fetchInstance(hash: string): Promise<Sprig> {
     //     return await this.get([hash])
@@ -651,18 +660,24 @@ const api = {
 
 };
 
-function linkTo(obj: ProofAttempt | Challenge | Sprig) {
+/**
+ * Link object to pass to router-link corresponding to an object.
+ * If obj is a string, it corresponds to a username.
+ */
+function linkTo(obj: ProofAttempt | Challenge | Sprig | string) {
     if (obj instanceof Sprig) {
         return { name: "instance", params: { instanceHash: obj.hash } };
     } else if (obj instanceof ProofAttempt) {
         return { name: "proofAttempt", params: { instanceHash: obj.instanceHash, hash: obj.hash } };
-    } else {
+    } else if (obj instanceof Challenge) {
         return { name: "proofAttempt", params: { instanceHash: obj.instanceHash, hash: obj.parent } };
+    } else {
+        return { name: "user", params: { user: obj }}
     }
 }
 
 export {
     api, STATUSES, STATUS_DISPLAY_NAME, LANGUAGES, Language,
-    decided, Challenge, Sprig, Status, Descr,
+    decided, Challenge, Sprig, Status,
     ProofAttempt, Parameters, Action, ActionData, linkTo,
 };

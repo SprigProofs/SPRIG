@@ -12,7 +12,7 @@
         </div>
       </div>
       <h3 class="text-lg pt-2  ">
-        <span class="small-title break-all">{{ language.describe(rootAttempt, instance, Descr.TITLE) }}</span>
+        <span class="small-title break-all">{{ language.describe(rootAttempt, instance) }}</span>
         <span class="text-sm text-gray-700">
           by
           <User :name="instance.author()" />
@@ -56,7 +56,7 @@
 </template>
 
 <script setup lang="ts">
-import { Descr, Status, Sprig, LANGUAGES, ProofAttempt } from '../../sprig';
+import { Status, Sprig, LANGUAGES, ProofAttempt } from '../../sprig';
 import { store } from '../../store';
 import { Price, StatusIcon, StatusTag, Time, LanguageTag } from '../small';
 import User from '../medium/User.vue';

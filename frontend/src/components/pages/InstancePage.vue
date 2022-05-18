@@ -5,14 +5,14 @@
 
                 <div class="flex">
                     <StatusTag :status="attempt.status" />
-                    <LanguageTag :lang="instance.language" />
+                    <LanguageTag :lang="instance.language" class="ml-2" />
                     <div class="ml-4 font-bold rounded-md">
                         Bounty
                         <Price :amount="attempt.possibleReward(params)" />
                     </div>
                 </div>
                 <h1 class="text-3xl font-bold font-title py-2">
-                    {{ language.describe(attempt, instance, Descr.TITLE) }}
+                    {{ language.describe(attempt, instance) }}
                 </h1>
                 <div class="flex space-x-4 text-gray-800">
                     <div>
@@ -107,7 +107,7 @@
 <script setup lang="ts">
 
 import { reactive, ref, watch } from 'vue';
-import { LANGUAGES, Descr } from '../../sprig';
+import { LANGUAGES } from '../../sprig';
 import { store } from '../../store';
 import { Price, StatusTag, Time } from "../small";
 import User from '../medium/User.vue';

@@ -1,4 +1,4 @@
-import { ProofAttempt, Challenge, Sprig, Descr } from "../../../sprig";
+import { ProofAttempt, Challenge, Sprig } from "../../../sprig";
 
 interface State {
     plays: string;
