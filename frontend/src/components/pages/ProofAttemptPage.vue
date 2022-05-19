@@ -229,32 +229,25 @@ const props = defineProps({
   },
 });
 
-const instance = reactive(store.instances[props.instanceHash]);
-const language = reactive(LANGUAGES[instance?.language]);
-const attempt = reactive(instance?.proofs[props.hash]);
-// const claim = instance.claims[props.hash];
-const params = reactive(instance?.params);
-const stakeHeld = attempt?.stakeHeld(params);
-const downBounty = attempt?.possibleReward(params);
-const nbClaims = attempt?.challenges.length;
-const costToChallenge = params?.costToChallenge(attempt);
+const instance = computed(() => store.instances[props.instanceHash]);
+const attempt = computed(() => instance.value?.proofs[props.hash]);
+const language = computed(() => LANGUAGES[instance.value?.language]);
+const params = computed(() => instance.value?.params);
+const stakeHeld = computed(() => attempt.value?.stakeHeld(params.value));
+const downBounty = computed(() => attempt.value?.possibleReward(params.value));
+const nbClaims = computed(() => attempt.value?.challenges.length);
+const costToChallenge = computed(() => params.value?.costToChallenge(attempt.value));
+
 
 const showPreviousDefinitions = ref(false);
 
-const actions = computed(() => instance?.actions(attempt).map(action => {
+const actions = computed(() => instance.value?.actions(attempt.value).map(action => {
   return {
     open: true,
     ...action,
   };
 }));
 
-
-const route = useRoute();
-const router = useRouter();
-watch(
-  () => route.params,
-  () => { }
-);
 </script>
 
 <style>

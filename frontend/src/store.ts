@@ -16,6 +16,7 @@ export const store = reactive<{
     fail: false,
     user: 'Diego',
     reload() {
+        console.log('reload');
         store.fail = false;
         Promise.all(
             [api.fetchAllInstances(), api.fetchBank()]
