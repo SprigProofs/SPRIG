@@ -53,7 +53,7 @@
                         <Parameters :params="params" :highlight="attempt.height" />
                     </section>
 
-                    <section class="flex flex-col flex-grow max-w-prose">
+                    <section class="flex flex-col flex-grow">
                         <h2 class="small-title mb-2 mt-4">Proof attempt</h2>
 
                         <!-- <button

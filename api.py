@@ -16,7 +16,6 @@ from pydantic import BaseModel
 
 os.environ["BANK_FILE"] = str((Path(__file__).parent / "data" / "api_bank").absolute())
 
-import languages.base
 import sprig
 import utils
 
@@ -143,20 +142,22 @@ class ChallengeCreatedData(BaseModel):
     challenge: sprig.Challenge
     parent: sprig.ProofAttempt
 
-@api.post("/challenge/{instance_hash}/{claim_hash}")
+@api.post("/challenge/{instance_hash}/{claim_hash}")  #, response_model=ChallengeCreatedData)  # The response_model is not working and I don't know why.
 def new_challenge(skeptic: sprig.Address, claim_hash: sprig.Hash, instance_hash: sprig.Hash) -> ChallengeCreatedData:
     """Challenge a claim that isn't yet challenged and still active."""
 
     instance = load(instance_hash)
 
-    instance.challenge(skeptic, claim_hash)
+    with sprig.time_mode('real'):
+        challenge = instance.challenge(skeptic, claim_hash)
 
     save(instance, instance_hash)
 
+    challenge = instance.challenges[claim_hash]
     return ChallengeCreatedData(
         balance=sprig.BANK[skeptic],
-        claim=instance.challenges[claim_hash],
-        parent=instance.proofs[claim_hash].parent,
+        challenge=challenge,
+        parent=instance.proofs[challenge.parent],
     )
 
 
