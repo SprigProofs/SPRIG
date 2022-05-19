@@ -3,6 +3,7 @@
 import SimpleStats from "./SimpleStats.vue";
 import Tooltip from "../small/Tooltip.vue";
 import { store } from "../../store";
+import { computed } from "@vue/reactivity";
 
 const props = defineProps({
   name: {
@@ -11,7 +12,7 @@ const props = defineProps({
   },
 });
 
-const money = store.bank[props.name];
+const money = computed(() => store.bank[props.name] || 0);
 
 </script>
 

@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { ProofAttempt, Sprig, Action, ActionData, Challenge } from '../../../sprig';
-import ActionChallengeParent from './ActionChallengeParent.vue';
-import User from '../User.vue';
-import { Time, Duration } from '../../small';
-import UidTag from '../../small/UidTag.vue';
+import { ProofAttempt, Sprig, Action, ActionData, Challenge } from '../../sprig';
+import User from './User.vue';
+import { Time, Duration } from '../small';
+import UidTag from '../small/UidTag.vue';
 import { nextTick, ref, watch } from 'vue';
-import Time1 from '../../small/Time.vue';
+import Time1 from '../small/Time.vue';
 
 
 const props = withDefaults(defineProps<{

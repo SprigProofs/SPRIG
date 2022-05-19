@@ -8,7 +8,7 @@ export const store = reactive<{
     fail: boolean,
     user: string
     reload: () => void,
-    challenge: (instance: string, challenge: string, skeptic: string) => void,
+    challenge: (instance: string, challenge: string) => void,
 }>({
     instances: {},
     bank: {},
@@ -35,8 +35,9 @@ export const store = reactive<{
             store.loaded = false;
         })
     },
-    challenge(instance: string, challenge: string, skeptic: string) {
-        api.challenge(instance, challenge, skeptic).then(() => {
+    challenge(instance: string, challenge: string) {
+        console.log("Challenge", instance, challenge, this.user);
+        api.challenge(instance, challenge, store.user).then(() => {
             store.reload();
         })
     }

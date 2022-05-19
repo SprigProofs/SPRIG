@@ -529,7 +529,7 @@ const api = {
     },
 
     async challenge(instanceHash: string, challengeHash: string, skeptic: string) {
-        return await this.post(['challenge', instanceHash, challengeHash], {}, { skeptic });
+        return await this.post(['challenge', instanceHash, challengeHash], { skeptic }, null);
     },
     // answer(instance: string, claim: string, claimer: string, claims: string[], lowLevel: boolean, callback: FetchCallback<AnswerRecord>) {
     //     this.post([instance, claim, "proof_attempts"], {}, {

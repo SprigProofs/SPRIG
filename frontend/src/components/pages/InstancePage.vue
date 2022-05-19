@@ -1,5 +1,6 @@
 <template>
-    <div>
+    <Embed404 v-if="!instance"/>
+    <div v-else>
         <div class="max-w-7xl mx-auto">
             <header class="p-8 pb-2">
 
@@ -112,10 +113,12 @@ import { store } from '../../store';
 import { Price, StatusTag, Time } from "../small";
 import User from '../medium/User.vue';
 import Parameters from '../medium/Parameters.vue';
-import Action from '../medium/Action/Action.vue';
+import Action from '../medium/Action.vue';
 import { useRoute } from 'vue-router';
 import * as Language from '../languages';
 import LanguageTag from '../small/LanguageTag.vue';
+import { computed } from '@vue/reactivity';
+import Embed404 from '../medium/Embed404.vue';
 
 const props = defineProps({
     instanceHash: {
@@ -125,14 +128,14 @@ const props = defineProps({
 });
 
 const instance = reactive(store.instances[props.instanceHash]);
-const language = reactive(LANGUAGES[instance.language]);
-const attempt = reactive(instance.rootAttempt());
+const language = reactive(LANGUAGES[instance?.language]);
+const attempt = reactive(instance?.rootAttempt());
 // const claim = instance.claims[props.hash];
-const params = reactive(instance.params);
+const params = reactive(instance?.params);
 
 const showPreviousDefinitions = ref(false);
 
-const actions = reactive(instance.allActions().map(action => {
+const actions = computed(() => instance?.allActions().map(action => {
     return {
         open: true,
         ...action,

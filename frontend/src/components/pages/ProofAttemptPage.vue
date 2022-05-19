@@ -1,5 +1,6 @@
 <template>
-  <div>
+  <Embed404 v-if="!attempt"/>
+  <div v-else>
     <div class="max-w-7xl mx-auto ">
       <header class="mx-8 mt-8">
 
@@ -211,9 +212,10 @@ import { store } from '../../store';
 import { Price, StatusTag, Time } from "../small";
 import User from '../medium/User.vue';
 import Parameters from '../medium/Parameters.vue';
-import Action from '../medium/Action/Action.vue';
-import { useRoute } from 'vue-router';
+import Action from '../medium/Action.vue';
+import { useRoute, useRouter } from 'vue-router';
 import * as Language from '../languages';
+import { computed } from '@vue/reactivity';
 
 
 const props = defineProps({
@@ -228,18 +230,18 @@ const props = defineProps({
 });
 
 const instance = reactive(store.instances[props.instanceHash]);
-const language = reactive(LANGUAGES[instance.language]);
-const attempt = reactive(instance.proofs[props.hash]);
+const language = reactive(LANGUAGES[instance?.language]);
+const attempt = reactive(instance?.proofs[props.hash]);
 // const claim = instance.claims[props.hash];
-const params = reactive(instance.params);
-const stakeHeld = attempt.stakeHeld(params);
-const downBounty = attempt.possibleReward(params);
-const nbClaims = attempt.challenges.length;
-const costToChallenge = params.costToChallenge(attempt);
+const params = reactive(instance?.params);
+const stakeHeld = attempt?.stakeHeld(params);
+const downBounty = attempt?.possibleReward(params);
+const nbClaims = attempt?.challenges.length;
+const costToChallenge = params?.costToChallenge(attempt);
 
 const showPreviousDefinitions = ref(false);
 
-const actions = reactive(instance.actions(attempt).map(action => {
+const actions = computed(() => instance?.actions(attempt).map(action => {
   return {
     open: true,
     ...action,
@@ -248,6 +250,7 @@ const actions = reactive(instance.actions(attempt).map(action => {
 
 
 const route = useRoute();
+const router = useRouter();
 watch(
   () => route.params,
   () => { }

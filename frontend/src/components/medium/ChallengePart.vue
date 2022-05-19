@@ -26,11 +26,16 @@
           <Price :amount="params.costToChallenge(attempt)" />
           before <Time :time="challenge.openUntil" not-relative />
         </p>
+        <p v-else-if="challenge.status == Status.CHALLENGED">
+          Challenged by <User :name="challenge.author" />
+          with a bounty of <Price :amount="params.costToChallenge(attempt)" />.
+        </p>
       </div>
       <Button v-if="challenge.attempts.length > 0"
         @click="isAttemptPanelOpen = true"
         >View proof attempts</Button>
-      <Button v-if="challenge.status == Status.UNCHALLENGED" color="blue" icon="md-bolt">Challenge</Button>
+      <Button v-if="challenge.status == Status.UNCHALLENGED" color="blue" icon="md-bolt"
+        @click="startChallenge()">Challenge</Button>
       <Button v-else-if="challenge.status == Status.CHALLENGED && challenge.openUntil.isAfter(dayjs())" color="yellow"
         icon="md-add-round">New proof</Button>
     </div>
@@ -47,8 +52,6 @@
       </ul>
 
     </SlideOver>
-
-    {{ $refs }}
   </div>
 </template>
 
@@ -62,6 +65,8 @@ import Button from '../small/Button.vue';
 import SlideOver from '../small/SlideOver.vue';
 import { ref } from 'vue';
 import AttemptEmbed from './AttemptEmbed.vue';
+import { store } from '../../store';
+import User from './User.vue';
 
 const isAttemptPanelOpen = ref(false);
 
@@ -90,6 +95,9 @@ const params = props.instance.params;
 const attempt = props.instance.proofs[props.challenge.parent];
 const timeForQuestions = params.timeForQuestions;
 
+function startChallenge() {
+  store.challenge(props.instance.hash, props.challenge.hash);
+}
 
 
 </script>
