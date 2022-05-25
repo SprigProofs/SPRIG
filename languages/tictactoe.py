@@ -90,7 +90,6 @@ class TicTacToe(Language):
                 and so on until the number of the challenge above the machine proof.
             attempt: the attempt to check for (syntaxic) validity.
         """
-
         prev_grid, turn, win = self.get_board(root_question, branch)
         second_player = "XO"[turn == "X"]
 
@@ -132,9 +131,9 @@ class TicTacToe(Language):
         for proof_attempt, challenge_nb in branch:
             matches = self.RE_ATTEMPT.findall(proof_attempt)
             next_move = matches[challenge_nb]
-            board[int(next_move[1]) - 1] = turn
-            if next_move[2] != '.':
-                board[int(next_move[2]) - 1] = "XO"[turn == "X"]
+            board[int(next_move[0]) - 1] = turn
+            if next_move[1] != '.':
+                board[int(next_move[1]) - 1] = "XO"[turn == "X"]
 
         return ''.join(board), turn, win
 
@@ -152,7 +151,7 @@ class TicTacToe(Language):
     def parse_attempt(self, attempt: str) -> list[tuple[int, int | None]]:
         """Parse an attempt into a list of (first_move, second_move) tuples."""
 
-        return [(int(match[1]), int(match[2]) if match[2] != "." else None)
+        return [(int(match[0]), int(match[1]) if match[1] != "." else None)
                 for match in self.RE_ATTEMPT.findall(attempt)]
 
     def _all_same(self, s: str) -> str:
