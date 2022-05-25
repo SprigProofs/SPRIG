@@ -28,7 +28,7 @@ function getMove(challengeHash: string, instance: Sprig): [number, number | null
  * @param instance The whole sprig instance containing the challenge
  * @returns The state at the challenge.
  */
-function getState(challengeHash: string | null, instance: Sprig) {
+function getState(challengeHash: string | null, instance: Sprig): { plays: string, wins: string, board: string[]; } {
     if (challengeHash === null) {
         const m = instance.rootQuestion.match(/([XO.]{3})\|([XO.]{3})\|([XO.]{3}) ([XO]) plays ([XO.]) wins/);
         return {
@@ -44,7 +44,7 @@ function getState(challengeHash: string | null, instance: Sprig) {
         const newBoard = state.board;
         newBoard[m1] = state.plays;
         if (m2 !== null) {
-            newBoard[m2] = "XO"[state.plays === "X" ? 1 : 0];
+            newBoard[m2] = state.plays === "X" ? "O" : 'X';
         }
         return {
             plays: state.plays,
@@ -54,4 +54,15 @@ function getState(challengeHash: string | null, instance: Sprig) {
     }
 }
 
-export { getState, getMove };
+function title(object: ProofAttempt | Challenge, instance: Sprig): string {
+    const state =
+        object instanceof ProofAttempt
+            ? getState(object.parent, instance)
+            : getState(object.hash, instance);
+
+    const board = state.board[0] + state.board[1] + state.board[2] + "|" + state.board[3] + state.board[4] + state.board[5] + "|" + state.board[6] + state.board[7] + state.board[8];
+    return `${board} ${state.plays} plays ${state.wins} wins`;
+
+}
+
+export { getState, getMove, title };

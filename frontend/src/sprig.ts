@@ -1,4 +1,3 @@
-import { dayjs } from 'dayjs';
 /*
 This contains all the logic of sprig, from the communication with the server
 to the processing of the data.
@@ -379,54 +378,6 @@ interface ActionData {
     target: Challenge | ProofAttempt | Sprig | Challenge[];
 }
 
-
-interface Language {
-    name: string;
-    describe: (object: ProofAttempt | Challenge, instance: Sprig) => string;
-}
-
-
-const TicTacToe = {
-    name: 'TicTacToe',
-    describe(object: ProofAttempt | Challenge, instance: Sprig) {
-        const state =
-            object instanceof ProofAttempt
-                ? TicTacToe.getState(object.parent, instance)
-                : TicTacToe.getState(object.hash, instance);
-
-        const board = state.board[0] + state.board[1] + state.board[2] + "|" + state.board[3] + state.board[4] + state.board[5] + "|" + state.board[6] + state.board[7] + state.board[8];
-        return `${board} ${state.plays} plays ${state.wins} wins`;
-    },
-    getState(challengeHash: string | null, instance: Sprig) {
-        if (challengeHash === null) {
-            const m = instance.rootQuestion.match(/([XO.]{3})\|([XO.]{3})\|([XO.]{3}) ([XO]) plays ([XO.]) wins/);
-            return {
-                plays: m[4],
-                wins: m[5],
-                board: [...m[1], ...m[2], ...m[3]],
-            };
-        } else {
-            const attempt = instance.proofs[instance.challenges[challengeHash].parent];
-            const state = TicTacToe.getState(attempt.parent, instance);
-            const challengeNb = attempt.challenges.indexOf(challengeHash);
-            const moves = [...attempt.proof.matchAll(/([1-9])\s*->\s*([1-9])/g)];
-            const move = moves[challengeNb];
-
-            const newBoard = state.board;
-            newBoard[+move[1] - 1] = state.plays;
-            if (move[2] !== '.') {
-                newBoard[+move[2] - 1] = "XO"[state.plays === "X" ? 1 : 0];
-            }
-            return {
-                plays: state.plays,
-                wins: state.wins,
-                board: newBoard,
-            };
-        }
-    }
-};
-
-const LANGUAGES: Record<string, Language> = { TicTacToe };
 // Lean: {
 // name: "Lean",
 // describe: (object: ProofAttempt | Challenge, instance: Sprig, details: Descr) => {
@@ -557,7 +508,7 @@ function linkTo(obj: ProofAttempt | Challenge | Sprig | string) {
 }
 
 export {
-    api, STATUSES, STATUS_DISPLAY_NAME, LANGUAGES, Language,
+    api, STATUSES, STATUS_DISPLAY_NAME,
     decided, Challenge, Sprig, Status,
     ProofAttempt, Parameters, Action, ActionData, linkTo,
 };

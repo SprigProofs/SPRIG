@@ -7,7 +7,7 @@
         <div class="lg:flex lg:items-center lg:justify-between">
           <div class="flex-1 min-w-0">
             <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
-              {{ language.describe(attempt, instance) }}
+              {{ lang.title(attempt, instance) }}
             </h2>
             <div class="mt-1 flex flex-col sm:flex-row sm:flex-wrap sm:mt-0 sm:space-x-6">
               <div class="mt-2 flex items-center text-sm text-gray-500">
@@ -138,7 +138,7 @@
 
           <!-- <code class="mt-2"><pre class="overflow-auto">{{ attempt.proof }}</pre>
                 </code> -->
-          <Language.TicTacToe.ProofDisplay :instance="instance" :attemptHash="hash" />
+          <component :is="lang.ProofDisplay" :instance="instance" :attemptHash="hash" />
         </section>
       </div>
     </div>
@@ -165,39 +165,9 @@
             </el-descriptions>
           </section>
 
-          <section>
-            <h2 class="small-title pb-2">Past changes and possible actions</h2>
-            <el-timeline>
-              <el-timeline-item type="success" timestamp="15.04.22 20:46">
-                <User name="cozyfractal" /> posted this proof attempt with a bounty of
-                <Price amount="100" />
-              </el-timeline-item>
-              <el-timeline-item type="warning" hollow timestamp="Until 27.04.22 12:00"> Doubtful ?
-                Challenge a claim by locking
-                <Price amount="100" />
-              </el-timeline-item>
-              <el-timeline-item timestamp="Up to 10 days after each challenge">Proof attempts can be
-                submitted for
-                <Price amount="42" />
-              </el-timeline-item>
-              <el-timeline-item>If some proof attempt is accepted, the first is rewarded with your locked
-                bounty of
-                <Price amount="37" />
-              </el-timeline-item>
-              <el-timeline-item class="last:b-0">If no proof attempt is valid, you get back your locked
-                <Price amount="37" />. The first challenge to invalidate Cozyfractal's claim get the
-                bounty of
-                <Price amount="100" />
-              </el-timeline-item>
-            </el-timeline>
-          </section>
-
-
         </el-collapse-item>
         <el-collapse-item title="Raw data">
-          <div class="text-sm text-gray-500">
-            {{ attempt }}
-          </div>
+          <pre class="text-sm text-gray-500">{{ attempt }}</pre>
         </el-collapse-item>
       </el-collapse>
     </section>
@@ -207,14 +177,14 @@
 <script setup lang="ts">
 
 import { reactive, ref, watch } from 'vue';
-import { LANGUAGES, Status } from '../../sprig';
+import { Status } from '../../sprig';
 import { store } from '../../store';
 import { Price, StatusTag, Time } from "../small";
 import User from '../medium/User.vue';
 import Parameters from '../medium/Parameters.vue';
 import Action from '../medium/Action.vue';
 import { useRoute, useRouter } from 'vue-router';
-import * as Language from '../languages';
+import Languages from '../languages';
 import { computed } from '@vue/reactivity';
 
 
@@ -231,7 +201,7 @@ const props = defineProps({
 
 const instance = computed(() => store.instances[props.instanceHash]);
 const attempt = computed(() => instance.value?.proofs[props.hash]);
-const language = computed(() => LANGUAGES[instance.value?.language]);
+const lang = computed(() => Languages[instance.value?.language]);
 const params = computed(() => instance.value?.params);
 const stakeHeld = computed(() => attempt.value?.stakeHeld(params.value));
 const downBounty = computed(() => attempt.value?.possibleReward(params.value));

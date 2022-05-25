@@ -135,7 +135,7 @@ function weightDebug(o, type: Types) {
   return weights;
 }
 
-const results = computed<{ key: string, challenge?: Challenge, instance?: Sprig, attempt?: ProofAttempt; user: number }[]>(() => {
+const results = computed<{ key: string, challenge?: Challenge, instance?: Sprig, attempt?: ProofAttempt; user: string }[]>(() => {
   const sortKey = (type) => (a, b) => combineWeights(getWeights(a, type))
     - combineWeights(getWeights(b, type));
 
@@ -201,7 +201,7 @@ const results = computed<{ key: string, challenge?: Challenge, instance?: Sprig,
 
 <template>
   <div class="max-w-5xl mx-auto p-8">
-    <input type="text" v-model="search" class="border rounded-sm w-full p-2 mb-6" placeholder="Search...">
+    <input type="text" v-model="search" class="w-full p-2 mb-6" placeholder="Search...">
     <div class="bg-gray-100 rounded-sm border
             p-4
             grid grid-cols-3 gap-8">
@@ -209,14 +209,14 @@ const results = computed<{ key: string, challenge?: Challenge, instance?: Sprig,
         <h2 class="small-title">Filter status</h2>
         <div class="flex flex-wrap -mx-1 -my-1">
           <label v-for="v, s in statuses" :key="s" class="m-1 hover:brightness-105 cursor-pointer transition ">
-            <input hidden type="checkbox" :name="s" :id="s" v-model="statuses[s]">
+            <input class="hidden" type="checkbox" :name="s" :id="s" v-model="statuses[s]">
             <StatusTag :status="s" class="" :grayed="!statuses[s]" />
           </label>
         </div>
         <h2 class="small-title pt-2">Filter language</h2>
         <div class="flex flex-wrap -mx-1 -my-1">
           <label v-for="v, l in languages" :key="l" class="m-1 cursor-pointer hover:font-semibold transition">
-            <input hidden type="checkbox" :name="l" :id="l" v-model="languages[l]">
+            <input class="hidden" type="checkbox" :name="l" :id="l" v-model="languages[l]">
             <LanguageTag :lang="l" :grayed="!v" />
           </label>
         </div>

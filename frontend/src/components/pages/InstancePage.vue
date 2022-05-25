@@ -13,7 +13,7 @@
                     </div>
                 </div>
                 <h1 class="text-3xl font-bold font-title py-2">
-                    {{ language.describe(attempt, instance) }}
+                    {{ lang.title(attempt, instance) }}
                 </h1>
                 <div class="flex space-x-4 text-gray-800">
                     <div>
@@ -86,7 +86,7 @@
 
                         <!-- <code class="mt-2"><pre class="overflow-auto">{{ attempt.proof }}</pre>
                 </code> -->
-                        <Language.TicTacToe.ProofDisplay :instance="instance" :attemptHash="attempt.hash" />
+                        <component :is="lang.ProofDisplay" :instance="instance" :attemptHash="attempt.hash" />
                     </section>
 
                 </div>
@@ -108,14 +108,13 @@
 <script setup lang="ts">
 
 import { reactive, ref, watch } from 'vue';
-import { LANGUAGES } from '../../sprig';
 import { store } from '../../store';
 import { Price, StatusTag, Time } from "../small";
 import User from '../medium/User.vue';
 import Parameters from '../medium/Parameters.vue';
 import Action from '../medium/Action.vue';
 import { useRoute } from 'vue-router';
-import * as Language from '../languages';
+import Languages from '../languages';
 import LanguageTag from '../small/LanguageTag.vue';
 import { computed } from '@vue/reactivity';
 import Embed404 from '../medium/Embed404.vue';
@@ -128,7 +127,7 @@ const props = defineProps({
 });
 
 const instance = reactive(store.instances[props.instanceHash]);
-const language = reactive(LANGUAGES[instance?.language]);
+const lang = reactive(Languages[instance?.language]);
 const attempt = reactive(instance?.rootAttempt());
 // const claim = instance.claims[props.hash];
 const params = reactive(instance?.params);

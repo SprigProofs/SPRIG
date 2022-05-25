@@ -12,13 +12,13 @@
         </div>
       </div>
       <h3 class="text-lg pt-2  ">
-        <span class="small-title break-all">{{ language.describe(rootAttempt, instance) }}</span>
+        <span class="small-title break-all">{{ lang.title(rootAttempt, instance) }}</span>
         <span class="text-sm text-gray-700">
           by
           <User :name="instance.author()" />
         </span>
       </h3>
-      <Language.TicTacToe.StatementDisplay :instance="instance" :challenge-hash="null"/>
+      <component :is="lang.StatementDisplay" :instance="instance" :challenge-hash="null"/>
       <!-- <div class="leading-none rounded border-gray-200 p-2">
         <div class="text-xs text-gray-600">Last action</div>
         <p class="text-sm">Michael challenged claim #1a209b for 70</p>
@@ -56,13 +56,13 @@
 </template>
 
 <script setup lang="ts">
-import { Status, Sprig, LANGUAGES, ProofAttempt } from '../../sprig';
+import { Status, Sprig, ProofAttempt } from '../../sprig';
 import { store } from '../../store';
 import { Price, StatusIcon, StatusTag, Time, LanguageTag } from '../small';
 import User from '../medium/User.vue';
 import LabeledData from '../small/LabeledData.vue';
 import UidTag from '../small/UidTag.vue';
-import * as Language from '../languages';
+import Languages from '../languages';
 import dayjs from 'dayjs';
 
 
@@ -75,7 +75,7 @@ const props = defineProps({
 
 const instance: Sprig = store.instances[props.hash];
 const rootAttempt: ProofAttempt = instance.rootAttempt();
-const language = LANGUAGES[instance.language];
+const lang = Languages[instance.language];
 const expires = rootAttempt.expires(instance);
 
 </script>

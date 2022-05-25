@@ -12,12 +12,12 @@ watch(store, () => nextTick( () => {
 </script>
 
 <template>
-  <div v-if="store.loaded">
+  <div v-if="store.loaded" class="h-full flex flex-col">
     <NavBar />
     <!-- The key makes that the view re-renders every time the route changes.
     It is not very efficient as the default is to re-use components, but I did
     not manage to make the component update itself on route change. This welcomes improvements. -->
-    <router-view :key="$route.path"/>
+    <router-view :key="$route.path" class="flex-grow"/>
   </div>
   <div v-else-if="store.fail" class="w-screen h-screen flex items-center justify-around">
     <div class="flex flex-col items-center">

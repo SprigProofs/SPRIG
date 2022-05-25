@@ -13,10 +13,10 @@
         </div>
       </div>
       <h3 class="text-lg pt-2  ">
-        <span class="small-title break-all">{{ language.describe(challenge, instance) }}</span>
+        <span class="small-title break-all">{{ lang.title(challenge, instance) }}</span>
         <span v-if="challenge.author" class="text-sm text-gray-700"> challenged by <User :name="challenge.author"/></span>
       </h3>
-      <Language.TicTacToe.StatementDisplay :instance="instance" :challenge-hash="challengeHash" />
+      <component :is="lang.StatementDisplay" :instance="instance" :challenge-hash="challengeHash" />
     </div>
 
     <!-- Right of the card -->
@@ -47,13 +47,13 @@
 </template>
 
 <script setup lang="ts">
-import { decided, Status, Parameters, LANGUAGES } from '../../sprig';
+import { decided, Status, Parameters } from '../../sprig';
 import { Price, StatusTag, UidTag } from '../small';
 import { store } from '../../store';
 import LanguageTag from '../small/LanguageTag.vue';
 import Time from '../small/Time.vue';
 import LabeledData from '../small/LabeledData.vue';
-import * as Language from '../languages';
+import Languages from '../languages';
 import User from './User.vue';
 
 const props = defineProps({
@@ -68,7 +68,7 @@ const props = defineProps({
 });
 
 const instance = store.instances[props.instanceHash];
-const language = LANGUAGES[instance.language];
+const lang = Languages[instance.language];
 const params: Parameters = instance.params;
 const challenge = instance.challenges[props.challengeHash];
 const bounty = challenge.possibleReward(params);
