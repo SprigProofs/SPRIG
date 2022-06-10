@@ -1,3 +1,6 @@
+from importlib.resources import path
+import os
+import shutil
 import pytest
 from fastapi.testclient import TestClient
 import json
@@ -124,3 +127,14 @@ def test_post_new_instance() -> None:
     assert data['root_question'] == creation_data['root_claim']
     assert data['proofs'][ROOT_HASH]['author'] == creation_data['author']
     assert data['proofs'][ROOT_HASH]['proof'] == creation_data['proof']
+
+
+def test_challenge_claim_api() -> None:
+    tmp = path_from_hash('42424')
+    shutil.copy(path_from_hash('00001'), tmp)
+    try:
+        response = client.post('/challenge/42424/C1', json={'skeptic': 'diego'})
+        assert response.status_code == 200
+        assert set(response.json()) == {'balance', 'parent', 'challenge'}
+    finally:
+        os.remove(tmp)

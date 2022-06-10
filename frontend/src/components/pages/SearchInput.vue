@@ -7,7 +7,6 @@ import dayjs from 'dayjs';
 import { Status, decided, Sprig, ProofAttempt, Parameters, Challenge, linkTo } from '../../sprig';
 import { store } from '../../store';
 import InstanceEmbed from '../medium/InstanceEmbed.vue';
-import ClaimEmbed from '../medium/ClaimEmbed.vue';
 import AttemptEmbed from '../medium/AttemptEmbed.vue';
 import { StatusTag } from '../small';
 import LanguageTag from '../small/LanguageTag.vue';
@@ -136,7 +135,7 @@ function weightDebug(o, type: Types) {
   return weights;
 }
 
-const results = computed<{ key: string, challenge?: Challenge, instance?: Sprig, attempt?: ProofAttempt; }[]>(() => {
+const results = computed<{ key: string, challenge?: Challenge, instance?: Sprig, attempt?: ProofAttempt; user: string }[]>(() => {
   const sortKey = (type) => (a, b) => combineWeights(getWeights(a, type))
     - combineWeights(getWeights(b, type));
 
@@ -175,8 +174,20 @@ const results = computed<{ key: string, challenge?: Challenge, instance?: Sprig,
       })));
   }
 
-  const getType = o => o.attempt ? Types.ATTEMPT : o.instance ? Types.INSTANCE : Types.CHALLENGE;
-  const getItem = o => o.attempt || o.instance || o.challenge;
+  if (selectedTypes[Types.USER]) {
+    all = all.concat(_.values(store.instances)
+      .flatMap(instance => _.values(instance.proofs)
+        .map(p => p.author)
+        .concat(_.values(instance.challenges)
+          .map(c => c.author)))
+      .filter(user => user !== null && user.toLowerCase().includes(search.value.toLocaleLowerCase()))
+      .map(user => ({ key: user, user }))
+
+    )
+  }
+
+  const getType = o => o.attempt ? Types.ATTEMPT : o.instance ? Types.INSTANCE : o.challenge ? Types.CHALLENGE : Types.USER;
+  const getItem = o => o.attempt || o.instance || o.challenge || o.user;
 
   all.sort((a, b) => (
     combineWeights(getWeights(getItem(a), getType(a)))
@@ -190,7 +201,7 @@ const results = computed<{ key: string, challenge?: Challenge, instance?: Sprig,
 
 <template>
   <div class="max-w-5xl mx-auto p-8">
-    <input type="text" v-model="search" class="border rounded-sm w-full p-2 mb-6" placeholder="Search...">
+    <input type="text" v-model="search" class="w-full p-2 mb-6" placeholder="Search...">
     <div class="bg-gray-100 rounded-sm border
             p-4
             grid grid-cols-3 gap-8">
@@ -198,14 +209,14 @@ const results = computed<{ key: string, challenge?: Challenge, instance?: Sprig,
         <h2 class="small-title">Filter status</h2>
         <div class="flex flex-wrap -mx-1 -my-1">
           <label v-for="v, s in statuses" :key="s" class="m-1 hover:brightness-105 cursor-pointer transition ">
-            <input hidden type="checkbox" :name="s" :id="s" v-model="statuses[s]">
+            <input class="hidden" type="checkbox" :name="s" :id="s" v-model="statuses[s]">
             <StatusTag :status="s" class="" :grayed="!statuses[s]" />
           </label>
         </div>
         <h2 class="small-title pt-2">Filter language</h2>
         <div class="flex flex-wrap -mx-1 -my-1">
           <label v-for="v, l in languages" :key="l" class="m-1 cursor-pointer hover:font-semibold transition">
-            <input hidden type="checkbox" :name="l" :id="l" v-model="languages[l]">
+            <input class="hidden" type="checkbox" :name="l" :id="l" v-model="languages[l]">
             <LanguageTag :lang="l" :grayed="!v" />
           </label>
         </div>
@@ -240,7 +251,7 @@ const results = computed<{ key: string, challenge?: Challenge, instance?: Sprig,
 
     <TransitionGroup tag="ol" class="space-y-6">
       <li v-for="result in results" :key="result.key" class="transition">
-        <router-link :to="linkTo(result.attempt || result.challenge || result.instance)"
+        <router-link :to="linkTo(result.attempt || result.challenge || result.instance || result.user)"
           class="p-4 block bg-white rounded-sm shadow-sm hover:shadow-md w-full border">
           <AttemptEmbed v-if="result.attempt" :instance-hash="result.attempt.instanceHash" :hash="result.attempt.hash" />
           <InstanceEmbed v-else-if="result.instance" :hash="result.instance.hash"></InstanceEmbed>

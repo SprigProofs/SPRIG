@@ -13,6 +13,11 @@
     src: url(./assets/SourceCodePro.ttf);
 }
 
+@font-face {
+    font-family: Inter;
+    src: url(./assets/Inter.ttf);
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -20,7 +25,7 @@
 @layer base {
     /* TODO: style all links of accessibiltiy. */
     a {
-        
+
     }
 }
 
@@ -29,9 +34,9 @@
         @apply font-title font-bold
     }
     .home-rectangle {
-        @apply p-4 shadow-lg  border border-black bg-opacity-30 flex items-center 
+        @apply p-4 shadow-lg  border border-black bg-opacity-30 flex items-center
     }
-    
+
     .animate-rainbow {
         animation: rainbow 2s infinite;
     }
@@ -43,7 +48,7 @@
             filter: hue-rotate(360deg);
         }
     }
-    
+
     .animate-spin-square {
         animation: spin-square 0.3s linear infinite;
     }

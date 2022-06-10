@@ -129,10 +129,9 @@ class TicTacToe(Language):
 
         board = list(grid)
         for proof_attempt, challenge_nb in branch:
-            matches = self.RE_ATTEMPT.findall(proof_attempt)
-            next_move = matches[challenge_nb]
+            next_move = self.parse_attempt(proof_attempt)[challenge_nb]
             board[int(next_move[0]) - 1] = turn
-            if next_move[1] != '.':
+            if next_move[1] is not None:
                 board[int(next_move[1]) - 1] = "XO"[turn == "X"]
 
         return ''.join(board), turn, win
@@ -149,7 +148,7 @@ class TicTacToe(Language):
         return grid, turn, wins
 
     def parse_attempt(self, attempt: str) -> list[tuple[int, int | None]]:
-        """Parse an attempt into a list of (first_move, second_move) tuples."""
+        """Parse an attempt into a list of (first_move, second_move) tuples of integers between 1 and 9."""
 
         return [(int(match[0]), int(match[1]) if match[1] != "." else None)
                 for match in self.RE_ATTEMPT.findall(attempt)]

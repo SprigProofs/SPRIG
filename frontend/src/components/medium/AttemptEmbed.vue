@@ -12,14 +12,14 @@
         </div>
       </div>
       <h3 class="text-lg pt-2  ">
-        <span class="small-title break-all">{{ language.describe(attempt, instance, Descr.TITLE) }}</span>
+        <span class="small-title break-all">{{ lang.title(attempt, instance) }}</span>
         <span class="text-sm text-gray-700">
           by
           <User :name="attempt.author" />
         </span>
       </h3>
       <!-- <component :is="language.name + '.' + 'ShortDescription'"/> -->
-      <Language.TicTacToe.StatementDisplay :instance="instance" :challenge-hash="attempt.parent"
+      <component :is=lang.StatementDisplay :instance="instance" :challenge-hash="attempt.parent"
         class="self-start "/>
     </div>
 
@@ -35,11 +35,12 @@
 <script setup lang="ts">
 import _ from 'lodash';
 import dayjs from 'dayjs';
-import { Status, Descr, Sprig, Challenge, LANGUAGES, ProofAttempt, Parameters } from '../../sprig';
+import { Status, Sprig, Challenge, ProofAttempt, Parameters } from '../../sprig';
 import { store } from '../../store';
 import { LabeledData, StatusTag, Price, LanguageTag, Time, UidTag } from "../small";
 import User from './User.vue';
-import * as Language from '../languages'
+import Languages from '../languages'
+import { computed } from '@vue/reactivity';
 
 const props = defineProps({
   instanceHash: {
@@ -52,12 +53,11 @@ const props = defineProps({
   },
 });
 
-const instance: Sprig = store.instances[props.instanceHash];
+const instance = store.instances[props.instanceHash];
 const params: Parameters = instance.params;
-// const claim: Claim = instance.claims[props.claimHash];
 const attempt: ProofAttempt = instance.proofs[props.hash];
-const language = LANGUAGES[instance.language];
+const lang = Languages[instance.language];
 
-const expires = attempt.expires(instance);
+const expires = computed(() => attempt.expires(instance));
 
 </script>

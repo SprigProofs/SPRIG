@@ -1,18 +1,19 @@
 <template>
-    <div>
+    <Embed404 v-if="!instance"/>
+    <div v-else>
         <div class="max-w-7xl mx-auto">
             <header class="p-8 pb-2">
 
                 <div class="flex">
                     <StatusTag :status="attempt.status" />
-                    <LanguageTag :lang="instance.language" />
+                    <LanguageTag :lang="instance.language" class="ml-2" />
                     <div class="ml-4 font-bold rounded-md">
                         Bounty
                         <Price :amount="attempt.possibleReward(params)" />
                     </div>
                 </div>
                 <h1 class="text-3xl font-bold font-title py-2">
-                    {{ language.describe(attempt, instance, Descr.TITLE) }}
+                    {{ lang.title(attempt, instance) }}
                 </h1>
                 <div class="flex space-x-4 text-gray-800">
                     <div>
@@ -52,7 +53,7 @@
                         <Parameters :params="params" :highlight="attempt.height" />
                     </section>
 
-                    <section class="flex flex-col flex-grow max-w-prose">
+                    <section class="flex flex-col flex-grow">
                         <h2 class="small-title mb-2 mt-4">Proof attempt</h2>
 
                         <!-- <button
@@ -85,7 +86,7 @@
 
                         <!-- <code class="mt-2"><pre class="overflow-auto">{{ attempt.proof }}</pre>
                 </code> -->
-                        <Language.TicTacToe.ProofDisplay :instance="instance" :attemptHash="attempt.hash" />
+                        <component :is="lang.ProofDisplay" :instance="instance" :attemptHash="attempt.hash" />
                     </section>
 
                 </div>
@@ -107,15 +108,16 @@
 <script setup lang="ts">
 
 import { reactive, ref, watch } from 'vue';
-import { LANGUAGES, Descr } from '../../sprig';
 import { store } from '../../store';
 import { Price, StatusTag, Time } from "../small";
 import User from '../medium/User.vue';
 import Parameters from '../medium/Parameters.vue';
-import Action from '../medium/Action/Action.vue';
+import Action from '../medium/Action.vue';
 import { useRoute } from 'vue-router';
-import * as Language from '../languages';
+import Languages from '../languages';
 import LanguageTag from '../small/LanguageTag.vue';
+import { computed } from '@vue/reactivity';
+import Embed404 from '../medium/Embed404.vue';
 
 const props = defineProps({
     instanceHash: {
@@ -125,14 +127,14 @@ const props = defineProps({
 });
 
 const instance = reactive(store.instances[props.instanceHash]);
-const language = reactive(LANGUAGES[instance.language]);
-const attempt = reactive(instance.rootAttempt());
+const lang = reactive(Languages[instance?.language]);
+const attempt = reactive(instance?.rootAttempt());
 // const claim = instance.claims[props.hash];
-const params = reactive(instance.params);
+const params = reactive(instance?.params);
 
 const showPreviousDefinitions = ref(false);
 
-const actions = reactive(instance.allActions().map(action => {
+const actions = computed(() => instance?.allActions().map(action => {
     return {
         open: true,
         ...action,

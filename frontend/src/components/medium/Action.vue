@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { ProofAttempt, Sprig, Action, ActionData, Challenge } from '../../../sprig';
-import ActionChallengeParent from './ActionChallengeParent.vue';
-import User from '../User.vue';
-import { Time, Duration } from '../../small';
-import UidTag from '../../small/UidTag.vue';
+import { ProofAttempt, Sprig, Action, ActionData, Challenge } from '../../sprig';
+import User from './User.vue';
+import { Time, Duration } from '../small';
+import UidTag from '../small/UidTag.vue';
 import { nextTick, ref, watch } from 'vue';
-import Time1 from '../../small/Time.vue';
+import Time1 from '../small/Time.vue';
 
 
 const props = withDefaults(defineProps<{
@@ -95,7 +94,7 @@ function toggle() {
 </script>
 
 <template>
-  <div class="flex group" @click="toggle()" :class="{ 'cursor-pointer': collapsable }" >
+  <div class="flex group w-full" @click="toggle()" :class="{ 'cursor-pointer': collapsable }" >
 
   <div class="w-6 mr-2 flex-shrink-0 relative
     flex flex-col items-center">
@@ -104,9 +103,9 @@ function toggle() {
     <v-icon :name="icon.name" :class="icon.class" class="absolute border shadow border-gray-500 w-6 h-6 p-1 rounded-full bg-blue-200 mt-0.5" />
   </div>
 
-  <div >
+  <div class="w-full">
 
-    <div class="flex group w-full ">
+    <div class="flex group w-full justify-between">
       <p>
 
         <v-icon v-if="collapsable" name="md-expandmore-round"
@@ -141,24 +140,24 @@ function toggle() {
         </span><span v-else-if="action.type === Action.AUTO_VALIDATION">
           Time for questions has elapsed for <UidTag :object="instance.proofs[action.target[0].parent]" />, and no new challenges can be added.
         </span><span v-else-if="action.type === Action.MACHINE_REJECTED">
-          This machine proof <UidTag :object="attempt" /> rejected.
+          The machine proof <UidTag :object="attempt" /> was rejected.
         </span><span v-else-if="action.type === Action.MACHINE_VALIDATED">
-          This machine proof <UidTag :object="attempt" /> was accepted.
+          The machine proof <UidTag :object="attempt" /> was accepted.
         </span><span v-else-if="action.type === Action.ATTEMPT_REJECTED">
           <UidTag :object="attempt" /> was rejected by challenge <UidTag :object="challenge" />.
         </span><span v-else-if="action.type === Action.ATTEMPT_VALIDATED">
           <UidTag :object="attempt" /> was validated.
         </span><span v-else-if="action.type === Action.CHALLENGE_REJECTED">
-          <UidTag :object="challenge" /> was rejected by attempt <UidTag :object="attempt" />.
+          <UidTag :object="challenge" /> was rejected.
         </span><span v-else>
           {{ action.type }} needs more work...
         </span>
 
       </p>
 
-      <button v-if="buttonText" @click.stop="takeAction()"
-        class="min-w-fit align-top border box-border border-slate-300 shadow-sm rounded-md px-4 py-1 ml-auto mr-4 -my-1 self-start transition duration-500 "
-        :class="{ 'opacity-0': !collapsed && title }">{{ buttonText }}</button>
+      <Button v-if="buttonText" @click.stop="takeAction()"
+        class="min-w-fit mr-4 -my-1 self-start transition-opacity duration-500 "
+        :class="{ 'opacity-0': !collapsed && title }">{{ buttonText }}</Button>
     </div>
 
     <Transition>

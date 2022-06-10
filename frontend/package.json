@@ -9,6 +9,8 @@
     "check": "vue-tsc --noEmit"
   },
   "dependencies": {
+    "@headlessui/vue": "^1.6.1",
+    "@heroicons/vue": "^1.0.6",
     "dayjs": "^1.11.1",
     "element-plus": "^2.1.9",
     "lodash": "^4.17.21",
@@ -17,6 +19,8 @@
     "vue-router": "^4.0.14"
   },
   "devDependencies": {
+    "@tailwindcss/forms": "^0.5.2",
+    "@tailwindcss/typography": "^0.5.2",
     "@vitejs/plugin-vue": "^2.2.0",
     "autoprefixer": "^10.4.2",
     "postcss": "^8.4.7",

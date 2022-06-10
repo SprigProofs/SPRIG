@@ -5,13 +5,16 @@ module.exports = {
   ],
   theme: {
     fontFamily: {
-      body: ["Raleway", "sans-serif"],
-      title: ["Nunito", "sans-serif"],
+      body: ["Inter", "Raleway", "sans-serif"],
+      title: ["Inter", "sans-serif"],
       mono: ["SourceCodePro", "sans-serif"],
     },
   },
   variants: {
     extend: {},
   },
-  plugins: [],
+  plugins: [
+    require('@tailwindcss/typography'),
+    require('@tailwindcss/forms'),
+  ],
 }
