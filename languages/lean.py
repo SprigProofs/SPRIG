@@ -4,6 +4,7 @@ import os, subprocess
 from languages.base import Language
 from typing import Dict, List, NewType, Optional
 
+REGEX = '(theorem|lemma|example)\s([^\s]*)\s\(.*\)\s:\s(.*)\s:='
 
 def lean_validate(lean_code: str) -> bool:
     f = open('tmp', 'w')
@@ -16,16 +17,6 @@ def lean_validate(lean_code: str) -> bool:
     os.remove('tmp')
 
     return out.returncode > 0
-
-
-def extract_lemma_name(code_piece: str) -> Optional[str]:
-    lemma_match = re.match(r"^lemma\s([^\s]*)", code_piece)
-
-    if lemma_match is None:
-        return None
-    else:
-        return lemma_match.groups()[0]
-
 
 class Lean(Language):
     """
@@ -56,13 +47,23 @@ class Lean(Language):
             True if the proof is correct, False otherwise.
         """
 
-        raise NotImplementedError
+        # The low-level proof should not contain a sorry
+        assert 'sorry' not in machine_proof
 
-        # TODO: better check (btw machine proofs can contain `def sorry_functor := ...`)
-        if 'sorry' in machine_proof[-1]:
-            return False
+        # Accumulate content of proof, ignoring challenged elements and what follows them
+        proof_elements = []
+        for proof_attempt, chal_nb in branch:
+            challenge_starts = list(re.compile('-- chal').finditer(proof_attempt))
+            challenge_start = challenge_starts[chal_nb]
 
-        return lean_validate('\n'.join(machine_proof)) == 0
+            proof_elements.append(proof_attempt[:challenge_start])
+        proof_elements.append(machine_proof)
+
+        # Validate proof with lean
+        proof = '\n'.join(proof_elements)
+        assert lean_validate(proof)
+
+        return True
 
     def validate_attempt(self, root_question: str, branch: list[tuple[str, int]],
                          attempt: str) -> bool:
@@ -78,27 +79,70 @@ class Lean(Language):
             attempt: the attempt to check for (syntaxic) validity.
         """
 
-        # This code was previously in validate_subclaims:
+        # Recover text of challenged proof attempt, and claim position
+        proof_attempt, chal_nb = branch[-1] if len(branch) > 0 else (root_question, 0)
 
-        # assert extract_lemma_name(sub_claim_statements[-1]) == extract_lemma_name(root_statement)
+        # Recover challenged portion
+        challenge_starts = list(re.compile('-- chal').finditer(proof_attempt))
+        challenge_ends = list(re.compile('-- endchal').finditer(proof_attempt))
 
-        # common_code = '\n'.join(common_proof_part)
-        # for statement in sub_claim_statements:
-        #     assert lean_validate(common_code + '\n' + statement) != 0
+        challenge_start, challenge_end = challenge_starts[chal_nb].end() + 1, challenge_ends[chal_nb].start()
+        challenged_text = proof_attempt[challenge_start:challenge_end]
 
-        # return True
+        challenged_thm = re.match(REGEX, challenged_text.strip())
+        assert challenged_thm is not None
+        challenged_header = challenged_text[challenged_thm.start():challenged_thm.end() + 1]
 
-        raise NotImplementedError
+        # Read attempt
+        attempt_starts = list(re.compile('-- chal').finditer(attempt))
+        attempt_ends = list(re.compile('-- endchal').finditer(attempt))
+
+        # Verify coherence of markers
+        assert len(attempt_starts) == len(attempt_ends)
+        assert all([attempt_starts[i].end() < attempt_ends[i].start() for i in range(len(attempt_starts))])
+        assert all([attempt_ends[i].end() < attempt_starts[i + 1].start() for i in range(len(attempt_starts) - 1)])
+
+        # Verify a sorry between each pair of markers
+        assert all([len(re.findall(r"\bsorry\b", attempt[attempt_starts[i].end():attempt_ends[i].start()])) == 1 for i in range(len(attempt_starts))])
+
+        # Verify no sorry outside of pairs of markers
+        if len(attempt_starts) > 0:
+            assert 'sorry' not in attempt[:attempt_starts[0].start()]
+            assert all(['sorry' not in attempt[attempt_ends[i].end():attempt_starts[i + 1].start()] for i in range(len(attempt_starts) - 1)])
+            assert 'sorry' not in attempt[attempt_ends[-1].end():]
+        else:
+            assert 'sorry' not in attempt
+
+        # TODO: improve this check
+        # Verify that challenged claim is proven again
+        assert challenged_header in attempt
+
+        return True
 
     def validate_top_level(self, root_question: str) -> bool:
         """Check that an initial claim is valid. Raises AssertionError if not."""
+        #assert lean_validate(root_question), "This is not a valid lean file"
 
-        assert extract_lemma_name(root_question) is not None
+        # Get markers
+        attempt_starts = list(re.compile('-- chal').finditer(root_question))
+        attempt_ends = list(re.compile('-- endchal').finditer(root_question))
 
-        # TODO: Also check that the definition is valid lean code
+        # Verify there is only one, it contains one sorry and no other sorries outside of marks
+        assert len(attempt_starts) == len(attempt_ends) == 1
+        assert len(re.findall(r"\bsorry\b", root_question[attempt_starts[0].end():attempt_ends[0].start()])) == 1
+        assert 'sorry' not in root_question[:attempt_starts[0].start()]
+        assert 'sorry' not in root_question[attempt_ends[0].end():]
+
+        challenged_thm = re.match(REGEX, root_question[attempt_starts[0].end() + 1:attempt_ends[0].start()].strip())
+        assert challenged_thm is not None
 
         return True
 
     def nb_of_challenges(self, proof: str) -> int:
         """Return the number of points that a proof can be challenged."""
-        return len(re.findall(r"\bsorry\b", proof))
+        attempt_starts = list(re.compile('-- chal').finditer(proof))
+        attempt_ends = list(re.compile('-- endchal').finditer(proof))
+
+        assert len(attempt_starts) == len(attempt_ends)
+
+        return len(attempt_starts)

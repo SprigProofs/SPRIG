@@ -737,14 +737,18 @@ def time_passes(sprig: Sprig, amount: int = 1) -> None:
 
 def play_tictactoe(params: Parameters) -> Sprig:
     sprig = Sprig.start(
-        TicTacToe().dump(), params, Address("Diego"), "...|XX.|... O plays X wins", """1 -> 6
+        TicTacToe().dump(), params, Address("Diego"),
+        "...|XX.|... O plays X wins",
+        """
+        1 -> 6
         2 -> 6
         3 -> 6
         6 -> 1
         7 -> 6
         8 -> 6
         9 -> 6
-        """)
+        """
+        )
 
     time_passes(sprig)
 
@@ -754,12 +758,16 @@ def play_tictactoe(params: Parameters) -> Sprig:
 
     time_passes(sprig)
     a1 = sprig.answer(
-        c2.hash, DIEGO, """Case X..|XXO|...
+        c2.hash, DIEGO,
+        """
+        Case X..|XXO|...
         2 -> 7
         3 -> 2
         7 -> 9
         8 -> 7
-        9 -> 7""")
+        9 -> 7
+        """
+        )
 
     time_passes(sprig)
     sprig.answer_low_level(c2.hash, DIEGO, "-2")
@@ -772,12 +780,16 @@ def play_tictactoe(params: Parameters) -> Sprig:
     time_passes(sprig)
 
     sprig.answer(
-        c2.hash, CLEMENT, """Case X..|XXO|...
+        c2.hash, CLEMENT,
+        """
+        Case X..|XXO|...
         2 -> 7
         3 -> 7
         7 -> 9
         8 -> 7
-        9 -> 7""")
+        9 -> 7
+        """
+        )
 
     for _ in range(5):
         time_passes(sprig)
@@ -794,68 +806,94 @@ def play_tictactoe(params: Parameters) -> Sprig:
 
 def play_lean(params: Parameters) -> Sprig:
     sprig = Sprig.start(
-        Lean().dump(), params, Address("Diego"), "lemma add_comm a b : nat) : a + b = b + a", """
-        def zero := 0
+        Lean().dump(), params, Address("Diego"), """
+        -- chal
+        theorem add_comm (m n : nat) : m + n = n + m := sorry
+        -- endchall""",
+            """
+        import data.nat.basic
+        open nat
 
-        lemma z_add (n : nat) : zero + n = n :=
-        begin
-            sorry
-        end
+        variables m n : ℕ
 
-        lemma add_succ (a b : nat) : a + nat.succ(b) = nat.succ(a + b) :=
-        begin
-            sorry
-        end
+        example : m + 0 = m := add_zero m
+        example : m + succ n = succ (m + n) := add_succ m n
 
-        lemma add_comm (a b : nat) : a + b = b + a :=
-        begin
-            sorry
-        end
+        -- chal
+        theorem succ_pred (n : ℕ) : n ≠ 0 → succ (pred n) = n := sorry
+        -- endchal
+
+        -- chal
+        theorem zero_add (n : nat) : 0 + n = n := sorry
+        -- endchal
+
+        -- chal
+        theorem succ_add (m n : nat) : succ m + n = succ (m + n) := sorry
+        -- endchal
+
+        -- chal
+        theorem add_assoc (m n k : nat) : m + n + k = m + (n + k) := sorry
+        -- endchal
+
+        -- chal
+        theorem add_comm (m n : nat) : m + n = n + m := sorry
+        -- endchal
         """)
 
     time_passes(sprig)
 
-    add_com = sprig.proofs[ROOT_HASH].challenges[2]
-    c1 = sprig.challenge(MICHAEL, add_com)
+    succ_add = sprig.proofs[ROOT_HASH].challenges[2]
+    c1 = sprig.challenge(MICHAEL, succ_add)
+
+    add_comm = sprig.proofs[ROOT_HASH].challenges[4]
+    c2 = sprig.challenge(MICHAEL, add_comm)
 
     time_passes(sprig)
 
-    a1 = sprig.answer(c1.hash, DIEGO, "false claim\nfalse claim => add_comm")
+    a1 = sprig.answer(c1.hash, DIEGO, """
+        -- chal
+        theorem succ_add (m n : nat) : succ m + n = succ (m + n) := sorry
+        -- endchal
+        """
+    )
+
+    a2 = sprig.answer(c2.hash, DIEGO, """
+        theorem add_comm (m n : nat) : m + n = n + m :=
+            nat.rec_on n
+            (show m + 0 = 0 + m, by rewrite [add_zero, zero_add])
+            (assume n,
+                assume ih : m + n = n + m,
+                show m + succ n = succ n + m, from calc
+                m + succ n = succ (m + n) : by rw add_succ
+                        ... = succ (n + m) : by rw ih
+                        ... = succ n + m   : by rw succ_add)
+        """
+    )
 
     time_passes(sprig)
 
-    sprig.challenge(MICHAEL, a1.hash)
+    sprig.challenge(MICHAEL, a1.challenges[0])
+
     a2 = sprig.answer(
-        add_com, CLEMENT, """
-lemma succ_add (a b : nat) : nat.succ a + b = nat.succ (a + b) :=
-begin
-    sorry
-end
-
-/-| `add_comm` is proved trivially by induction -/
-
-lemma add_comm (a b : nat) : a + b = b + a :=
-begin
-    induction b, rw add_zero, rw z_add, refl,
-    rw succ_add, rw add_succ, rw b_ih, refl,
-end""")
-
-    time_passes(sprig)
-
-    sprig.challenge(MICHAEL, a2.challenges[-1])
+        succ_add, CLEMENT, """
+        theorem succ_add (m n : nat) : succ m + n = succ (m + n) :=
+        nat.rec_on n
+        (show succ m + 0 = succ (m + 0), from rfl)
+        (assume n,
+            assume ih : succ m + n = succ (m + n),
+            show succ m + succ n = succ (m + succ n), from
+            calc
+            succ m + succ n = succ (succ m + n) : rfl
+            ... = succ (succ (m + n)) : by rw ih
+            ... = succ (m + succ n) : rfl)
+        """
+    )
 
     time_passes(sprig)
-
-    sprig.answer_low_level(
-        a2.challenges[-1], DIEGO, """
-lemma succ_add (a b : nat) : nat.succ a + b = nat.succ (a + b) :=
-    begin
-        induction b, rw add_zero, rw add_zero,
-        rw add_succ, rw b_ih,
-    end""")
-
-    for _ in range(3):
-        time_passes(sprig)
+    time_passes(sprig)
+    time_passes(sprig)
+    time_passes(sprig)
+    time_passes(sprig)
 
     return sprig
 
