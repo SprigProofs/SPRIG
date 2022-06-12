@@ -56,7 +56,7 @@
 </template>
 
 <script setup lang="ts">
-import dayjs from 'dayjs';
+import dayjs from 'dayjs/esm';
 import { Challenge, Sprig, Status } from '../../sprig';
 import UidTag from '../small/UidTag.vue';
 import Duration from '../small/Duration.vue';

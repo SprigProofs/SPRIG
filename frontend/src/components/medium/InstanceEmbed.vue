@@ -63,7 +63,7 @@ import User from '../medium/User.vue';
 import LabeledData from '../small/LabeledData.vue';
 import UidTag from '../small/UidTag.vue';
 import Languages from '../languages';
-import dayjs from 'dayjs';
+import dayjs from 'dayjs/esm';
 
 
 const props = defineProps({

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 
-import { Duration } from 'dayjs/plugin/duration';
+import { Duration } from 'dayjs/esm/plugin/duration';
 
 const props = defineProps<{
   duration: Duration,

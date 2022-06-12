@@ -10,9 +10,8 @@ backend:
 frontend:
 	cd frontend && PORT=$(PORT) npm run dev
 
-run:
-	poetry run uvicorn api:api --port $(BACKEND_PORT) &
-	cd frontend && PORT=$(PORT) npm run serve
+deploy:
+	cd frontend && npm run build && scp -r dist sprig.therandom.space:sprig/frontend/dist
 
 test:
 	poetry run pytest

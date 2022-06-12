@@ -4,11 +4,11 @@ to the processing of the data.
 */
 
 import _, { at } from "lodash";
-import dayjs, { Dayjs } from 'dayjs';
-import * as duration from 'dayjs/plugin/duration';
-import * as relativeTime from 'dayjs/plugin/relativeTime';  // for .humanize(  / fromNow()
-import * as calendar from 'dayjs/plugin/calendar';  // for .calendar()
-import * as advancedFormat from 'dayjs/plugin/advancedFormat';
+import dayjs, { Dayjs } from 'dayjs/esm';
+import duration from 'dayjs/esm/plugin/duration';
+import relativeTime from 'dayjs/esm/plugin/relativeTime';  // for .humanize(  / fromNow()
+import calendar from 'dayjs/esm/plugin/calendar';  // for .calendar()
+import advancedFormat from 'dayjs/esm/plugin/advancedFormat';
 dayjs.extend(duration);
 dayjs.extend(relativeTime);
 dayjs.extend(calendar);
