@@ -8,6 +8,7 @@ import json
 import os
 from pathlib import Path
 from typing import Any, Iterator
+from xmlrpc.client import boolean
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -166,3 +167,25 @@ def new_challenge(skeptic: sprig.Address, claim_hash: sprig.Hash,
         challenge=challenge,
         parent=instance.proofs[challenge.parent],
     )
+
+
+class NewProofAttemptData(BaseModel):
+    statement: str
+    author: sprig.Address
+    machine_level: boolean
+
+
+@api.post("/proof/{instance_hash}/{challenge_hash}")
+def new_proof_attempt(instance_hash: sprig.Hash, challenge_hash: sprig.Hash,
+                      attempt_data: NewProofAttemptData) -> None:
+    """Create a new proof attempt to answer a challenge."""
+
+    instance = load(instance_hash)
+
+    with sprig.time_mode('real'):
+        if attempt_data.machine_level:
+            instance.answer_low_level(challenge_hash, attempt_data.author, attempt_data.author)
+        else:
+            instance.answer(challenge_hash, attempt_data.author, attempt_data.author)
+
+    save(instance, instance_hash)
