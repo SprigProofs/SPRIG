@@ -99,7 +99,7 @@ def get_everything() -> Any:
 
 class SprigInitData(BaseModel):
     language: str
-    params: dict[str, Any]
+    params: ParameterData
     author: sprig.Address
     root_claim: str
     proof: str
@@ -115,7 +115,7 @@ def add_new_instance(new_instance: SprigInitData) -> Any:
 
     with sprig.time_mode('real'):
         try:
-            parameters = sprig.Parameters(**new_instance.params)
+            parameters = sprig.Parameters(**new_instance.params.dict())
             instance = sprig.Sprig.start(
                 new_instance.language,
                 parameters,
@@ -146,9 +146,11 @@ class ChallengeCreatedData(BaseModel):
     parent: sprig.ProofAttempt
 
 
-@api.post("/challenge/{instance_hash}/{claim_hash}", response_model=ChallengeCreatedData
-          )  # The response_model is not working and I don't know why.
-def new_challenge(skeptic: sprig.Address, claim_hash: sprig.Hash, instance_hash: sprig.Hash) -> ChallengeCreatedData:
+@api.post(
+    "/challenge/{instance_hash}/{claim_hash}"
+)  #, response_model=ChallengeCreatedData)  # The response_model is not working and I don't know why.
+def new_challenge(skeptic: sprig.Address, claim_hash: sprig.Hash,
+                  instance_hash: sprig.Hash) -> ChallengeCreatedData:
     """Challenge a claim that isn't yet challenged and still active."""
 
     instance = load(instance_hash)
@@ -164,58 +166,3 @@ def new_challenge(skeptic: sprig.Address, claim_hash: sprig.Hash, instance_hash:
         challenge=challenge,
         parent=instance.proofs[challenge.parent],
     )
-
-
-if False:
-
-    @api.get("/{instance_hash}", response_model=SprigData)
-    def get_instance(instance_hash: str) -> Any:
-        """All the data of one SPRIG instance."""
-        data = json.loads(path_from_hash(instance_hash).read_text())
-        data['hash'] = instance_hash
-        return data
-
-    @api.post("/{instance_hash}/{claim_hash}/challenge")
-    def new_challenge(skeptic: sprig.Address, claim_hash: str, instance_hash: str):
-        """Challenge a claim that isn't yet challenged and still active."""
-
-        instance = load(instance_hash)
-
-        instance.challenge(skeptic, claim_hash)
-
-        save(instance, instance_hash)
-
-        return ChallengeCreatedData(balance=sprig.BANK[skeptic], claim=instance.claims[claim_hash])
-
-    @api.get("/{instance_hash}/{claim_hash}/proof_attempts")
-    def get_proof_attempts(claim_hash: str, instance: sprig.Sprig = Depends(load)):
-        """Return a list of all proof attempts for a claim.
-        A proof attempt is a list of the hashes of the claims that make up the proof."""
-        return instance.proof_attempts.get(claim_hash, [])
-
-    class NewProofAttempt(BaseModel):
-        claimer: sprig.Address
-        claims: list[str]
-        machine_level: bool = False
-
-    class AnswerRecord(BaseModel):
-        balance: int
-        attempt: sprig.ProofAttempt
-
-    @api.post("/{instance_hash}/{claim_hash}/proof_attempts")
-    def add_proof_attempt(attempt: NewProofAttempt, claim_hash: str, instance_hash: str):
-        """Create a new proof attempt of a challenged claim."""
-
-        instance = load(instance_hash)
-
-        if attempt.machine_level:
-            assert len(attempt.claims) == 1
-            instance.answer_low_level(claim_hash, attempt.claimer, *attempt.claims)
-        else:
-            instance.answer(claim_hash, attempt.claimer, *attempt.claims)
-
-        instance.distribute_all_bets()
-        sprig.now(1)
-        save(instance, instance_hash)
-
-        return AnswerRecord(balance=42, attempt=instance.proof_attempts[claim_hash][-1])
