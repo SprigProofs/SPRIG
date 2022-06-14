@@ -19,7 +19,10 @@ os.environ["BANK_FILE"] = str((Path(__file__).parent / "data" / "api_bank").abso
 import sprig
 import utils
 
-api = FastAPI()
+print(os.environ)
+ROOT_PATH = "/api" if os.environ.get("DEV", "").lower() not in ("true", "1", "yes", "y'") else ""
+print(ROOT_PATH)
+api = FastAPI(root_path=ROOT_PATH)
 # This allows cross-origin requests.
 # It is needed in development because the frontend dev server is not the same as the backend.
 api.add_middleware(
@@ -142,7 +145,9 @@ class ChallengeCreatedData(BaseModel):
     challenge: sprig.Challenge
     parent: sprig.ProofAttempt
 
-@api.post("/challenge/{instance_hash}/{claim_hash}")  #, response_model=ChallengeCreatedData)  # The response_model is not working and I don't know why.
+
+@api.post("/challenge/{instance_hash}/{claim_hash}", response_model=ChallengeCreatedData
+          )  # The response_model is not working and I don't know why.
 def new_challenge(skeptic: sprig.Address, claim_hash: sprig.Hash, instance_hash: sprig.Hash) -> ChallengeCreatedData:
     """Challenge a claim that isn't yet challenged and still active."""
 

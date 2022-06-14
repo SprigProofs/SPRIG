@@ -1,5 +1,5 @@
 
-.PHONY: backend frontend run test fmt install install-dev
+.PHONY: backend frontend deploy sync-files test fmt install install-dev
 
 PORT=8600
 BACKEND_PORT=8601
@@ -11,7 +11,10 @@ frontend:
 	cd frontend && PORT=$(PORT) npm run dev
 
 deploy:
-	cd frontend && npm run build && scp -r dist sprig.therandom.space:sprig/frontend/dist
+	cd frontend && npm run build && scp -r dist sprig.therandom.space:sprig/frontend/ && make sync-files
+
+sync-files:
+	git ls-files | rsync -azP --files-from=- . sprig.therandom.space:sprig
 
 test:
 	poetry run pytest

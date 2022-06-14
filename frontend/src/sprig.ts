@@ -412,8 +412,10 @@ interface ActionData {
 //     return claim.statement;
 // }
 // }
+const isLocalhost = (location.hostname === "localhost" || location.hostname === "127.0.0.1");
+const API_BASE = isLocalhost ? "http://localhost:8601/" : "http://sprig.therandom.space/api/";
 
-const API_BASE = "http://localhost:8601/";
+console.log(location.hostname, isLocalhost, API_BASE);
 
 function logFail(title: string, data: Object) {
     console.error(title, data);
@@ -512,3 +514,5 @@ export {
     decided, Challenge, Sprig, Status,
     ProofAttempt, Parameters, Action, ActionData, linkTo,
 };
+
+// ok
