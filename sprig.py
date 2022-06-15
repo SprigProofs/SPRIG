@@ -889,11 +889,7 @@ def play_lean(params: Parameters) -> Sprig:
         """
     )
 
-    time_passes(sprig)
-    time_passes(sprig)
-    time_passes(sprig)
-    time_passes(sprig)
-    time_passes(sprig)
+    time_passes(sprig, 4 * 1000 * 3600 * 24 + 1)
 
     return sprig
 
