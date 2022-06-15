@@ -7,6 +7,7 @@ It reads and updates the sprig instances in the data/ folder.
 import json
 import os
 from pathlib import Path
+import traceback
 from typing import Any, Iterator
 from xmlrpc.client import boolean
 
@@ -20,19 +21,20 @@ os.environ["BANK_FILE"] = str((Path(__file__).parent / "data" / "api_bank").abso
 import sprig
 import utils
 
-print(os.environ)
-ROOT_PATH = "/api" if os.environ.get("DEV", "").lower() not in ("true", "1", "yes", "y'") else ""
-print(ROOT_PATH)
+DEV =os.environ.get("DEV", "").lower() in ("true", "1", "yes", "y'")
+ROOT_PATH = "/api" if not DEV else ""
 api = FastAPI(root_path=ROOT_PATH)
-# This allows cross-origin requests.
-# It is needed in development because the frontend dev server is not the same as the backend.
-api.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    # allow_credentials=True,
-    allow_methods=["*"],
-    # allow_headers=["*"],
-)
+
+if DEV:
+    # This allows cross-origin requests.
+    # It is needed in development because the frontend dev server is not the same as the backend.
+    api.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        # allow_credentials=True,
+        allow_methods=["*"],
+        # allow_headers=["*"],
+    )
 
 
 def all_instances_filenames() -> Iterator[Path]:
@@ -84,6 +86,10 @@ class SprigData(BaseModel):
     challenges: dict[sprig.Hash, sprig.Challenge]
     root_question: sprig.Hash
 
+    class Config:
+        arbitrary_types_allowed = True
+        orm_mode = True
+
 
 @api.get("/everything", response_model=dict[sprig.Hash, SprigData])
 def get_everything() -> Any:
@@ -100,14 +106,14 @@ def get_everything() -> Any:
 
 class SprigInitData(BaseModel):
     language: str
-    params: ParameterData
+    params: ParameterData  # I would like to use Parameters, but it doesn't work...
     author: sprig.Address
     root_claim: str
     proof: str
 
 
 @api.post("/instances", response_model=SprigData)
-def add_new_instance(new_instance: SprigInitData) -> Any:
+def add_new_instance(new_instance: SprigInitData) -> dict[str, Any]:  # SprigData:
     """
     Start a new instance of the sprig protocol.
 
@@ -115,23 +121,21 @@ def add_new_instance(new_instance: SprigInitData) -> Any:
     """
 
     with sprig.time_mode('real'):
-        try:
-            parameters = sprig.Parameters(**new_instance.params.dict())
-            instance = sprig.Sprig.start(
-                new_instance.language,
-                parameters,
-                new_instance.author,
-                new_instance.root_claim,
-                new_instance.proof,
-            )
-        except AssertionError as e:
-            raise HTTPException(400, e.args)
+        parameters = sprig.Parameters(**new_instance.params.dict())
+        instance = sprig.Sprig.start(
+            new_instance.language,
+            parameters,
+            new_instance.author,
+            new_instance.root_claim,
+            new_instance.proof,
+        )
 
         h = new_hash()
         save(instance, h)
 
         data = instance.dump_as_dict()
         data['hash'] = h
+        print(data)
         return data
 
 

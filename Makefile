@@ -5,7 +5,7 @@ PORT=8600
 BACKEND_PORT=8601
 
 backend:
-	DEV=true poetry run uvicorn api:api --port $(BACKEND_PORT) --reload
+	DEV=true poetry run uvicorn api:api --port $(BACKEND_PORT) --reload --log-level=trace
 
 frontend:
 	cd frontend && PORT=$(PORT) npm run dev

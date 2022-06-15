@@ -1,55 +1,140 @@
 <script setup lang="ts">
+import { computed } from '@vue/reactivity';
+import dayjs from 'dayjs/esm';
+import { nextTick, reactive, ref } from 'vue';
+import { useRouter } from 'vue-router';
+import { linkTo, Parameters, Unit } from '../../sprig';
+import { store } from '../../store';
 import Languages from '../languages';
+import DurationPicker from '../small/DurationPicker.vue';
 
-const people = [
+const router = useRouter();
 
-
-  { name: 'Lindsay Walton', title: 'Front-end Developer', email: 'lindsay.walton@example.com', role: 'Member' },
-  { name: 'Lindsay Walton', title: 'Front-end Developer', email: 'lindsay.walton@example.com', role: 'Member' },
-  { name: 'Lindsay Walton', title: 'Front-end Developer', email: 'lindsay.walton@example.com', role: 'Member' },
-];
-
-const costs = [
-  {
-    upstake: 0,
-    downstake: 0,
-    questionBounty: 0,
+const costs = reactive([
+  {  // machine level
+    upstake: 5,
+    downstake: 0,  // not used
+    questionBounty: 0,  // not used
+    key: "My",
+    height: 0,
   },
   {
-    upstake: 0,
-    downstake: 0,
-    questionBounty: 0,
+    upstake: 5,
+    downstake: 50,
+    questionBounty: 20,
+    key: "name",
+    height: 1,
   },
   {
-    upstake: 0,
-    downstake: 0,
-    questionBounty: 0,
+    upstake: 10,
+    downstake: 100,
+    questionBounty: 25,
+    key: "is",
+    height: 2,
   },
-  {
-    upstake: 0,
-    downstake: 0,
-    questionBounty: 0,
+  {  // root
+    upstake: 0,  // not used
+    downstake: 200,
+    questionBounty: 50,
+    key: "Bob",
+    height: 3,
   },
-];
+]);
+const timeForQuestions = ref(dayjs.duration(1, 'day'));
+const timeForAnswers = ref(dayjs.duration(1, 'day'));
+const selectedLanguage = ref("Lean4");
+const maxProofSize = ref(10000);
+const root_question = ref("");
+const proof_attempt = ref("");
+
+function newCostRow(height: number) {
+  costs.splice(height, 0, {
+    upstake: height,
+    downstake: height,
+    questionBounty: height,
+    key: Math.random().toString().slice(2, 10),
+    height: 0  // placeholder
+  })
+
+  costs.forEach((row, height) => row.height = height)
+}
+
+const costsMiddleRows = computed(() => {
+  const middle = [...costs];
+  middle.splice(0, 1)
+  middle.pop();
+  return middle.reverse();
+})
+
+const invalidInputs = computed(() => {
+  const fails = [];
+  if (timeForAnswers.value.asMinutes() < 1)
+    fails.push("The time to answer challenges must be greater than one minute.")
+
+  if (timeForQuestions.value.asMinutes() < 1)
+    fails.push("The time ask questions must be greater than one minute.")
+
+  // When an imput is not a number, its value is "", which is < 100
+  if (maxProofSize.value < 100) {
+    fails.push("The maximum proof size must be a number greater than 100.")
+  }
+
+  costs.forEach((row) => {
+    if (row.height == 0) {
+      if (row.downstake != 0)
+        fails.push(`Downstake for height ${row.height} must be zero.`)
+    } else if (row.downstake < 1)
+      fails.push(`Downstake for height ${row.height} must be greater than 1.`)
+
+    if (row.height == costs.length - 1) {
+      if (row.upstake != 0)
+      fails.push(`Upstake for height ${row.height} must be zero.`)
+    } else if (row.upstake < 1)
+      fails.push(`Upstake for height ${row.height} must be greater than 1.`)
+
+    if (row.height == 0) {
+      if (row.questionBounty != 0)
+      fails.push(`Question Bounty for height ${row.height} must be zero.`)
+    } else if (row.questionBounty < 1)
+      fails.push(`Question bounty for height ${row.height} must be greater than 1.`)
+  });
+
+  if (root_question.value === "")
+    fails.push("And an initial question");
+
+  if (proof_attempt.value === "")
+    fails.push("Add a proof attempt");
+
+  return fails;
+})
+
+function createInstance() {
+  const upstakes = costs.map(row => row.upstake);
+  const downstakes = costs.map(row => row.downstake);
+  const questionBounties = costs.map(row => row.questionBounty);
+  const params = new Parameters({
+        rootHeight: costs.length,
+        maxLength: maxProofSize.value,
+        timeForQuestions: timeForQuestions.value,
+        timeForAnswers: timeForAnswers.value,
+        upstakes: upstakes,
+        downstakes: downstakes,
+        questionBounties: questionBounties,
+        verificationCost: 1,
+    });
+
+  store.newInstance(
+    selectedLanguage.value,
+    params,
+    root_question.value,
+    proof_attempt.value,
+  ).then(instance => {
+    nextTick(() => router.push(linkTo(instance)))
+  })
+}
 
 </script>
 
-<!--
-  This example requires Tailwind CSS v2.0+
-
-  This example requires some changes to your config:
-
-  ```
-  // tailwind.config.js
-  module.exports = {
-    // ...
-    plugins: [
-      // ...
-      require('@tailwindcss/forms'),
-    ],
-  }
-  ```
--->
 <template>
   <div class="bg-gray-100">
     <div class="max-w-4xl lg:mx-auto sm:mx-6 my-8">
@@ -60,10 +145,9 @@ const costs = [
         <div class="md:grid md:grid-cols-3 md:gap-6">
           <div class="md:col-span-1">
             <div class="px-4 sm:px-0">
-              <h3 class="text-lg font-medium leading-6 text-gray-900">Constraints</h3>
-              <p class="mt-1 text-sm text-gray-600">This information will be displayed publicly so be
-                careful
-                what you share.</p>
+              <h3 class="text-lg font-medium leading-6 text-gray-900">Parameters</h3>
+              <p class="mt-1 text-sm text-gray-600">
+                Stakes, bounties and constraints for every level of recursion.</p>
             </div>
           </div>
           <div class="mt-5 md:mt-0 md:col-span-2">
@@ -82,8 +166,8 @@ const costs = [
                       <div class="space-y-4">
                         <div v-for="lang in Languages" :key="lang.name" class="relative flex items-start">
                           <div class="flex items-center h-5">
-                            <input :id="lang.name" :aria-describedby="`${lang.name}-description`" name="language"
-                              type="radio" :checked="lang.name === 'Lean4'"
+                            <input type="radio" v-model="selectedLanguage" :value="lang.name"
+                              :id="lang.name" :aria-describedby="`${lang.name}-description`" name="language"
                               class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300" />
                           </div>
                           <div class="ml-3 text-sm">
@@ -95,13 +179,21 @@ const costs = [
                     </fieldset>
                   </div>
 
-                  <!-- Maximum depth -->
+                  <div class="sm:flex sm:space-x-6 space-y-6 sm:space-y-0">
+                    <!-- Max question time -->
+                    <DurationPicker id="time_for_questions" label="Time for questions" v-model="timeForQuestions"/>
+
+                    <!-- Answer time -->
+                    <DurationPicker id="time_for_answers" label="Time to answer challenges" v-model="timeForAnswers"/>
+
+                  </div>
+
+                  <!-- Max proof size -->
                   <div>
-                    <label for="account-number" class="block text-sm font-medium text-gray-700">Maximum depth</label>
+                    <label for="max-proof-size" class="block text-sm font-medium text-gray-700">Maximum Proof size</label>
                     <div class="mt-1 relative rounded-md shadow-sm w-24">
-                      <input type="number" name="account-number" id="account-number"
-                        class="focus:ring-indigo-500 focus:border-indigo-500 block w-full  sm:text-sm border-gray-300 rounded-md"
-                        :value="4" min="2" />
+                      <input type="number" name="max-proof-size" id="max-proof-size"
+                        v-model="maxProofSize" min="100" />
                     </div>
                   </div>
 
@@ -118,7 +210,7 @@ const costs = [
                               <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
                                 Upstake</th>
                               <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                                Down-stake</th>
+                                Downstake</th>
                               <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
                                 Question bounty</th>
                               <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-6">
@@ -126,50 +218,63 @@ const costs = [
                               </th>
                             </tr>
                           </thead>
-                          <tbody class="divide-y divide-gray-200 bg-white">
-                            <tr>
+                          <tbody class="divide-y divide-gray-200 bg-white" >
                               <!-- Root claim -->
+                            <tr>
                               <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
                                 {{ costs.length - 1 }} (root)</td>
+                              <td></td>
                               <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                                0
+                                <input type="number" min="1" v-model="costs[costs.length - 1].downstake">
                               </td>
                               <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                                <input type="number" v-model="costs[costs.length - 1].downstake"
-                                  class="w-24 border-0 px-0">
+                                <input type="number" min="1" v-model="costs[costs.length - 1].questionBounty">
+                              </td>
+                              <td class="relative">
+                                <button @click.prevent="newCostRow(costs.length - 1)" class="absolute top-full left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white px-1  text-green-600 hover:text-green-900 rounded">
+                                  New
+                                </button>
+                              </td>
+                            </tr>
+                            <!-- Each depth level -->
+                            <tr v-for="(row, i) in costsMiddleRows">
+                              <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
+                                {{ row.height }}
                               </td>
                               <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                                <input type="number" v-model="costs[costs.length - 1].downstake"
-                                  class="w-24 border-0 px-0">
+                                <input type="number" min="1" v-model="row.upstake">
+                              </td>
+                              <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                                <input type="number" min="1" v-model="row.downstake">
+                              </td>
+                              <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                                <input type="number" min="1" v-model="row.questionBounty">
+                              </td>
+                              <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
+                                <button @click.prevent="costs.splice(row.height, 1)" class="px-1 rounded text-indigo-600 hover:text-indigo-900">
+                                  Remove
+                                </button>
+                                <button @click.prevent="newCostRow(row.height)" class="absolute top-full left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white px-1 rounded  text-green-600 hover:text-green-900">
+                                  New
+                                </button>
+
+                              </td>
+                            </tr>
+
+                              <!-- Machine level -->
+                            <tr>
+                              <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
+                                0 (machine)</td>
+                              <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                                <input type="number" min="1" v-model="costs[0].upstake"
+                                  class="w-24">
                               </td>
                               <td></td>
+                              <td></td>
+                              <td class="relative">
+                              </td>
                             </tr>
-                            <tr v-for="(row, height) in costs" :key="height">
-                              <template v-if="height > 0 && height < costs.length - 1">
-                                <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
-                                  {{ costs.length - height - 1 }}
-                                </td>
-                                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                                  <input type="number" v-model="row.upstake"
-                                    class="w-24 border-0 px-0">
-                                </td>
-                                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                                  <input type="number" v-model="row.downstake"
-                                    class="w-24 border-0 px-0">
-                                </td>
-                                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                                  <input type="number" v-model="row.questionBounty"
-                                    class="w-24 border-0 px-0">
-                                </td>
-                                <td
-                                  class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                                  <button href="#" class="text-indigo-600 hover:text-indigo-900">
-                                    Remove
-                                  </button>
-                                </td>
 
-                              </template>
-                            </tr>
                           </tbody>
                         </table>
                       </div>
@@ -193,190 +298,61 @@ const costs = [
           <div class="md:col-span-1">
             <div class="px-4 sm:px-0">
               <h3 class="text-lg font-medium leading-6 text-gray-900">
-                Proof statement</h3>
+                Initial proof attempt</h3>
               <p class="mt-1 text-sm text-gray-600">
-                Use a permanent address where you can receive mail.
+                For details on the format, see <span class="underline hover:text-purple-700">the documentation</span> (TBD).
               </p>
             </div>
           </div>
           <div class="mt-5 md:mt-0 md:col-span-2">
             <form action="#" method="POST">
               <div class="shadow overflow-hidden sm:rounded-md">
-                <div class="px-4 py-5 bg-white sm:p-6">
+                <div class="px-4 py-5 bg-white sm:p-6 space-y-6">
 
                   <div>
                     <label for="about" class="block text-sm font-medium text-gray-700">
-                      Root question
+                      Initial question
                     </label>
                     <div class="mt-1">
                       <textarea id="about" name="about" rows="3"
+                        v-model="root_question"
                         class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 mt-1 block w-full sm:text-sm border border-gray-300 rounded-md"
                         placeholder="theorem riemann_hypothesis ..." />
                     </div>
-                    <p class="mt-2 text-sm text-gray-500">Brief description for your profile. URLs
-                      are
-                      hyperlinked.</p>
+                    <p class="mt-2 text-sm text-gray-500">
+                      The main question... </p>
                   </div>
 
-                  <div class="grid grid-cols-6 gap-6">
-
-                    <div class="col-span-6 sm:col-span-3">
-                      <label for="first-name" class="block text-sm font-medium text-gray-700">First
-                        name</label>
-                      <input type="text" name="first-name" id="first-name" autocomplete="given-name"
-                        class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md" />
+                  <div>
+                    <label for="partial_proof" class="block text-sm font-medium text-gray-700">
+                      Partial proof
+                    </label>
+                    <div class="mt-1">
+                      <textarea id="about" name="partial_proof" rows="7"
+                        v-model="proof_attempt"
+                        class="font-mono shadow-sm focus:ring-indigo-500 focus:border-indigo-500 mt-1 block w-full sm:text-sm border border-gray-300 rounded-md"
+                        placeholder="theorem riemann_hypothesis ..." />
                     </div>
-
-                    <div class="col-span-6 sm:col-span-3">
-                      <label for="last-name" class="block text-sm font-medium text-gray-700">Last
-                        name</label>
-                      <input type="text" name="last-name" id="last-name" autocomplete="family-name"
-                        class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md" />
-                    </div>
-
-                    <div class="col-span-6 sm:col-span-4">
-                      <label for="email-address" class="block text-sm font-medium text-gray-700">Email
-                        address</label>
-                      <input type="text" name="email-address" id="email-address" autocomplete="email"
-                        class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md" />
-                    </div>
-
-                    <div class="col-span-6 sm:col-span-3">
-                      <label for="country" class="block text-sm font-medium text-gray-700">Country</label>
-                      <select id="country" name="country" autocomplete="country-name"
-                        class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                        <option>United States</option>
-                        <option>Canada</option>
-                        <option>Mexico</option>
-                      </select>
-                    </div>
-
-                    <div class="col-span-6">
-                      <label for="street-address" class="block text-sm font-medium text-gray-700">Street address</label>
-                      <input type="text" name="street-address" id="street-address" autocomplete="street-address"
-                        class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md" />
-                    </div>
-
-                    <div class="col-span-6 sm:col-span-6 lg:col-span-2">
-                      <label for="city" class="block text-sm font-medium text-gray-700">City</label>
-                      <input type="text" name="city" id="city" autocomplete="address-level2"
-                        class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md" />
-                    </div>
-
-                    <div class="col-span-6 sm:col-span-3 lg:col-span-2">
-                      <label for="region" class="block text-sm font-medium text-gray-700">State /
-                        Province</label>
-                      <input type="text" name="region" id="region" autocomplete="address-level1"
-                        class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md" />
-                    </div>
-
-                    <div class="col-span-6 sm:col-span-3 lg:col-span-2">
-                      <label for="postal-code" class="block text-sm font-medium text-gray-700">ZIP
-                        /
-                        Postal code</label>
-                      <input type="text" name="postal-code" id="postal-code" autocomplete="postal-code"
-                        class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md" />
-                    </div>
+                    <p class="mt-2 text-sm text-gray-500">
+                      The main question... </p>
                   </div>
-                </div>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
 
-      <div class="hidden sm:block" aria-hidden="true">
-        <div class="py-5">
-          <div class="border-t border-gray-200" />
-        </div>
-      </div>
-
-      <div class="mt-10 sm:mt-0">
-        <div class="md:grid md:grid-cols-3 md:gap-6">
-          <div class="md:col-span-1">
-            <div class="px-4 sm:px-0">
-              <h3 class="text-lg font-medium leading-6 text-gray-900">Notifications</h3>
-              <p class="mt-1 text-sm text-gray-600">Decide which communications you'd like to receive and
-                how.
-              </p>
-            </div>
-          </div>
-          <div class="mt-5 md:mt-0 md:col-span-2">
-            <form action="#" method="POST">
-              <div class="shadow overflow-hidden sm:rounded-md">
-                <div class="px-4 py-5 bg-white space-y-6 sm:p-6">
-                  <fieldset>
-                    <legend class="sr-only">By Email</legend>
-                    <div class="text-base font-medium text-gray-900" aria-hidden="true">By Email
-                    </div>
-                    <div class="mt-4 space-y-4">
-                      <div class="flex items-start">
-                        <div class="flex items-center h-5">
-                          <input id="comments" name="comments" type="checkbox"
-                            class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded" />
-                        </div>
-                        <div class="ml-3 text-sm">
-                          <label for="comments" class="font-medium text-gray-700">Comments</label>
-                          <p class="text-gray-500">Get notified when someones posts a comment
-                            on a
-                            posting.</p>
-                        </div>
-                      </div>
-                      <div class="flex items-start">
-                        <div class="flex items-center h-5">
-                          <input id="candidates" name="candidates" type="checkbox"
-                            class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded" />
-                        </div>
-                        <div class="ml-3 text-sm">
-                          <label for="candidates" class="font-medium text-gray-700">Candidates</label>
-                          <p class="text-gray-500">Get notified when a candidate applies for a
-                            job.</p>
-                        </div>
-                      </div>
-                      <div class="flex items-start">
-                        <div class="flex items-center h-5">
-                          <input id="offers" name="offers" type="checkbox"
-                            class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded" />
-                        </div>
-                        <div class="ml-3 text-sm">
-                          <label for="offers" class="font-medium text-gray-700">Offers</label>
-                          <p class="text-gray-500">Get notified when a candidate accepts or
-                            rejects an offer.</p>
-                        </div>
-                      </div>
-                    </div>
-                  </fieldset>
-                  <fieldset>
-                    <legend class="contents text-base font-medium text-gray-900">Push Notifications
-                    </legend>
-                    <p class="text-sm text-gray-500">These are delivered via SMS to your mobile
-                      phone.
-                    </p>
-                    <div class="mt-4 space-y-4">
-                      <div class="flex items-center">
-                        <input id="push-everything" name="push-notifications" type="radio"
-                          class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300" />
-                        <label for="push-everything" class="ml-3 block text-sm font-medium text-gray-700"> Everything
-                        </label>
-                      </div>
-                      <div class="flex items-center">
-                        <input id="push-email" name="push-notifications" type="radio"
-                          class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300" />
-                        <label for="push-email" class="ml-3 block text-sm font-medium text-gray-700"> Same as email
-                        </label>
-                      </div>
-                      <div class="flex items-center">
-                        <input id="push-nothing" name="push-notifications" type="radio"
-                          class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300" />
-                        <label for="push-nothing" class="ml-3 block text-sm font-medium text-gray-700"> No push
-                          notifications </label>
-                      </div>
-                    </div>
-                  </fieldset>
                 </div>
-                <div class="px-4 py-3 bg-gray-50 text-right sm:px-6">
+                <div class="px-4 py-3 bg-gray-50 sm:flex flex-row justify-between items-end sm:px-6">
+                  <div class="text-sm text-gray-500 pb-3 sm:pb-0 sm:pr-6">
+                    <p v-if="invalidInputs.length > 0">There are still a few things to do before creating this instance:</p>
+                    <ul class="list-disc list-inside">
+                      <li v-for="fail in invalidInputs"
+                        class="">{{ fail }}</li>
+                    </ul>
+                  </div>
                   <button type="submit"
-                    class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">Save</button>
+                    @click.prevent="createInstance()"
+                    :disabled="invalidInputs.length > 0"
+                    class="flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600
+                    hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500
+                    disabled:bg-gray-400 disabled:cursor-not-allowed
+                    ">Publish</button>
                 </div>
               </div>
             </form>

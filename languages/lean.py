@@ -18,7 +18,8 @@ def lean_validate(lean_code: str) -> bool:
 
     return out.returncode > 0
 
-class Lean(Language):
+
+class Lean4(Language):
     """
     Language that represents Lean proofs.
 
@@ -28,7 +29,7 @@ class Lean(Language):
         - machine proofs
     """
 
-    name = "Lean"
+    name = "Lean4"
 
     def judge_low_level(self, root_question: str, branch: list[tuple[str, int]],
                         machine_proof: str) -> bool:
