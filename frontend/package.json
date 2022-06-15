@@ -6,7 +6,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "check": "vue-tsc --noEmit"
+    "check": "vue-tsc --noEmit",
+    "h": "vite build --help"
   },
   "dependencies": {
     "@headlessui/vue": "^1.6.1",

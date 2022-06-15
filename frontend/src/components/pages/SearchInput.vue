@@ -2,7 +2,7 @@
 
 import { computed, reactive, ref } from 'vue';
 import _ from 'lodash';
-import dayjs from 'dayjs';
+import dayjs from 'dayjs/esm';
 
 import { Status, decided, Sprig, ProofAttempt, Parameters, Challenge, linkTo } from '../../sprig';
 import { store } from '../../store';

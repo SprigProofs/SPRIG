@@ -34,7 +34,7 @@
 
 <script setup lang="ts">
 import _ from 'lodash';
-import dayjs from 'dayjs';
+import dayjs from 'dayjs/esm';
 import { Status, Sprig, Challenge, ProofAttempt, Parameters } from '../../sprig';
 import { store } from '../../store';
 import { LabeledData, StatusTag, Price, LanguageTag, Time, UidTag } from "../small";
