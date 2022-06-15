@@ -1,32 +1,36 @@
 import _ from 'lodash';
 import { ProofAttempt, Challenge, Sprig } from "../../../sprig";
 
-
+const CHALENGE_START = "-- chal\n";
+const CHALENGE_END = "-- endchal";
 interface Block {
     start: number,
     end: number,
     challenge: boolean,
-    content: string
+    challengeNb?: number,
+    content: string;
 }
 
-function blocks(proof: string): Block[] {
+function getBlocks(proof: string): Block[] {
     const blocks = [];
+    let challengeNb = -1;
     let i = 0;
     while (i < proof.length) {
-        if (proof.startsWith("-- chal", i)) {
-            const start = i + "-- chal".length;
-            let end = proof.indexOf("-- endchal", start);
+        if (proof.startsWith(CHALENGE_START, i)) {
+            const start = i + CHALENGE_START.length;
+            let end = proof.indexOf(CHALENGE_END, start);
             if (end === -1) end = proof.length;
 
             blocks.push({
                 start,
                 end,
                 challenge: true,
-                content: proof.substring(start, end)
+                content: proof.substring(start, end),
+                challengeNb: ++challengeNb
             });
-            i = end + "-- endchal".length;
+            i = end + CHALENGE_END.length;
         } else {
-            let end = proof.indexOf("-- chal", i);
+            let end = proof.indexOf(CHALENGE_START, i);
             if (end === -1) end = proof.length;
 
             blocks.push({
@@ -38,11 +42,12 @@ function blocks(proof: string): Block[] {
             i = end;
         }
     }
+    console.log(blocks)
     return blocks;
 }
 
 function getChallenges(proof: string): Block[] {
-    return blocks(proof).filter(b => b.challenge);
+    return getBlocks(proof).filter(b => b.challenge);
 }
 
 function extractTitle(proofAttempt: string, challengeNb: number): string {
@@ -66,4 +71,4 @@ function title(object: ProofAttempt | Challenge, instance: Sprig): string {
 
 }
 
-export { title, blocks, getChallenges, extractTitle };
+export { title, getBlocks, getChallenges, extractTitle };

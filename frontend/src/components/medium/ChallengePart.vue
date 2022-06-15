@@ -8,13 +8,14 @@
     <div class="-translate-y-1/2 w-full flex space-x-4 -mb-1">
       <h3 class="border
     flex px-4 py-2 rounded
+    flex-shrink-0
     font-semibold text-gray-700" :class="style[status] + ' ' + lightBg[status]">
         <span>
           Claim {{ challenge.hash }}
           <!-- <UidTag :object="challenge" :tooltip="false" /> -->
         </span>
       </h3>
-      <div class="flex-grow border bg-white rounded flex items-center px-4
+      <div class="flex-grow flex-shrink border bg-white rounded flex items-center px-4
         text-gray-600 text-sm">
         <p v-if="challenge.status == Status.VALIDATED && challenge.author === null">
           Validated <Time :time="challenge.openUntil" not-relative />
