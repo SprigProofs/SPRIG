@@ -18,15 +18,10 @@ interface Language {
 import { defineComponent, DefineComponent } from "vue";
 import { Challenge, ProofAttempt, Sprig } from "../../sprig";
 import TicTacToe from "./TicTacToe";
+import Lean4 from "./Lean4"
 
 const LANGS: Record<string, Language> = {
-    Lean4: {
-        name: "Lean4",
-        description: "WIP: Mathematical proofs in Lean4.",
-        StatementDisplay: null,
-        ProofDisplay: null,
-        title: (object: ProofAttempt | Challenge, instance: Sprig) => "Lean4 proof",
-    },
+    Lean4: Lean4 as unknown as Language,
     TicTacToe: TicTacToe as unknown as Language,
 }
 

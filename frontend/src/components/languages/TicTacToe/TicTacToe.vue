@@ -16,7 +16,7 @@ const props = defineProps({
             if (value.length != 9) {
                 return false;
             }
-            return (!value.every(x => ["X", "O", "."].includes(x)))
+            return (value.every(x => ["X", "O", "."].includes(x)))
         },
     },
     highlight: {
