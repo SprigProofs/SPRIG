@@ -97,9 +97,13 @@ def get_everything() -> Any:
 
     everything = {}
     for file in all_instances_filenames():
-        instance = json.loads(file.read_text())
-        instance['hash'] = file.stem
-        everything[file.stem] = instance
+        instance = load(file.stem)
+        with sprig.time_mode('real'):
+            instance.distribute_all_bets()
+        save(instance, file.stem)
+        data = instance.dump_as_dict()
+        data['hash'] = file.stem
+        everything[file.stem] = data
 
     return everything
 
