@@ -20,13 +20,13 @@
                 through blockchain technology and game theory.
             </p>
 
-            <p class="relative mx-16 -mt-24 bg-red-600/30 home-rectangle w-48 h-48">
+            <div class="relative mx-16 -mt-24 bg-red-600/30 home-rectangle w-48 h-48">
                 <!-- Lorem ipsum dolor sit amet consectetur adipisicing elit. Suscipit assumenda maxime nostrum officia earum consequatur deleniti -->
-                <div class="absolute
+                <span class="absolute
                     top-[calc(100%-1rem)] left-[calc(100%-1rem)] w-16 h-16
                     hover:animate-spin-square
-                    shadow home-rectangle bg-green-600/30"></div>
-            </p>
+                    shadow home-rectangle bg-green-600/30"></span>
+            </div>
 
             <div class="w-64 h-32 ml-auto mr-32 mt-4
                 home-rectangle bg-amber-600/30
@@ -120,6 +120,20 @@
             </div>
         </div>
     </div>
+
+  <div class="bg-indigo-50">
+    <div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:py-24 lg:px-8 lg:flex lg:items-center lg:justify-between">
+      <h2 class="text-3xl font-extrabold tracking-tight text-gray-900 md:text-4xl">
+        <span class="block">Ready to dive in?</span>
+        <span class="block text-indigo-600">Explore open challenges today.</span>
+      </h2>
+      <div class="mt-8 flex lg:mt-0 lg:flex-shrink-0">
+        <div class="inline-flex rounded-md shadow">
+          <router-link to="/search" href="#" class="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"> Get started </router-link>
+        </div>
+      </div>
+    </div>
+  </div>
 
     <!-- <div class="h-64"></div> -->
 </div>

@@ -431,7 +431,7 @@ interface ActionData {
 // }
 // }
 const isLocalhost = (location.hostname === "localhost" || location.hostname === "127.0.0.1");
-const API_BASE = isLocalhost ? "http://localhost:8601/" : "http://sprig.therandom.space/api/";
+const API_BASE = isLocalhost ? "http://localhost:8601/" : "https://sprig.therandom.space/api/";
 
 console.log(location.hostname, isLocalhost, API_BASE);
 

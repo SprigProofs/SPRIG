@@ -1,5 +1,6 @@
 <template>
-  <Button color="yellow" icon="md-add-round" @click="openDialog()">New proof</Button>
+  <div>
+  <Button color="yellow" icon="md-add-round" @click.prevent="openDialog()">New proof</Button>
   <SlideOver v-model="slideOpen" panel-title="New proof attempt">
     <div class="space-y-4">
       <div v-if="!preview">
@@ -44,6 +45,7 @@
 
 
   </SlideOver>
+  </div>
 </template>
 
 <script setup lang="ts">

@@ -36,12 +36,11 @@
           Challenge for
           <Price :amount="challengeCost" />
         </button>
-        <button v-else-if="attemptCost !== null"
-          class="col-span-2 self-end
-          border bg-blue-100 rounded-md py-2 px-4 w-full shadow">
-          Add proof for
-          <Price :amount="attemptCost" />
-        </button>
+        <NewProofButton
+          v-else-if="attemptCost !== null"
+          :instance="instance" :challenge="challenge"
+          class="col-span-2 self-end w-full"
+          />
       </template>
     </div>
   </div>
@@ -57,6 +56,7 @@ import LabeledData from '../small/LabeledData.vue';
 import User from './User.vue';
 import { inject } from 'vue';
 import LANGS from '../languages';
+import NewProofButton from './NewProofButton.vue';
 
 const props = defineProps<{
   challenge: Challenge,
