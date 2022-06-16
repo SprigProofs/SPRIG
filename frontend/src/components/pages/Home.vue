@@ -8,25 +8,25 @@
         bg-gradient-to-br from-blue-200 to-purple-200">
 
         <div class="max-w-3xl mx-auto pt-12">
-            <div></div>
+            <div class="mt-14"></div>
 
-            <div class="home-rectangle shadow-xl p-8 bg-gray-100/30 ml-4 w-96 " >
-                <img class="w-full"
-                    src="/sprig.svg" alt="SPRIG">
-            </div>
+            <a href="https://sprig.ch" class="home-rectangle shadow-xl p-8 bg-gray-100/30 ml-4 w-96 hover:shadow-2xl" >
+                <img class="w-full -mt-28"
+                    src="/sprig.png" alt="SPRIG">
+            </a>
             <p class="home-rectangle w-60 h-60 ml-auto -mt-16 mr-12
                 bg-blue-500/30 text-right text-2xl font-semibold">
                 Building trust in mathematical proofs
                 through blockchain technology and game theory.
             </p>
 
-                <p class="relative mx-16 -mt-24 bg-red-600/30 home-rectangle w-48 h-48">
-                    Lorem ipsum dolor sit amet consectetur adipisicing elit. Suscipit assumenda maxime nostrum officia earum consequatur deleniti
-                    <div class="absolute
-                        top-[calc(100%-1rem)] left-[calc(100%-1rem)] w-16 h-16
-                        hover:animate-spin-square
-                        shadow home-rectangle bg-green-600/30"></div>
-                </p>
+            <p class="relative mx-16 -mt-24 bg-red-600/30 home-rectangle w-48 h-48">
+                <!-- Lorem ipsum dolor sit amet consectetur adipisicing elit. Suscipit assumenda maxime nostrum officia earum consequatur deleniti -->
+                <div class="absolute
+                    top-[calc(100%-1rem)] left-[calc(100%-1rem)] w-16 h-16
+                    hover:animate-spin-square
+                    shadow home-rectangle bg-green-600/30"></div>
+            </p>
 
             <div class="w-64 h-32 ml-auto mr-32 mt-4
                 home-rectangle bg-amber-600/30

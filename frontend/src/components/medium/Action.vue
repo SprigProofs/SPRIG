@@ -155,9 +155,10 @@ function toggle() {
 
       </p>
 
-      <Button v-if="buttonText" @click.stop="takeAction()"
+      <!-- <Button v-if="buttonText" @click.stop="takeAction()"
         class="min-w-fit mr-4 -my-1 self-start transition-opacity duration-500 "
-        :class="{ 'opacity-0': !collapsed && title }">{{ buttonText }}</Button>
+        :class="{ 'opacity-0': !collapsed && title }">{{ buttonText }}</Button> -->
+
     </div>
 
     <Transition>
@@ -200,10 +201,10 @@ function toggle() {
             </li>
           </ul>
           <pre v-else>{{ action }}</pre>
-          <button v-if="buttonText !== null" @click.stop="takeAction()"
+          <!-- <button v-if="buttonText !== null" @click.stop="takeAction()"
             class="bg-white border border-slate-300 rounded-md px-2 py-1 self-end shadow-sm">
             {{ buttonText }}
-          </button>
+          </button> -->
         </div>
       </div>
     </Transition>
