@@ -23,5 +23,5 @@ if (props.challengeHash === null) {
 </script>
 
 <template>
-    <pre>{{ dedent(text) }}</pre>
+    <pre class="whitespace-pre-wrap">{{ dedent(text) }}</pre>
 </template>

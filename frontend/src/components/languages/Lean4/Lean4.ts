@@ -1,3 +1,4 @@
+import dedent from 'dedent';
 import _ from 'lodash';
 import { ProofAttempt, Challenge, Sprig } from "../../../sprig";
 
@@ -21,24 +22,30 @@ function getBlocks(proof: string): Block[] {
             let end = proof.indexOf(CHALENGE_END, start);
             if (end === -1) end = proof.length;
 
-            blocks.push({
-                start,
-                end,
-                challenge: true,
-                content: proof.substring(start, end),
-                challengeNb: ++challengeNb
-            });
-            i = end + CHALENGE_END.length;
+            const content = dedent(proof.substring(start, end));
+            if (content.length > 0) {
+                blocks.push({
+                    start,
+                    end,
+                    content,
+                    challenge: true,
+                    challengeNb: ++challengeNb
+                });
+            }
+           i = end + CHALENGE_END.length;
         } else {
             let end = proof.indexOf(CHALENGE_START, i);
             if (end === -1) end = proof.length;
 
-            blocks.push({
-                start: i,
-                end,
-                challenge: false,
-                content: proof.substring(i, end)
-            });
+            const content =dedent(proof.substring(i, end));
+            if (content.length > 0) {
+                blocks.push({
+                    start: i,
+                    end,
+                    challenge: false,
+                    content,
+                });
+            }
             i = end;
         }
     }
@@ -56,10 +63,33 @@ function extractTitle(proofAttempt: string, challengeNb: number): string {
     return claim.match(/(theorem|lemma|example)\s*(\S+)/m)[2];
 }
 
+function collectPreviousDefs(instance: Sprig, start: string | null, removeChallengeTags: boolean = true): string {
+    if (start === undefined || start === null) return '';
+    console.log(start, instance.challenges)
+    const challenge = instance.challenges[start];
+    const parent = instance.proofs[challenge.parent];
+    const challengeNb = parent.challenges.indexOf(challenge.hash);
+    const blocks = getBlocks(parent.proof);
+    const lastBlock = blocks.findIndex(b => b.challengeNb === challengeNb);
+
+    let previousDefs: string;
+    if (removeChallengeTags) {
+        previousDefs = blocks.slice(0, lastBlock).map(b => b.content).join('\n\n');
+    } else {
+        previousDefs = parent.proof.substring(0, blocks[lastBlock].start);
+    }
+
+    if (!parent.isRoot()) {
+        return collectPreviousDefs(instance, parent.parent) + '\n\n' + previousDefs;
+    } else {
+        return previousDefs;
+    }
+}
+
 function title(object: ProofAttempt | Challenge, instance: Sprig): string {
     if (object instanceof ProofAttempt) {
         if (!object.isRoot())
-            return 'root' + title(instance.challenges[object.parent], instance);
+            return title(instance.challenges[object.parent], instance);
         else
             return extractTitle(object.proof, getChallenges(object.proof).length - 1);
 
@@ -71,4 +101,16 @@ function title(object: ProofAttempt | Challenge, instance: Sprig): string {
 
 }
 
-export { title, getBlocks, getChallenges, extractTitle };
+
+function attemptTemplate(challenge: string, instance: Sprig): string {
+    const attempt = instance.proofs[instance.challenges[challenge].parent];
+    const separator = `\n\n-- Modify and submit only what is below this line --\n\n`
+    const challengeStatement = getChallenges(attempt.proof)[attempt.challenges.indexOf(challenge)].content;
+    return collectPreviousDefs(instance, challenge, true) + separator + challengeStatement;
+}
+
+function challengeCount(text: string): number {
+    return getChallenges(text).length;
+}
+
+export { title, attemptTemplate, challengeCount, getBlocks, getChallenges, extractTitle, collectPreviousDefs };

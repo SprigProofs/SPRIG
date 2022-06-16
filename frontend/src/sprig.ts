@@ -548,11 +548,21 @@ function linkTo(obj: ProofAttempt | Challenge | Sprig | string) {
     }
 }
 
+function copy(text): void {  // TODO: What is the best way to copy stuff ?
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    document.execCommand('copy')
+    document.body.removeChild(textArea)
+}
+
 export {
     api, STATUSES, STATUS_DISPLAY_NAME, Unit,
     decided, Challenge, Sprig, Status,
     ProofAttempt, Parameters, Action, ActionData, linkTo,
-    dayjs,
+    dayjs, copy,
 };
 
 // ok

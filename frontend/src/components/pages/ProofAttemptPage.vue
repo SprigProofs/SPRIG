@@ -70,7 +70,7 @@
             <Price :amount="downBounty" /> and this proof attempt
             becomes
             <StatusTag status="rejected" />.
-            Every subsequent challenge that is validated will only have its bounty refunded
+            Every other successful challenge will only have its bounty refunded
             and the bounties of answered challenges
             will reward their answers with
             <Price :amount="costToChallenge" />.
@@ -96,7 +96,7 @@
       </header>
 
       <div class="p-8 flex xl:flex-row-reverse xl:justify-between flex-col">
-        <section class="xl:w-[32rem] xl:ml-8">
+        <section v-if="!readOnly" class="xl:w-[32rem] xl:ml-8 mb-4">
           <h2 class="small-title pb-2">Actions log</h2>
           <ol>
             <li v-for="(action, idx) in actions">
@@ -106,7 +106,7 @@
         </section>
 
         <section class="flex flex-col flex-grow ">
-          <h2 class="small-title mb-2 mt-4">Proof attempt</h2>
+          <h2 class="small-title mb-2">Proof attempt</h2>
 
           <!-- <button
                     v-if="!showPreviousDefinitions"
@@ -143,7 +143,7 @@
       </div>
     </div>
 
-    <section class="m-8">
+    <section class="m-8" v-if="!readOnly">
       <el-collapse>
         <el-collapse-item title="Instance parameters">
           <Parameters :params="params" :highlight="attempt.height" />
@@ -176,7 +176,7 @@
 
 <script setup lang="ts">
 
-import { reactive, ref, watch } from 'vue';
+import { inject, reactive, ref, watch } from 'vue';
 import { Status } from '../../sprig';
 import { store } from '../../store';
 import { Price, StatusTag, Time } from "../small";
@@ -197,14 +197,19 @@ const props = defineProps({
     type: String,
     required: true,
   },
+  instanceValue: {
+    type: Object,
+    required: false,
+  },
 });
 
-const instance = computed(() => store.instances[props.instanceHash]);
+const readOnly = inject('readOnly', false);
+const instance = computed(() => props.instanceValue || store.instances[props.instanceHash]);
 const attempt = computed(() => instance.value?.proofs[props.hash]);
 const lang = computed(() => Languages[instance.value?.language]);
 const params = computed(() => instance.value?.params);
 const stakeHeld = computed(() => attempt.value?.stakeHeld(params.value));
-const downBounty = computed(() => attempt.value?.possibleReward(params.value));
+const downBounty = computed(() => params.value?.downstakes[attempt.value?.height]);
 const nbClaims = computed(() => attempt.value?.challenges.length);
 const costToChallenge = computed(() => params.value?.costToChallenge(attempt.value));
 

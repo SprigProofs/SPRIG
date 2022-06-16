@@ -12,6 +12,10 @@ interface Language {
     }>;
     // Functions
     title: (object: ProofAttempt | Challenge, instance: Sprig) => string;
+    // Text template for a new proof attempt that answers this challenge.
+    attemptTemplate: (challenge: string, instance: Sprig) => string;
+    // The number of challenge in a proof attempt. This proof attempt can be ill formed.
+    challengeCount: (text: string) => number;
 }
 
 

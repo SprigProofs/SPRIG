@@ -6,10 +6,9 @@ import dayjs from 'dayjs/esm';
 
 import { Status, decided, Sprig, ProofAttempt, Parameters, Challenge, linkTo } from '../../sprig';
 import { store } from '../../store';
+import { StatusTag, LanguageTag } from '../small';
 import InstanceEmbed from '../medium/InstanceEmbed.vue';
 import AttemptEmbed from '../medium/AttemptEmbed.vue';
-import { StatusTag } from '../small';
-import LanguageTag from '../small/LanguageTag.vue';
 import ChallengeEmbed from '../medium/ChallengeEmbed.vue';
 
 const statuses = reactive({
@@ -253,9 +252,9 @@ const results = computed<{ key: string, challenge?: Challenge, instance?: Sprig,
       <li v-for="result in results" :key="result.key" class="transition">
         <router-link :to="linkTo(result.attempt || result.challenge || result.instance || result.user)"
           class="p-4 block bg-white rounded-sm shadow-sm hover:shadow-md w-full border">
-          <AttemptEmbed v-if="result.attempt" :instance-hash="result.attempt.instanceHash" :hash="result.attempt.hash" />
+          <AttemptEmbed v-if="result.attempt" :hash="result.attempt.hash" :instance="store.instances[result.attempt.instanceHash]" />
           <InstanceEmbed v-else-if="result.instance" :hash="result.instance.hash"></InstanceEmbed>
-          <ChallengeEmbed v-else-if="result.challenge" :challenge-hash="result.challenge.hash" :instance-hash="result.challenge.instanceHash" />
+          <ChallengeEmbed v-else-if="result.challenge" :challenge="result.challenge" :instance="store.instances[result.challenge.hash]" />
           <pre v-else>{{ result }}</pre>
           <!-- <pre>{{ weightDebug(result.attempt || result.claim || result.instance, selectedType) }}</pre> -->
 
