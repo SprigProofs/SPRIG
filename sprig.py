@@ -585,7 +585,7 @@ SPRIG instance:
         while h is not None:
             challenge = self.challenges[h]
             attempt = self.proofs[challenge.parent]
-            branch.append((attempt.proof, attempt.challenges.index(challenge_hash)))
+            branch.append((attempt.proof, attempt.challenges.index(h)))
 
             h = attempt.parent
 
