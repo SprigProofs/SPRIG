@@ -38,7 +38,7 @@
       <div class="flex space-x-4 justify-end">
         <Button v-if="!preview" @click="togglePreview()" color="indigo" >Preview</Button>
         <Button v-else @click="togglePreview()" color="indigo" >Edit</Button>
-        <Button v-if="preview" color="indigo" filled>Publish</Button>
+        <Button v-if="preview" @click="publish()" color="indigo" filled>Publish</Button>
       </div>
     </div>
 
@@ -49,14 +49,15 @@
 <script setup lang="ts">
 import dedent from 'dedent';
 import _ from 'lodash';
-import { computed, provide, ref } from 'vue';
-import { Challenge, Sprig, copy, ProofAttempt, Status } from '../../sprig';
+import { computed, nextTick, provide, ref } from 'vue';
+import { Challenge, Sprig, copy, ProofAttempt, Status, linkTo } from '../../sprig';
 import { Button, SlideOver } from '../small';
 import { store } from '../../store';
 import { collectPreviousDefs, getChallenges } from '../languages/Lean4/Lean4';
 import LANGS from '../languages';
 import ProofAttemptPageVue from '../pages/ProofAttemptPage.vue';
 import dayjs from 'dayjs';
+import { useRouter } from 'vue-router';
 
 const slideOpen = ref(false);
 const templateVisible = ref(true);
@@ -68,10 +69,21 @@ const props = defineProps<{
   challenge: Challenge,
   instance: Sprig,
 }>();
+const router = useRouter();
 
 function openDialog() {
   slideOpen.value = true;
-  console.log("openDialog", props.challenge);
+}
+
+async function publish() {
+  store.newProofAttempt(
+    props.instance.hash, props.challenge.hash,
+    lang.challengeCount(proofInput.value) === 0,
+    proofInput.value)
+    .then((proofAttempt) => {
+      console.log("published", proofAttempt);
+      nextTick(() => router.push(linkTo(proofAttempt)));
+    })
 }
 
 function togglePreview() {

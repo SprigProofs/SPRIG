@@ -479,7 +479,6 @@ const api = {
             url.searchParams.append(key, query[key]);
         }
         console.log("post url", url, "body", body);
-        console.log(JSON.stringify(body));
         const resp = await fetch(url.toString(), {
             method: "POST",
             headers: {"content-type": "application/json"},
@@ -524,12 +523,10 @@ const api = {
             proof: proof,
         }).then(data => new Sprig(data));
     },
-
-    // answer(instance: string, claim: string, claimer: string, claims: string[], lowLevel: boolean, callback: FetchCallback<AnswerRecord>) {
-    //     this.post([instance, claim, "proof_attempts"], {}, {
-    //         claimer, claims, machine_level: lowLevel
-    //     }, callback)
-    // }
+    async newProofAttempt(instanceHash: string, challengeHash: string, isMachineLevel: boolean, proof: string, author: string): Promise<ProofAttempt> {
+        return this.post(['proof', instanceHash, challengeHash], {},
+            { author, statement: proof, machine_level: isMachineLevel }).then((data) => new ProofAttempt({ instanceHash, ...data}));
+    },
 };
 
 /**

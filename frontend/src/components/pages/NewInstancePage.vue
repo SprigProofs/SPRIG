@@ -231,7 +231,7 @@ function createInstance() {
                                 <input type="number" min="1" v-model="costs[costs.length - 1].questionBounty">
                               </td>
                               <td class="relative">
-                                <button @click.prevent="newCostRow(costs.length - 1)" class="absolute top-full left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white px-1  text-green-600 hover:text-green-900 rounded">
+                                <button @click.prevent="newCostRow(costs.length - 1)" class="absolute text-sm top-full left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white px-1  text-green-600 hover:text-green-900 rounded">
                                   New
                                 </button>
                               </td>

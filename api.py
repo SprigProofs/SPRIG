@@ -181,15 +181,18 @@ class NewProofAttemptData(BaseModel):
 
 @api.post("/proof/{instance_hash}/{challenge_hash}")
 def new_proof_attempt(instance_hash: sprig.Hash, challenge_hash: sprig.Hash,
-                      attempt_data: NewProofAttemptData) -> None:
+                      attempt_data: NewProofAttemptData) -> sprig.ProofAttempt:
     """Create a new proof attempt to answer a challenge."""
 
     instance = load(instance_hash)
 
     with sprig.time_mode('real'):
         if attempt_data.machine_level:
-            instance.answer_low_level(challenge_hash, attempt_data.author, attempt_data.author)
+            attempt = instance.answer_low_level(challenge_hash, attempt_data.author,
+                                                attempt_data.statement)
         else:
-            instance.answer(challenge_hash, attempt_data.author, attempt_data.author)
+            attempt = instance.answer(challenge_hash, attempt_data.author, attempt_data.statement)
 
     save(instance, instance_hash)
+
+    return attempt

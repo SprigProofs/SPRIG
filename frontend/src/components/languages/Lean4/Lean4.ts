@@ -49,7 +49,6 @@ function getBlocks(proof: string): Block[] {
             i = end;
         }
     }
-    console.log(blocks)
     return blocks;
 }
 

@@ -141,10 +141,4 @@ const actions = computed(() => instance?.allActions().map(action => {
     };
 }));
 
-
-const route = useRoute();
-watch(
-    () => route.params,
-    () => { }
-);
 </script>

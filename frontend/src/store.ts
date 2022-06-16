@@ -1,4 +1,4 @@
-import { api, Parameters, Sprig } from "./sprig";
+import { api, Parameters, ProofAttempt, Sprig } from "./sprig";
 import { reactive } from "vue";
 
 export const store = reactive<{
@@ -10,6 +10,7 @@ export const store = reactive<{
     reload: () => Promise<void>,
     challenge: (instance: string, challenge: string) => void,
     newInstance: (language: string, params: Parameters, rootClaim: string, proof: string) => Promise<Sprig>,
+    newProofAttempt: (instance: string, challenge: string, isMachineLevel: boolean, proof: string) => Promise<ProofAttempt>,
 }>({
     instances: {},
     bank: {},
@@ -41,6 +42,13 @@ export const store = reactive<{
         return api.newInstance(language, params, this.user, rootClaim, proof).then(async (instance) => {
             await store.reload();
             return instance;
+        })
+    },
+    async newProofAttempt(instance: string, challenge: string, isMachineLevel: boolean, proof: string) {
+        console.log("New proof attempt", instance, challenge, proof);
+        return api.newProofAttempt(instance, challenge, isMachineLevel, proof, this.user).then(async (proofAttempt) => {
+            await store.reload();
+            return proofAttempt;
         })
     }
 });
