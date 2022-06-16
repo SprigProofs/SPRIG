@@ -115,7 +115,7 @@ class Lean(Language):
 
         # TODO: improve this check
         # Verify that challenged claim is proven again
-        assert challenged_header in attempt
+        assert challenged_header.strip() in attempt
 
         return True
 
