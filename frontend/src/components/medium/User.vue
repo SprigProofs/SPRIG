@@ -15,12 +15,10 @@ const props = defineProps({
 </script>
 
 <template>
-  <Tooltip :width="300">
+  <!-- <Tooltip :width="300">
     <UserEmbed :name="name" />
-
-    <template #reference>
+    <template #reference> -->
       <span class="underline decoration-dashed">{{ name }}</span>
-    </template>
-
-  </Tooltip>
+    <!-- </template>
+  </Tooltip> -->
 </template>

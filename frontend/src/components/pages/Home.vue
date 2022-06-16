@@ -55,7 +55,7 @@
             </li>
         </ul>
 
-        <div class="mx-12 flex flex-col space-y-8 ">
+        <div v-if="false" class="mx-12 flex flex-col space-y-8 ">
             <div class="even:self-end even:text-right">
                 <h2 class="font-title font-bold text-2xl
                     ">Join a comunity of truth seekers</h2>
@@ -78,7 +78,7 @@
         </div>
     </div>
 
-    <div class="
+    <div v-if="false" class="
         my-8
         border-y border-black
         bg-gradient-to-tr to-purple-200 from-blue-200">
@@ -121,7 +121,7 @@
         </div>
     </div>
 
-    <div class="h-64"></div>
+    <!-- <div class="h-64"></div> -->
 </div>
 </template>
 
