@@ -55,7 +55,7 @@ class Lean4(Language):
         proof_elements = []
         for proof_attempt, chal_nb in branch:
             challenge_starts = list(re.compile('-- chal').finditer(proof_attempt))
-            challenge_start = challenge_starts[chal_nb]
+            challenge_start = challenge_starts[chal_nb].start()
 
             proof_elements.append(proof_attempt[:challenge_start])
         proof_elements.append(machine_proof)
