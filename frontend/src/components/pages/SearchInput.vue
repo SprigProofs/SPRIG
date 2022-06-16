@@ -264,9 +264,9 @@ const results = computed<{ key: string, challenge?: Challenge, instance?: Sprig,
 
     <section v-if="results.length === 0">
       <el-empty description="Nothing to show here. Try broadening your search.">
-        <button class="rounded border bg-blue-100 pl-2 pr-4 py-2 border-blue-700 shadow hover:-translate-y-0.5 hover:shadow-md transition transform">
-          <v-icon name="md-add-round" class="fill-blue-800"/>
-          New SPRIG instance</button>
+        <router-link to="/new">
+          <Button icon="md-add-round" color="blue">New SPRIG instance</Button>
+        </router-link>
       </el-empty>
     </section>
   </div>
