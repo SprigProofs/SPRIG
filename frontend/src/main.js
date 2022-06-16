@@ -15,7 +15,7 @@ import InstancePage from './components/pages/InstancePage.vue'
 import NewInstancePage from './components/pages/NewInstancePage.vue'
 import UserPage from './components/pages/UserPage.vue'
 import { OhVueIcon, addIcons } from "oh-vue-icons";
-import { MdClearRound, MdCheckRound, MdMenu, MdModeedit, MdCancel, MdCheckcircle, MdOfflineboltSharp, MdKeyboarddoublearrowdown, MdKeyboarddoublearrowup, MdBolt, MdOfflinebolt, MdQuestionmarkRound, MdInfoRound, MdAccesstimeRound, MdPersonRound, FaMountain, MdLockclock, MdLockopenRound, MdPriorityhighRound, MdCloseRound, MdDownload, MdDownloading, MdExpandmoreRound, MdAddRound, MdLockoutline, HiSolidQuestionMarkCircle } from "oh-vue-icons/icons";
+import { MdClearRound, MdCheckRound, MdMenu, MdModeedit, MdCancel, MdCheckcircle, MdOfflineboltSharp, MdKeyboarddoublearrowdown, MdKeyboarddoublearrowup, MdBolt, MdOfflinebolt, MdQuestionmarkRound, MdInfoRound, MdAccesstimeRound, MdPersonRound, FaMountain, MdLockclock, MdLockopenRound, MdPriorityhighRound, MdCloseRound, MdDownload, MdDownloading, MdExpandmoreRound, MdAddRound, MdLockoutline, HiSolidQuestionMarkCircle, MdVisibility, MdVisibilityoff, MdCopyall } from "oh-vue-icons/icons";
 import { PiPikachu } from 'oh-vue-icons/icons'
 import { CiAlgo } from 'oh-vue-icons/icons'
 
@@ -26,6 +26,9 @@ addIcons(
     MdCheckRound,
     MdQuestionmarkRound,
     HiSolidQuestionMarkCircle,
+    MdVisibility,
+    MdVisibilityoff,
+    MdCopyall,
     MdMenu,
     PiPikachu,
     MdModeedit,

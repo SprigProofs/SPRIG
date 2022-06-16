@@ -7,7 +7,9 @@ It reads and updates the sprig instances in the data/ folder.
 import json
 import os
 from pathlib import Path
+import traceback
 from typing import Any, Iterator
+from xmlrpc.client import boolean
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -19,16 +21,20 @@ os.environ["BANK_FILE"] = str((Path(__file__).parent / "data" / "api_bank").abso
 import sprig
 import utils
 
-api = FastAPI()
-# This allows cross-origin requests.
-# It is needed in development because the frontend dev server is not the same as the backend.
-api.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    # allow_credentials=True,
-    allow_methods=["*"],
-    # allow_headers=["*"],
-)
+DEV =os.environ.get("DEV", "").lower() in ("true", "1", "yes", "y'")
+ROOT_PATH = "/api" if not DEV else ""
+api = FastAPI(root_path=ROOT_PATH)
+
+if DEV:
+    # This allows cross-origin requests.
+    # It is needed in development because the frontend dev server is not the same as the backend.
+    api.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        # allow_credentials=True,
+        allow_methods=["*"],
+        # allow_headers=["*"],
+    )
 
 
 def all_instances_filenames() -> Iterator[Path]:
@@ -80,6 +86,10 @@ class SprigData(BaseModel):
     challenges: dict[sprig.Hash, sprig.Challenge]
     root_question: sprig.Hash
 
+    class Config:
+        arbitrary_types_allowed = True
+        orm_mode = True
+
 
 @api.get("/everything", response_model=dict[sprig.Hash, SprigData])
 def get_everything() -> Any:
@@ -96,14 +106,14 @@ def get_everything() -> Any:
 
 class SprigInitData(BaseModel):
     language: str
-    params: dict[str, Any]
+    params: ParameterData  # I would like to use Parameters, but it doesn't work...
     author: sprig.Address
     root_claim: str
     proof: str
 
 
 @api.post("/instances", response_model=SprigData)
-def add_new_instance(new_instance: SprigInitData) -> Any:
+def add_new_instance(new_instance: SprigInitData) -> dict[str, Any]:  # SprigData:
     """
     Start a new instance of the sprig protocol.
 
@@ -111,23 +121,21 @@ def add_new_instance(new_instance: SprigInitData) -> Any:
     """
 
     with sprig.time_mode('real'):
-        try:
-            parameters = sprig.Parameters(**new_instance.params)
-            instance = sprig.Sprig.start(
-                new_instance.language,
-                parameters,
-                new_instance.author,
-                new_instance.root_claim,
-                new_instance.proof,
-            )
-        except AssertionError as e:
-            raise HTTPException(400, e.args)
+        parameters = sprig.Parameters(**new_instance.params.dict())
+        instance = sprig.Sprig.start(
+            new_instance.language,
+            parameters,
+            new_instance.author,
+            new_instance.root_claim,
+            new_instance.proof,
+        )
 
         h = new_hash()
         save(instance, h)
 
         data = instance.dump_as_dict()
         data['hash'] = h
+        print(data)
         return data
 
 
@@ -142,8 +150,12 @@ class ChallengeCreatedData(BaseModel):
     challenge: sprig.Challenge
     parent: sprig.ProofAttempt
 
-@api.post("/challenge/{instance_hash}/{claim_hash}")  #, response_model=ChallengeCreatedData)  # The response_model is not working and I don't know why.
-def new_challenge(skeptic: sprig.Address, claim_hash: sprig.Hash, instance_hash: sprig.Hash) -> ChallengeCreatedData:
+
+@api.post(
+    "/challenge/{instance_hash}/{claim_hash}"
+)  #, response_model=ChallengeCreatedData)  # The response_model is not working and I don't know why.
+def new_challenge(skeptic: sprig.Address, claim_hash: sprig.Hash,
+                  instance_hash: sprig.Hash) -> ChallengeCreatedData:
     """Challenge a claim that isn't yet challenged and still active."""
 
     instance = load(instance_hash)
@@ -161,56 +173,26 @@ def new_challenge(skeptic: sprig.Address, claim_hash: sprig.Hash, instance_hash:
     )
 
 
-if False:
+class NewProofAttemptData(BaseModel):
+    statement: str
+    author: sprig.Address
+    machine_level: boolean
 
-    @api.get("/{instance_hash}", response_model=SprigData)
-    def get_instance(instance_hash: str) -> Any:
-        """All the data of one SPRIG instance."""
-        data = json.loads(path_from_hash(instance_hash).read_text())
-        data['hash'] = instance_hash
-        return data
 
-    @api.post("/{instance_hash}/{claim_hash}/challenge")
-    def new_challenge(skeptic: sprig.Address, claim_hash: str, instance_hash: str):
-        """Challenge a claim that isn't yet challenged and still active."""
+@api.post("/proof/{instance_hash}/{challenge_hash}")
+def new_proof_attempt(instance_hash: sprig.Hash, challenge_hash: sprig.Hash,
+                      attempt_data: NewProofAttemptData) -> sprig.ProofAttempt:
+    """Create a new proof attempt to answer a challenge."""
 
-        instance = load(instance_hash)
+    instance = load(instance_hash)
 
-        instance.challenge(skeptic, claim_hash)
-
-        save(instance, instance_hash)
-
-        return ChallengeCreatedData(balance=sprig.BANK[skeptic], claim=instance.claims[claim_hash])
-
-    @api.get("/{instance_hash}/{claim_hash}/proof_attempts")
-    def get_proof_attempts(claim_hash: str, instance: sprig.Sprig = Depends(load)):
-        """Return a list of all proof attempts for a claim.
-        A proof attempt is a list of the hashes of the claims that make up the proof."""
-        return instance.proof_attempts.get(claim_hash, [])
-
-    class NewProofAttempt(BaseModel):
-        claimer: sprig.Address
-        claims: list[str]
-        machine_level: bool = False
-
-    class AnswerRecord(BaseModel):
-        balance: int
-        attempt: sprig.ProofAttempt
-
-    @api.post("/{instance_hash}/{claim_hash}/proof_attempts")
-    def add_proof_attempt(attempt: NewProofAttempt, claim_hash: str, instance_hash: str):
-        """Create a new proof attempt of a challenged claim."""
-
-        instance = load(instance_hash)
-
-        if attempt.machine_level:
-            assert len(attempt.claims) == 1
-            instance.answer_low_level(claim_hash, attempt.claimer, *attempt.claims)
+    with sprig.time_mode('real'):
+        if attempt_data.machine_level:
+            attempt = instance.answer_low_level(challenge_hash, attempt_data.author,
+                                                attempt_data.statement)
         else:
-            instance.answer(claim_hash, attempt.claimer, *attempt.claims)
+            attempt = instance.answer(challenge_hash, attempt_data.author, attempt_data.statement)
 
-        instance.distribute_all_bets()
-        sprig.now(1)
-        save(instance, instance_hash)
+    save(instance, instance_hash)
 
-        return AnswerRecord(balance=42, attempt=instance.proof_attempts[claim_hash][-1])
+    return attempt

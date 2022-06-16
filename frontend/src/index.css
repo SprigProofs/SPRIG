@@ -37,6 +37,10 @@
         @apply p-4 shadow-lg  border border-black bg-opacity-30 flex items-center
     }
 
+    input[type="number"] {
+        @apply w-24 focus:ring-indigo-500 focus:border-indigo-500 block sm:text-sm border-gray-300 rounded-md
+    }
+
     .animate-rainbow {
         animation: rainbow 2s infinite;
     }

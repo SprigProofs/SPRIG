@@ -1,10 +1,10 @@
 import StatementDisplay from './StatementDisplay.vue';
 import ProofDisplay from './ProofDisplay.vue';
-import { title, attemptTemplate, challengeCount } from './TicTacToe';
+import { title, attemptTemplate, challengeCount } from './Lean4';
 
 export default {
-    name: "TicTacToe",
-    description: "The toy language to play Tic Tac Toe recursively.",
+    name: "Lean4",
+    description: "WIP: Mathematical proofs in Lean4.",
     title,
     attemptTemplate,
     challengeCount,

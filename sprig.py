@@ -13,7 +13,7 @@ from textwrap import indent
 from time import sleep, time_ns
 from typing import Generator, Literal, NewType, Optional, Tuple, Iterator, Any, cast
 
-from languages import Lean, TicTacToe
+from languages import Lean4, TicTacToe
 from languages.base import Language
 from utils import *
 
@@ -806,11 +806,10 @@ def play_tictactoe(params: Parameters) -> Sprig:
 
 def play_lean(params: Parameters) -> Sprig:
     sprig = Sprig.start(
-        Lean().dump(), params, Address("Diego"), """
+        Lean4().dump(), params, Address("Diego"), """
         -- chal
         theorem add_comm (m n : nat) : m + n = n + m := sorry
-        -- endchall""",
-            """
+        -- endchall""", """
         import data.nat.basic
         open nat
 

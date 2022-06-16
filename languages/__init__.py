@@ -1,7 +1,7 @@
 from .tictactoe import TicTacToe as TicTacToe
-from .lean import Lean as Lean
+from .lean import Lean4 as Lean4
 
 LANGUAGES = {
     TicTacToe.name: TicTacToe,
-    Lean.name: Lean,
+    Lean4.name: Lean4,
 }

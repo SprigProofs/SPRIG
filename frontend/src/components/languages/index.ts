@@ -12,21 +12,20 @@ interface Language {
     }>;
     // Functions
     title: (object: ProofAttempt | Challenge, instance: Sprig) => string;
+    // Text template for a new proof attempt that answers this challenge.
+    attemptTemplate: (challenge: string, instance: Sprig) => string;
+    // The number of challenge in a proof attempt. This proof attempt can be ill formed.
+    challengeCount: (text: string) => number;
 }
 
 
 import { defineComponent, DefineComponent } from "vue";
 import { Challenge, ProofAttempt, Sprig } from "../../sprig";
 import TicTacToe from "./TicTacToe";
+import Lean4 from "./Lean4"
 
 const LANGS: Record<string, Language> = {
-    Lean4: {
-        name: "Lean4",
-        description: "WIP: Mathematical proofs in Lean4.",
-        StatementDisplay: null,
-        ProofDisplay: null,
-        title: (object: ProofAttempt | Challenge, instance: Sprig) => "Lean4 proof",
-    },
+    Lean4: Lean4 as unknown as Language,
     TicTacToe: TicTacToe as unknown as Language,
 }
 

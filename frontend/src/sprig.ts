@@ -20,6 +20,12 @@ import { ElNotification } from "element-plus";
  * Constants
 */
 
+enum Unit {
+    DAYS = "day",
+    HOURS = "hour",
+    MINUTES = "minute",
+}
+
 const ROOT_HASH = "0";
 enum Status {
     CHALLENGED = "challenged",
@@ -54,8 +60,8 @@ class Parameters {
     constructor(params: Record<string, any>) {
         this.rootHeight = params.rootHeight || params.root_height;
         this.maxLength = params.maxLength || params.max_length;
-        this.timeForQuestions = dayjs.duration(params.timeForQuestions || params.time_for_questions);
-        this.timeForAnswers = dayjs.duration(params.timeForAnswers || params.time_for_answers);
+        this.timeForQuestions = dayjs.duration(params.timeForQuestions?.asMilliseconds() || params.timeForQuestions || params.time_for_questions)
+        this.timeForAnswers = dayjs.duration(params.timeForAnswers?.asMilliseconds() || params.timeForAnswers || params.time_for_answers) || params.timeForAnswers;
         this.upstakes = params.upstakes;
         this.downstakes = params.downstakes;
         this.questionBounties = params.questionBounties || params.question_bounties;
@@ -67,6 +73,18 @@ class Parameters {
         } else {
             return this.questionBounties[attempt.height];
         }
+    }
+    toServer() {
+        return {
+            root_height: this.rootHeight,
+            max_length: this.maxLength,
+            time_for_questions: this.timeForQuestions.asSeconds(),
+            time_for_answers: this.timeForAnswers.asSeconds(),
+            upstakes: this.upstakes,
+            downstakes: this.downstakes,
+            question_bounties: this.questionBounties,
+            verification_cost: this.verificationCost,
+        };
     }
 }
 
@@ -412,8 +430,10 @@ interface ActionData {
 //     return claim.statement;
 // }
 // }
+const isLocalhost = (location.hostname === "localhost" || location.hostname === "127.0.0.1");
+const API_BASE = isLocalhost ? "http://localhost:8601/" : "http://sprig.therandom.space/api/";
 
-const API_BASE = "http://localhost:8601/";
+console.log(location.hostname, isLocalhost, API_BASE);
 
 function logFail(title: string, data: Object) {
     console.error(title, data);
@@ -453,7 +473,7 @@ const api = {
     //     return await this.get([hash])
     //         .then(data => new Sprig(data));
     // },
-    async post(path: string[], query: Record<string, string>, body: any) {
+    async post(path: string[], query: Record<string, string>, body: any): Promise<any> {
         const url = new URL(API_BASE + path.join("/"));
         for (const key of Object.keys(query)) {
             url.searchParams.append(key, query[key]);
@@ -461,6 +481,7 @@ const api = {
         console.log("post url", url, "body", body);
         const resp = await fetch(url.toString(), {
             method: "POST",
+            headers: {"content-type": "application/json"},
             body: body ? JSON.stringify(body) : "",
         }).catch(err => {
             logFail("Error posting data", { url, err, body });
@@ -482,13 +503,30 @@ const api = {
     async challenge(instanceHash: string, challengeHash: string, skeptic: string) {
         return await this.post(['challenge', instanceHash, challengeHash], { skeptic }, null);
     },
-    // answer(instance: string, claim: string, claimer: string, claims: string[], lowLevel: boolean, callback: FetchCallback<AnswerRecord>) {
-    //     this.post([instance, claim, "proof_attempts"], {}, {
-    //         claimer, claims, machine_level: lowLevel
-    //     }, callback)
-    // }
 
-
+    async newInstance(language: string, params: Parameters, author: string,
+        rootClaim: string, proof: string): Promise<Sprig> {
+        return await this.post(['instances'], {}, {
+            language: language,
+            author: author,
+            params: {
+                root_height: params.rootHeight,
+                max_length: params.maxLength,
+                time_for_questions: params.timeForQuestions.asMilliseconds(),
+                time_for_answers: params.timeForAnswers.asMilliseconds(),
+                upstakes: params.upstakes,
+                downstakes: params.downstakes,
+                question_bounties: params.questionBounties,
+                verification_cost: params.verificationCost,
+            },
+            root_claim: rootClaim,
+            proof: proof,
+        }).then(data => new Sprig(data));
+    },
+    async newProofAttempt(instanceHash: string, challengeHash: string, isMachineLevel: boolean, proof: string, author: string): Promise<ProofAttempt> {
+        return this.post(['proof', instanceHash, challengeHash], {},
+            { author, statement: proof, machine_level: isMachineLevel }).then((data) => new ProofAttempt({ instanceHash, ...data}));
+    },
 };
 
 /**
@@ -507,8 +545,21 @@ function linkTo(obj: ProofAttempt | Challenge | Sprig | string) {
     }
 }
 
+function copy(text): void {  // TODO: What is the best way to copy stuff ?
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    document.execCommand('copy')
+    document.body.removeChild(textArea)
+}
+
 export {
-    api, STATUSES, STATUS_DISPLAY_NAME,
+    api, STATUSES, STATUS_DISPLAY_NAME, Unit,
     decided, Challenge, Sprig, Status,
     ProofAttempt, Parameters, Action, ActionData, linkTo,
+    dayjs, copy,
 };
+
+// ok

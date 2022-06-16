@@ -13,6 +13,7 @@
     "@headlessui/vue": "^1.6.1",
     "@heroicons/vue": "^1.0.6",
     "dayjs": "^1.11.1",
+    "dedent": "^0.7.0",
     "element-plus": "^2.1.9",
     "lodash": "^4.17.21",
     "oh-vue-icons": "^1.0.0-rc2",

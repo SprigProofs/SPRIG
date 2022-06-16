@@ -1,15 +1,16 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router';
 import { Status, Challenge, ProofAttempt, Sprig, linkTo } from '../../sprig';
-import AttemptEmbed from '../medium/AttemptEmbed.vue';
 import Tooltip from './Tooltip.vue';
+import AttemptEmbed from '../medium/AttemptEmbed.vue';
 import ChallengeEmbed from '../medium/ChallengeEmbed.vue';
 import InstanceEmbed from '../medium/InstanceEmbed.vue';
 
 
 interface Props {
-    object: ProofAttempt|Challenge|Sprig
-    tooltip?: boolean,
+    instance: Sprig;
+    object?: ProofAttempt|Challenge;
+    tooltip?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -42,13 +43,12 @@ const linkClasses = {
         </template>
 
         <AttemptEmbed v-if="tooltip && object instanceof ProofAttempt"
-            :instance-hash="object.instanceHash"
+            :instance="instance"
             :hash="object.hash" />
         <ChallengeEmbed v-else-if="tooltip && object instanceof Challenge"
-            :instance-hash="object.instanceHash"
-            :challenge-hash="object.hash" />
-        <InstanceEmbed v-else-if="tooltip && object instanceof Sprig"
-            :hash="object.hash" />
+            :instance="instance"
+            :challenge="object" />
+        <InstanceEmbed v-else :hash="instance.hash" />
     </Tooltip>
 
     <RouterLink v-else

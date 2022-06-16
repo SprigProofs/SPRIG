@@ -123,12 +123,12 @@ function toggle() {
         </span><span v-else-if="action.type === Action.ATTEMPT_CREATED">
           <User :name="attempt.author" /> answered
           <!-- Note: challenge is always defined here, because ATTEMPT_CREATED does not happen on the root -->
-          <UidTag :object="challenge" />
+          <UidTag :object="challenge" :instance="instance"/>
           with this proof attempt and a bounty of
           <Price :amount="params.downstakes[attempt.height]" />
         </span><span v-else-if="action.type === Action.CHALLENGE_ACTIVATED">
           <User :name="challenge.author" /> opened challenge
-          <UidTag :object="challenge" /> on <UidTag :object="attempt" />
+          <UidTag :object="challenge" :instance="instance"/> on <UidTag :object="attempt" :instance="instance"/>
           with a bounty of
           <Price :amount="params.costToChallenge(attempt)" />
         <!-- </span><span v-else-if="action.type === Action.CHALLENGE_ANSWERED">
@@ -138,17 +138,17 @@ function toggle() {
           with
           <UidTag :object="action.attempt" :tooltip="true" /> -->
         </span><span v-else-if="action.type === Action.AUTO_VALIDATION">
-          Time for questions has elapsed for <UidTag :object="instance.proofs[action.target[0].parent]" />, and no new challenges can be added.
+          Time for questions has elapsed for <UidTag :object="instance.proofs[action.target[0].parent]" :instance="instance"/>, and no new challenges can be added.
         </span><span v-else-if="action.type === Action.MACHINE_REJECTED">
-          The machine proof <UidTag :object="attempt" /> was rejected.
+          The machine proof <UidTag :object="attempt" :instance="instance"/> was rejected.
         </span><span v-else-if="action.type === Action.MACHINE_VALIDATED">
-          The machine proof <UidTag :object="attempt" /> was accepted.
+          The machine proof <UidTag :object="attempt" :instance="instance"/> was accepted.
         </span><span v-else-if="action.type === Action.ATTEMPT_REJECTED">
-          <UidTag :object="attempt" /> was rejected by challenge <UidTag :object="challenge" />.
+          <UidTag :object="attempt" :instance="instance"/> was rejected by challenge <UidTag :object="challenge" :instance="instance"/>.
         </span><span v-else-if="action.type === Action.ATTEMPT_VALIDATED">
-          <UidTag :object="attempt" /> was validated.
+          <UidTag :object="attempt" :instance="instance"/> was validated.
         </span><span v-else-if="action.type === Action.CHALLENGE_REJECTED">
-          <UidTag :object="challenge" /> was rejected.
+          <UidTag :object="challenge" :instance="instance"/> was rejected.
         </span><span v-else>
           {{ action.type }} needs more work...
         </span>

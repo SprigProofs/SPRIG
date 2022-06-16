@@ -8,7 +8,7 @@
         <div class="space-x-2">
           <StatusTag class="" :status="attempt.status" />
           <LanguageTag :lang="instance.language" />
-          <UidTag  :tooltip="false" :object="attempt" />
+          <UidTag  :tooltip="false" :object="attempt" :instance="instance"/>
         </div>
       </div>
       <h3 class="text-lg pt-2  ">
@@ -42,22 +42,15 @@ import User from './User.vue';
 import Languages from '../languages'
 import { computed } from '@vue/reactivity';
 
-const props = defineProps({
-  instanceHash: {
-    type: String,
-    required: true,
-  },
-  hash: {
-    type: String,
-    required: true,
-  },
-});
+const props = defineProps<{
+  instance: Sprig,
+  hash: string,
+}>();
 
-const instance = store.instances[props.instanceHash];
-const params: Parameters = instance.params;
-const attempt: ProofAttempt = instance.proofs[props.hash];
-const lang = Languages[instance.language];
+const params: Parameters = props.instance.params;
+const attempt: ProofAttempt = props.instance.proofs[props.hash];
+const lang = Languages[props.instance.language];
 
-const expires = computed(() => attempt.expires(instance));
+const expires = computed(() => attempt.expires(props.instance));
 
 </script>
