@@ -12,7 +12,7 @@
     font-semibold text-gray-700" :class="style[status] + ' ' + lightBg[status]">
         <span>
           Claim {{ challenge.hash }}
-          <!-- <UidTag :object="challenge" :tooltip="false" /> -->
+          <!-- <UidTag :object="challenge" :instance="instance" :tooltip="false" /> -->
         </span>
       </h3>
       <div class="flex-grow flex-shrink border bg-white rounded flex items-center px-4

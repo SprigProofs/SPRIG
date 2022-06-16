@@ -254,7 +254,7 @@ const results = computed<{ key: string, challenge?: Challenge, instance?: Sprig,
           class="p-4 block bg-white rounded-sm shadow-sm hover:shadow-md w-full border">
           <AttemptEmbed v-if="result.attempt" :hash="result.attempt.hash" :instance="store.instances[result.attempt.instanceHash]" />
           <InstanceEmbed v-else-if="result.instance" :hash="result.instance.hash"></InstanceEmbed>
-          <ChallengeEmbed v-else-if="result.challenge" :challenge="result.challenge" :instance="store.instances[result.challenge.hash]" />
+          <ChallengeEmbed v-else-if="result.challenge" :challenge="result.challenge" :instance="store.instances[result.challenge.instanceHash]" />
           <pre v-else>{{ result }}</pre>
           <!-- <pre>{{ weightDebug(result.attempt || result.claim || result.instance, selectedType) }}</pre> -->
 

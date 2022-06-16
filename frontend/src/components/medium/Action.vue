@@ -117,7 +117,7 @@ function toggle() {
           <Price :amount="params.downstakes[params.rootHeight-1]" />.
         <!-- </span><span v-else-if="action.type === Action.PARENT_CHALLENGED">
           <User :name="action.author" /> challenged the parent claim
-          <UidTag :object="parentChallenge" />
+          <UidTag :object="parentChallenge" :instance="instance" />
           with a bounty of
           <Price :amount="action.cost" /> -->
         </span><span v-else-if="action.type === Action.ATTEMPT_CREATED">
@@ -133,10 +133,10 @@ function toggle() {
           <Price :amount="params.costToChallenge(attempt)" />
         <!-- </span><span v-else-if="action.type === Action.CHALLENGE_ANSWERED">
           Challenge
-          <UidTag :object="action.challenge" /> was answered by
+          <UidTag :object="action.challenge" :instance="instance" /> was answered by
           <User :name="action.author" />
           with
-          <UidTag :object="action.attempt" :tooltip="true" /> -->
+          <UidTag :object="action.attempt" :instance="instance" :tooltip="true" /> -->
         </span><span v-else-if="action.type === Action.AUTO_VALIDATION">
           Time for questions has elapsed for <UidTag :object="instance.proofs[action.target[0].parent]" :instance="instance"/>, and no new challenges can be added.
         </span><span v-else-if="action.type === Action.MACHINE_REJECTED">
