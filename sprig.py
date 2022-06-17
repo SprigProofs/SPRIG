@@ -642,6 +642,7 @@ SPRIG instance:
             answer = get(children_attempts, status=Status.VALIDATED)
             if answer:
                 challenge.status = Status.VALIDATED
+                challenge.open_until = now()
                 # Distribute the bet from the challenge that just closed
                 # downwards to the successful attempt
                 self.params.pay_challenge_rejected(answer, self)
