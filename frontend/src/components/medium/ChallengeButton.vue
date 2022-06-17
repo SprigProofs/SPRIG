@@ -1,6 +1,6 @@
 <template>
   <div>
-  <Button color="blue" icon="md-bolt" @click.prevent="openDialog()">Challenge</Button>
+  <Button class="w-full" color="blue" icon="md-bolt" @click.prevent="openDialog()">Challenge</Button>
   <SlideOver v-model="slideOpen" panel-title="New challenge">
     <div class="space-y-4 flex flex-col">
       <p class="prose -mb-4">You are about to challenge a claim made by <User :name="attempt.author" /> </p>

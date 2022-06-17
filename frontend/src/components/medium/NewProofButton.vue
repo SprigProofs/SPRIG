@@ -1,6 +1,6 @@
 <template>
   <div>
-  <Button color="yellow" icon="md-add-round" @click.prevent="openDialog()">
+  <Button class="w-full" color="yellow" icon="md-add-round" @click.prevent="openDialog()">
     <span class="whitespace-nowrap">New proof</span>
   </Button>
   <SlideOver v-model="slideOpen" panel-title="New proof attempt">

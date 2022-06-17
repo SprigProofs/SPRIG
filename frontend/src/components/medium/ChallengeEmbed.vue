@@ -30,16 +30,13 @@
       </LabeledData>
 
       <template v-if="!readOnly">
-        <button v-if="challenge.status == Status.UNCHALLENGED"
-          class="col-span-2 self-end
-            border bg-blue-100 rounded-md py-2 px-4 shadow">
-          Challenge for
-          <Price :amount="challengeCost" />
-        </button>
+        <ChallengeButton v-if="challenge.status == Status.UNCHALLENGED"
+          :challenge="challenge" :instance="instance"
+          class="col-span-2 self-end" />
         <NewProofButton
           v-else-if="attemptCost !== null"
           :instance="instance" :challenge="challenge"
-          class="col-span-2 self-end w-full"
+          class="col-span-2 self-end"
           />
       </template>
     </div>
@@ -57,6 +54,7 @@ import User from './User.vue';
 import { inject } from 'vue';
 import LANGS from '../languages';
 import NewProofButton from './NewProofButton.vue';
+import ChallengeButton from './ChallengeButton.vue';
 
 const props = defineProps<{
   challenge: Challenge,
