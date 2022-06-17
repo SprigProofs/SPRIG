@@ -2,3 +2,5 @@ __pycache__
 data/
 tmp
 .vscode/
+monthly_report.md
+sprig.pdf
