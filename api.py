@@ -139,7 +139,6 @@ def add_new_instance(new_instance: SprigInitData) -> dict[str, Any]:  # SprigDat
 
         data = instance.dump_as_dict()
         data['hash'] = h
-        print(data)
         return data
 
 

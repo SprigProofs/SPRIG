@@ -672,8 +672,8 @@ SPRIG instance:
 
     # Serialisation
 
-    def dump_as_dict(self) -> Any:
-        return json.loads(self.dumps())
+    def dump_as_dict(self) -> dict[str, Any]:
+        return cast(dict[str, Any], json.loads(self.dumps()))
 
     def dumps(self) -> str:
         base = dataclasses.asdict(self)

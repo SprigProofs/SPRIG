@@ -23,5 +23,5 @@ def test_serialisation(instance: Sprig) -> None:
         (Status.VALIDATED, "validated"),
     ],
 )
-def test_status_values(enum, value):
+def test_status_values(enum: Status, value: str) -> None:
     assert enum.value == value
