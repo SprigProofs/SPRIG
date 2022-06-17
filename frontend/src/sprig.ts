@@ -467,7 +467,7 @@ const api = {
         }
     },
 
-    async challenge(instanceHash: string, challengeHash: string, skeptic: string) {
+    async challenge(instanceHash: string, challengeHash: string, skeptic: string): Promise<void> {
         return await this.post(['challenge', instanceHash, challengeHash], { skeptic }, null);
     },
 

@@ -8,7 +8,7 @@ export const store = reactive<{
     fail: boolean,
     user: string
     reload: () => Promise<void>,
-    challenge: (instance: string, challenge: string) => void,
+    challenge: (instance: string, challenge: string) => Promise<void>,
     newInstance: (language: string, params: Parameters, rootClaim: string, proof: string) => Promise<Sprig>,
     newProofAttempt: (instance: string, challenge: string, isMachineLevel: boolean, proof: string) => Promise<ProofAttempt>,
 }>({
@@ -33,7 +33,7 @@ export const store = reactive<{
     },
     challenge(instance: string, challenge: string) {
         console.log("Challenge", instance, challenge, this.user);
-        api.challenge(instance, challenge, store.user).then(() => {
+        return api.challenge(instance, challenge, store.user).then(() => {
             store.reload();
         })
     },
