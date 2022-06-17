@@ -134,8 +134,7 @@ def test_challenge_claim_api() -> None:
     DAY = 86_400_000
     with time_mode('real'):
         sprig = Sprig.start(
-            'TicTacToe',
-            Parameters(3, 100, DAY, DAY, [1, 1, 0], [0, 1, 1], [0, 1, 1], 1),
+            'TicTacToe', Parameters(3, 100, DAY, DAY, [1, 1, 0], [0, 1, 1], [0, 1, 1], 1),
             Address("Diego"), "...|XX.|... O plays X wins", """1 -> 6
             2 -> 6
             3 -> 6
@@ -144,7 +143,6 @@ def test_challenge_claim_api() -> None:
             8 -> 6
             9 -> 6
             """)
-        print(sprig)
         save(sprig, '42424')
         try:
             response = client.post('/challenge/42424/C1', params={'skeptic': 'diego'})

@@ -21,7 +21,7 @@ os.environ["BANK_FILE"] = str((Path(__file__).parent / "data" / "api_bank").abso
 import sprig
 import utils
 
-DEV =os.environ.get("DEV", "").lower() in ("true", "1", "yes", "y'")
+DEV = os.environ.get("DEV", "").lower() in ("true", "1", "yes", "y'")
 ROOT_PATH = "/api" if not DEV else ""
 api = FastAPI(root_path=ROOT_PATH)
 

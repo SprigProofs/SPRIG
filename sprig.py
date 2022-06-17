@@ -738,9 +738,7 @@ def time_passes(sprig: Sprig, amount: int = 1) -> None:
 
 def play_tictactoe(params: Parameters) -> Sprig:
     sprig = Sprig.start(
-        TicTacToe().dump(), params, Address("Diego"),
-        "...|XX.|... O plays X wins",
-        """
+        TicTacToe().dump(), params, Address("Diego"), "...|XX.|... O plays X wins", """
         1 -> 6
         2 -> 6
         3 -> 6
@@ -748,8 +746,7 @@ def play_tictactoe(params: Parameters) -> Sprig:
         7 -> 6
         8 -> 6
         9 -> 6
-        """
-        )
+        """)
 
     time_passes(sprig)
 
@@ -759,16 +756,14 @@ def play_tictactoe(params: Parameters) -> Sprig:
 
     time_passes(sprig)
     a1 = sprig.answer(
-        c2.hash, DIEGO,
-        """
+        c2.hash, DIEGO, """
         Case X..|XXO|...
         2 -> 7
         3 -> 2
         7 -> 9
         8 -> 7
         9 -> 7
-        """
-        )
+        """)
 
     time_passes(sprig)
     sprig.answer_low_level(c2.hash, DIEGO, "-2")
@@ -781,16 +776,14 @@ def play_tictactoe(params: Parameters) -> Sprig:
     time_passes(sprig)
 
     sprig.answer(
-        c2.hash, CLEMENT,
-        """
+        c2.hash, CLEMENT, """
         Case X..|XXO|...
         2 -> 7
         3 -> 7
         7 -> 9
         8 -> 7
         9 -> 7
-        """
-        )
+        """)
 
     for _ in range(5):
         time_passes(sprig)
@@ -850,14 +843,15 @@ def play_lean(params: Parameters) -> Sprig:
 
     time_passes(sprig)
 
-    a1 = sprig.answer(c1.hash, DIEGO, """
+    a1 = sprig.answer(
+        c1.hash, DIEGO, """
         -- chal
         theorem succ_add (m n : nat) : succ m + n = succ (m + n) := sorry
         -- endchal
-        """
-    )
+        """)
 
-    a2 = sprig.answer(c2.hash, DIEGO, """
+    a2 = sprig.answer(
+        c2.hash, DIEGO, """
         theorem add_comm (m n : nat) : m + n = n + m :=
             nat.rec_on n
             (show m + 0 = 0 + m, by rewrite [add_zero, zero_add])
@@ -867,8 +861,7 @@ def play_lean(params: Parameters) -> Sprig:
                 m + succ n = succ (m + n) : by rw add_succ
                         ... = succ (n + m) : by rw ih
                         ... = succ n + m   : by rw succ_add)
-        """
-    )
+        """)
 
     time_passes(sprig)
 
@@ -886,8 +879,7 @@ def play_lean(params: Parameters) -> Sprig:
             succ m + succ n = succ (succ m + n) : rfl
             ... = succ (succ (m + n)) : by rw ih
             ... = succ (m + succ n) : rfl)
-        """
-    )
+        """)
 
     time_passes(sprig, 4 * 1000 * 3600 * 24 + 1)
 
