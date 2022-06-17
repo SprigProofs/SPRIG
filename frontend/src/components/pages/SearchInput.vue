@@ -22,7 +22,7 @@ const REWARD = "Reward";
 const OPEN_UNTIL = "Open until";
 const RELEVANCE = "Relevance";
 const NEW = "New";
-const sortMethods = reactive([NEW, REWARD, OPEN_UNTIL]);
+const sortMethods = reactive([REWARD, NEW, OPEN_UNTIL]);
 enum Types {
   CHALLENGE = "Challenges",
   ATTEMPT = "Proof Attempts",
@@ -83,9 +83,8 @@ function drop(event, droppedMethod) {
 function getWeights(o, type: Types) {
   const weights = {};
   const now = dayjs();
-  const timeDiff = (d: dayjs.Dayjs) => now.diff(d, "hours", true);
+  const timeDiff = (d: dayjs.Dayjs) => now.diff(d, "minutes", true);
   switch (type) {
-    // TODO: Set all weights
     case Types.CHALLENGE:
       const challenge: Challenge = o;
       weights[REWARD] = -challenge.possibleReward(store.instances[challenge.instanceHash].params);
@@ -101,7 +100,9 @@ function getWeights(o, type: Types) {
       const instance_ = store.instances[attempt.instanceHash];
       weights[REWARD] = -attempt.possibleReward(instance_.params);
       weights[NEW] = timeDiff(attempt.createdAt);
-      weights[OPEN_UNTIL] = -1;
+      weights[OPEN_UNTIL] = decided(attempt.status)
+        ? 99999999999999
+        : timeDiff(attempt.expires(instance_));
       weights[RELEVANCE] = -1;
       break;
 
@@ -109,7 +110,9 @@ function getWeights(o, type: Types) {
       const instance: Sprig = o;
       weights[REWARD] = -instance.totalBounties();
       weights[NEW] = timeDiff(instance.rootAttempt().createdAt);
-      weights[OPEN_UNTIL] = -1;
+      weights[OPEN_UNTIL] = decided(instance.rootAttempt().status)
+        ? 99999999999999
+        : timeDiff(instance.rootAttempt().expires(instance));
       weights[RELEVANCE] = -1;
       break;
 
@@ -174,14 +177,9 @@ const results = computed<{ key: string, challenge?: Challenge, instance?: Sprig,
   }
 
   if (selectedTypes[Types.USER]) {
-    all = all.concat(_.values(store.instances)
-      .flatMap(instance => _.values(instance.proofs)
-        .map(p => p.author)
-        .concat(_.values(instance.challenges)
-          .map(c => c.author)))
-      .filter(user => user !== null && user.toLowerCase().includes(search.value.toLocaleLowerCase()))
+    all = all.concat(_.keys(store.bank)
+      .filter(user => user.toLowerCase().includes(search.value.toLowerCase()))
       .map(user => ({ key: user, user }))
-
     )
   }
 

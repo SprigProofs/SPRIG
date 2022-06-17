@@ -1,6 +1,6 @@
 <template>
     <article>
-        <pre v-if="previousDefs.length > 0" class="whitespace-pre-wrap text-gray-500">{{ previousDefs }}</pre>
+        <pre v-if="previousDefs.length > 0" class="whitespace-pre-wrap text-gray-500 mb-4">{{ previousDefs }}</pre>
         <div v-for="block in blocks">
             <ChallengePart
                 v-if="block.challenge" :preview="preview"

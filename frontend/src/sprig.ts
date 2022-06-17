@@ -396,40 +396,7 @@ interface ActionData {
     target: Challenge | ProofAttempt | Sprig | Challenge[];
 }
 
-// Lean: {
-// name: "Lean",
-// describe: (object: ProofAttempt | Challenge, instance: Sprig, details: Descr) => {
-//     if (details === Descr.TITLE) {
-//         return object.uid();
-//     } else if (details === Descr.SHORT) {
-//         return object.uid();
-//     } else {
-//         return object.uid();
-//     }
-// },
-// title(claim: ProofAttempt) {
-//     const m = claim.statement.match(/(theorem|lemma) \S+\s/m,);
-//     if (m) {
-//         return m[0].trim();
-//     } else {
-//         console.warn("Cannot parse title", claim);
-//         return "Cannot parse title";
-//     }
-// },
-// shortDescription(claim: Claim) {
-//     return claim.statement;
-//     const m = claim.statement.match(/(?:theorem|lemma) \S+\s(.*):=/m);
-//     if (m) {
-//         return m[1].trim();
-//     } else {
-//         console.warn("Cannot make shortDescription", claim);
-//         return "Cannot parse statement";
-//     }
-// },
-// longDescription(claim: Claim) {
-//     return claim.statement;
-// }
-// }
+
 const isLocalhost = (location.hostname === "localhost" || location.hostname === "127.0.0.1");
 const API_BASE = isLocalhost ? "http://localhost:8601/" : "https://sprig.therandom.space/api/";
 
