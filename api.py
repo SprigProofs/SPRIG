@@ -4,16 +4,13 @@ This file contains the code of the API / Server.
 It reads and updates the sprig instances in the data/ folder.
 """
 
-import json
 import os
 from pathlib import Path
-import traceback
 from typing import Any, Iterator
-from xmlrpc.client import boolean
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Request, HTTPException
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.params import Depends
 from pydantic import BaseModel
 
 os.environ["BANK_FILE"] = str((Path(__file__).parent / "data" / "api_bank").absolute())
@@ -65,6 +62,14 @@ def save(instance: sprig.Sprig, hash_: str) -> None:
 def load(instance_hash: str) -> sprig.Sprig:
     """Load a prig instance from disk."""
     return sprig.Sprig.loads(path_from_hash(instance_hash).read_text())
+
+
+@api.exception_handler(AssertionError)
+async def unicorn_exception_handler(request: Request, exc: AssertionError) -> JSONResponse:
+    return JSONResponse(
+        status_code=400,
+        content={"detail": exc.args[0]},
+    )
 
 
 class ParameterData(BaseModel):
@@ -179,7 +184,7 @@ def new_challenge(skeptic: sprig.Address, claim_hash: sprig.Hash,
 class NewProofAttemptData(BaseModel):
     statement: str
     author: sprig.Address
-    machine_level: boolean
+    machine_level: bool
 
 
 @api.post("/proof/{instance_hash}/{challenge_hash}")
