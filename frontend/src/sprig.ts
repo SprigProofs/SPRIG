@@ -402,30 +402,34 @@ const API_BASE = isLocalhost ? "http://localhost:8601/" : "https://sprig.therand
 
 console.log(location.hostname, isLocalhost, API_BASE);
 
-function logFail(title: string, data: Object) {
-    console.error(title, data);
-    ElNotification.error({
-        title: title,
-        message: JSON.stringify(data, null, 2),
-    });
+/**
+ * Inform about an error.
+ * @param title Title of the notification to send.
+ * @param message Content of the notification to send.
+ * @param data More data to log to the console.
+ */
+function logFail(title: string, message: string, data: any) {
+    console.error(title, message, data);
+    ElNotification.error({ title, message, });
 }
 const api = {
     async get(path: string[]) {
         const url = API_BASE + path.join("/");
         const resp = await fetch(url)
             .catch(err => {
-                logFail("Error fetching data", { url, err });
+                logFail("Error while fetching data", "The backend may be down. Are you online ?", { url, err });
                 return Promise.reject(err);
             });
         if (resp.ok) {
             return await resp.json()
                 .catch(err => {
-                    logFail("Failed to parse JSON", { url, err, resp });
+                    logFail("Failed to parse JSON", "This a website internal error, please report it.", { url, err, resp });
                     return Promise.reject(err);
                 });
         } else {
-            logFail("Server returned error", { url, resp });
-            throw new Error(`Server returned error ${resp.status}`);
+            const data = await resp.json()
+            logFail(data.detail, "", data)
+            throw new Error(data);
         }
     },
     async fetchAllInstances(): Promise<Record<string, Sprig>> {
@@ -451,19 +455,20 @@ const api = {
             headers: {"content-type": "application/json"},
             body: body ? JSON.stringify(body) : "",
         }).catch(err => {
-            logFail("Error posting data", { url, err, body });
+            logFail("Error with posting data", "The backend may be down. Are you online ?", { url, err, body });
             return Promise.reject(err);
         });
 
         if (resp.ok) {
             return await resp.json()
                 .catch(err => {
-                    logFail("Failed to parse JSON", { url, err, body, resp });
+                    logFail("Failed to parse JSON", "This a website internal error, please report it.", { url, err, resp });
                     return Promise.reject(err);
                 });
         } else {
-            logFail("Server returned error", { url, resp, body });
-            throw new Error(`Server returned error ${resp.status}`);
+            const data = await resp.json()
+            logFail(data.detail, "", data)
+            throw new Error(data);
         }
     },
 

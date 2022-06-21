@@ -6,6 +6,7 @@ It reads and updates the sprig instances in the data/ folder.
 
 import os
 from pathlib import Path
+import traceback
 from typing import Any, Iterator
 
 from fastapi import FastAPI, Request, HTTPException
@@ -66,9 +67,14 @@ def load(instance_hash: str) -> sprig.Sprig:
 
 @api.exception_handler(AssertionError)
 async def unicorn_exception_handler(request: Request, exc: AssertionError) -> JSONResponse:
+    if len(exc.args) > 0:
+        detail = exc.args[0]
+    else:
+        detail = "Unkown error, please report this."
+        traceback.print_tb(exc.__traceback__)
     return JSONResponse(
         status_code=400,
-        content={"detail": exc.args[0]},
+        content={"detail": detail},
     )
 
 
