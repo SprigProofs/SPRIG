@@ -67,7 +67,6 @@ import Button from '../small/Button.vue';
 import SlideOver from '../small/SlideOver.vue';
 import { inject, ref } from 'vue';
 import AttemptEmbed from './AttemptEmbed.vue';
-import { store } from '../../store';
 import User from './User.vue';
 import { computed } from '@vue/reactivity';
 import NewProofButton from './NewProofButton.vue';
@@ -98,10 +97,6 @@ const status = computed(() => props.challenge.status);
 const attempt = computed(() => props.instance.proofs[props.challenge.parent]);
 const timeForQuestions = computed(() => props.instance.params.timeForQuestions);
 const challengeCost = computed(() => props.instance.params.costToChallenge(attempt.value));
-
-function startChallenge() {
-  store.challenge(props.instance.hash, props.challenge.hash);
-}
 
 // Internal data
 const isAttemptPanelOpen = ref(false);
