@@ -65,6 +65,7 @@ addIcons({
 
 const routes = [
     { path: '/', component: Home },
+    { path: '/homeHidden', component: Home, name: 'homeHidden'},
     { path: '/search', component: Search },
     { path: '/new', component: NewInstancePage },
     { path: '/i/:instanceHash/:hash', component: ProofAttemptPage, props: true, name: 'proofAttempt' },
