@@ -180,18 +180,18 @@ const team = [
     },
     {
         name: 'Franck Gabriel',
-        title: 'Cool kid',
-        image: 'https://www.iliketowastemytime.com/sites/default/files/fractal-art-silvia-cordedda3.png',
+        title: 'Research',
+        image: 'https://www.hongler.org/clement-2015.jpg',
     },
     {
         name: 'Sylvain Carré',
-        title: 'Economist',
-        image: 'https://www.iliketowastemytime.com/sites/default/files/fractal-art-silvia-cordedda3.png',
+        title: 'Research',
+        image: 'https://www.hongler.org/clement-2015.jpg',
     },
     {
         name: ' Christophe Nussbaumer',
-        title: 'Cool kid',
-        image: 'https://www.iliketowastemytime.com/sites/default/files/fractal-art-silvia-cordedda3.png',
+        title: 'Research',
+        image: 'https://www.hongler.org/clement-2015.jpg',
     },
 ]
 
