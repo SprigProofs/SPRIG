@@ -57,14 +57,15 @@ import NewProofButton from './NewProofButton.vue';
 import ChallengeButton from './ChallengeButton.vue';
 
 const props = defineProps<{
-  challenge: Challenge,
+  hash: string,
   instance: Sprig,
 }>();
 const readOnly = inject('readOnly', false);
 
+const challenge = props.instance.challenges[props.hash];
 const lang = LANGS[props.instance.language];
 const params: Parameters = props.instance.params;
-const bounty = props.challenge.possibleReward(params);
-const attemptCost = props.challenge.costAddAttempt(params);
-const challengeCost = params.costToChallenge(props.instance.proofs[props.challenge.parent]);
+const bounty = challenge.possibleReward(params);
+const attemptCost = challenge.costAddAttempt(params);
+const challengeCost = params.costToChallenge(props.instance.proofs[challenge.parent]);
 </script>

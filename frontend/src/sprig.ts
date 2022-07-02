@@ -544,7 +544,7 @@ function linkTo(obj: ProofAttempt | Challenge | Sprig | string) {
     } else if (obj instanceof Challenge) {
         return { name: "proofAttempt", params: { instanceHash: obj.instanceHash, hash: obj.parent } };
     } else {
-        return { name: "user", params: { user: obj } };
+        return { name: "user", params: { name: obj } };
     }
 }
 

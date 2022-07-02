@@ -36,6 +36,9 @@
     .home-rectangle {
         @apply p-4 shadow-lg  border border-black bg-opacity-30 flex items-center
     }
+    .card {
+        @apply p-4 block bg-white rounded-sm shadow-sm hover:shadow-md w-full border;
+    }
 
     input[type="number"] {
         @apply w-24 focus:ring-indigo-500 focus:border-indigo-500 block sm:text-sm border-gray-300 rounded-md

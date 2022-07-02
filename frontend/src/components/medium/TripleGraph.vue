@@ -126,7 +126,7 @@ onMounted(() => {
               }
               if (context.parsed.y !== null) {
                 const data = attempts[context.dataIndex];
-                const name = ['accepted', 'rejected', 'pending'][context.datasetIndex];
+                const name = ['rejected', 'accepted', 'pending'][context.datasetIndex];
                 label += data[name];
                 label += ' (' + Math.round(data[name] / data.total * 100) + '%)';
               }

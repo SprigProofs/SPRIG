@@ -72,7 +72,7 @@ const routes = [
     { path: '/new', component: NewInstancePage },
     { path: '/i/:instanceHash/:hash', component: ProofAttemptPage, props: true, name: 'proofAttempt' },
     { path: '/i/:instanceHash', component: InstancePage, props: true, name: 'instance' },
-    { path: '/u/:user', component: UserPage, props: true, name: 'user' },
+    { path: '/u/:name', component: UserPage, props: true, name: 'user' },
 
 ]
 const router = VueRouter.createRouter({

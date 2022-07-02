@@ -250,10 +250,10 @@ const results = computed<{ key: string, challenge?: Challenge, instance?: Sprig,
     <TransitionGroup tag="ol" class="space-y-6">
       <li v-for="result in results" :key="result.key" class="transition">
         <router-link :to="linkTo(result.attempt || result.challenge || result.instance || result.user)"
-          class="p-4 block bg-white rounded-sm shadow-sm hover:shadow-md w-full border">
+          class="card">
           <AttemptEmbed v-if="result.attempt" :hash="result.attempt.hash" :instance="store.instances[result.attempt.instanceHash]" />
           <InstanceEmbed v-else-if="result.instance" :hash="result.instance.hash"></InstanceEmbed>
-          <ChallengeEmbed v-else-if="result.challenge" :challenge="result.challenge" :instance="store.instances[result.challenge.instanceHash]" />
+          <ChallengeEmbed v-else-if="result.challenge" :hash="result.challenge.hash" :instance="store.instances[result.challenge.instanceHash]" />
           <UserEmbed v-else-if="result.user" :name="result.user" />
           <!-- <pre>{{ weightDebug(result.attempt || result.claim || result.instance, selectedType) }}</pre> -->
 

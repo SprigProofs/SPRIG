@@ -46,7 +46,7 @@ const linkClasses = {
             :hash="object.hash" />
         <ChallengeEmbed v-else-if="tooltip && object instanceof Challenge"
             :instance="instance"
-            :challenge="object" />
+            :hash="object.hash" />
         <InstanceEmbed v-else :hash="instance.hash" />
     </Tooltip>
 
