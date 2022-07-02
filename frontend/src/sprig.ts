@@ -396,6 +396,37 @@ interface ActionData {
     target: Challenge | ProofAttempt | Sprig | Challenge[];
 }
 
+class User {
+    name: string;
+    balance: number;
+    challenges: Challenge[];
+    attempts: ProofAttempt[];
+    constructor(name: string, balance: number, instances: Record<string, Sprig>) {
+        this.name = name;
+        this.balance = balance;
+        this.challenges = [];
+        this.attempts = [];
+        _.forEach(instances, (instance) => {
+            _.forEach(instance.challenges, (challenge) => {
+                if (challenge.author === name) {
+                    this.challenges.push(challenge);
+                }
+            })
+            _.forEach(instance.proofs, (proof) => {
+                if (proof.author === name) {
+                    this.attempts.push(proof);
+                }
+            });
+        });
+    }
+    countAttempts(...status: Status[]): number {
+        return _.sum(_.map(this.attempts, (attempt) => status.includes(attempt.status) ? 1 : 0));
+    }
+    countChallenges(...status: Status[]): number {
+        return _.sum(_.map(this.challenges, (challenge) => status.includes(challenge.status) ? 1 : 0));
+    }
+}
+
 
 const isLocalhost = (location.hostname === "localhost" || location.hostname === "127.0.0.1");
 const API_BASE = isLocalhost ? "http://localhost:8601/" : "https://sprig.therandom.space/api/";
@@ -531,7 +562,7 @@ export {
     api, STATUSES, STATUS_DISPLAY_NAME, Unit,
     decided, Challenge, Sprig, Status,
     ProofAttempt, Parameters, Action, ActionData, linkTo,
-    dayjs, copy,
+    dayjs, copy, User,
 };
 
 // ok

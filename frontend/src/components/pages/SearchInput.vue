@@ -10,6 +10,7 @@ import { StatusTag, LanguageTag } from '../small';
 import InstanceEmbed from '../medium/InstanceEmbed.vue';
 import AttemptEmbed from '../medium/AttemptEmbed.vue';
 import ChallengeEmbed from '../medium/ChallengeEmbed.vue';
+import UserEmbed from '../medium/UserEmbed.vue';
 
 const statuses = reactive({
   [Status.CHALLENGED]: true,
@@ -34,7 +35,7 @@ const selectedTypes = reactive({
   [Types.CHALLENGE]: true,
   [Types.ATTEMPT]: true,
   [Types.INSTANCE]: true,
-  [Types.USER]: false,
+  [Types.USER]: true,
 });
 const search = ref("");
 
@@ -178,7 +179,7 @@ const results = computed<{ key: string, challenge?: Challenge, instance?: Sprig,
 
   if (selectedTypes[Types.USER]) {
     all = all.concat(_.keys(store.bank)
-      .filter(user => user.toLowerCase().includes(search.value.toLowerCase()))
+      .filter(user => !user.includes('@') && user.toLowerCase().includes(search.value.toLowerCase()))
       .map(user => ({ key: user, user }))
     )
   }
@@ -253,7 +254,7 @@ const results = computed<{ key: string, challenge?: Challenge, instance?: Sprig,
           <AttemptEmbed v-if="result.attempt" :hash="result.attempt.hash" :instance="store.instances[result.attempt.instanceHash]" />
           <InstanceEmbed v-else-if="result.instance" :hash="result.instance.hash"></InstanceEmbed>
           <ChallengeEmbed v-else-if="result.challenge" :challenge="result.challenge" :instance="store.instances[result.challenge.instanceHash]" />
-          <pre v-else>{{ result }}</pre>
+          <UserEmbed v-else-if="result.user" :name="result.user" />
           <!-- <pre>{{ weightDebug(result.attempt || result.claim || result.instance, selectedType) }}</pre> -->
 
         </router-link>

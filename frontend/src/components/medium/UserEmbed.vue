@@ -1,35 +1,40 @@
 <script setup lang="ts">
 
+import _ from 'lodash';
 import SimpleStats from "./SimpleStats.vue";
 import Tooltip from "../small/Tooltip.vue";
 import { store } from "../../store";
-import { computed } from "@vue/reactivity";
+import { computed, ComputedRef, ref } from "@vue/reactivity";
+import { User, Status, dayjs } from '../../sprig';
+import LabeledData from "../small/LabeledData.vue";
+import { Chart } from "chart.js";
+import { onMounted } from "vue";
+import TripleGraph from './TripleGraph.vue';
 
-const props = defineProps({
-  name: {
-    required: true,
-    type: String,
-  },
-});
+const props = defineProps<{
+  name: string,
+}>();
 
-const money = computed(() => store.bank[props.name] || 0);
+const user: ComputedRef<User> = computed(() => store.getUser(props.name));
 
 </script>
 
 <template>
-    <div class="flex flex-col">
-      <div class="flex justify-between w-full mb-2 items-baseline">
-        <h3 class="small-title pb-2">@{{ name }}</h3>
-        <Price :amount="money" class="font-bold bg-blue-200 px-3 py-1 rounded-md" />
-      </div>
-      <p>Proof attempts
-        <SimpleStats :yes="7" :no="4" :maybe="5" />
+  <div class="flex flex-col">
+    <div class="justify-between w-full mb-2 items-start">
+      <h3 class="font-title font-extrabold text-2xl">{{ user.name }}</h3>
+      <p class="text-sm text-gray-500">
+        <span>Total gains </span>
+        <Price :amount="user.balance" class="text-gray-700" />
       </p>
-      <p>Challenges
-        <SimpleStats :yes="2" :no="6" :maybe="1" />
-      </p>
-
-      <button class="underline self-end pt-4">View full user profile</button>
     </div>
+
+    <div class="grid grid-cols-2">
+      <TripleGraph :data="user.attempts" />
+      <TripleGraph :data="user.challenges" />
+    </div>
+
+    <button class="underline self-end pt-4">View full user profile</button>
+  </div>
 
 </template>

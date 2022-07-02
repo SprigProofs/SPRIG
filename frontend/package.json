@@ -12,6 +12,8 @@
   "dependencies": {
     "@headlessui/vue": "^1.6.1",
     "@heroicons/vue": "^1.0.6",
+    "chart.js": "^3.8.0",
+    "chartjs-adapter-dayjs-3": "^1.2.3",
     "dayjs": "^1.11.1",
     "dedent": "^0.7.0",
     "element-plus": "^2.1.9",
