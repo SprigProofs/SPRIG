@@ -1,6 +1,6 @@
 <template>
   <div class="relative">
-    <canvas v-if="data.length > 1" ref="chart" />
+    <canvas ref="chart" />
   </div>
 </template>
 
@@ -64,6 +64,13 @@ attempts.push({
   ...current,
   time: dayjs(),
 });
+attempts.splice(0, 0, {
+  accepted: 0,
+  rejected: 0,
+  pending: 0,
+  total: 0,
+  time: attempts[0].time.subtract(1, 'day'),
+})
 
 const type = props.data[0] instanceof Challenge ? 'challenges' : 'proofs';
 
@@ -142,6 +149,9 @@ onMounted(() => {
         },
         x: {
           type: 'time',
+          time: {
+            minUnit: 'day',
+          }
         }
       }
     }

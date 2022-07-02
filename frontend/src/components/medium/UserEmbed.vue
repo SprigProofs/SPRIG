@@ -29,12 +29,10 @@ const user: ComputedRef<User> = computed(() => store.getUser(props.name));
       </p>
     </div>
 
-    <div class="grid grid-cols-2">
+    <div class="grid grid-cols-2 h-52">
       <TripleGraph :data="user.attempts" />
       <TripleGraph :data="user.challenges" />
     </div>
-
-    <button class="underline self-end pt-4">View full user profile</button>
   </div>
 
 </template>
