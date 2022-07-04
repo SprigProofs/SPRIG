@@ -585,7 +585,7 @@ SPRIG instance:
         while h is not None:
             challenge = self.challenges[h]
             attempt = self.proofs[challenge.parent]
-            branch.append((attempt.proof, attempt.challenges.index(challenge_hash)))
+            branch.append((attempt.proof, attempt.challenges.index(h)))
 
             h = attempt.parent
 
@@ -871,9 +871,46 @@ def play_lean(params: Parameters) -> Sprig:
 
     time_passes(sprig)
 
-    sprig.challenge(MICHAEL, a1.challenges[0])
+    c3 = sprig.challenge(MICHAEL, a1.challenges[0])
 
-    a2 = sprig.answer(
+    time_passes(sprig)
+
+    a3 = sprig.answer(c3.hash, DIEGO, """
+        -- chal
+        theorem succ_add (m n : nat) : succ m + n = succ (m + n) := sorry
+        -- endchal
+        """
+    )
+
+    time_passes(sprig)
+
+    c4 = sprig.challenge(MICHAEL, a3.challenges[0])
+
+    time_passes(sprig)
+
+    a4 = sprig.answer(c4.hash, DIEGO, """
+        -- chal
+        theorem succ_add (m n : nat) : succ m + n = succ (m + n) := sorry
+        -- endchal
+        """
+    )
+
+    time_passes(sprig)
+
+    c5 = sprig.challenge(MICHAEL, a4.challenges[0])
+
+    time_passes(sprig)
+
+    a5 = sprig.answer_low_level(c5.hash, DIEGO, """
+        -- chal
+        theorem succ_add (m n : nat) : succ m + n = succ (m + n) := 2
+        -- endchal
+        """
+    )
+
+    time_passes(sprig)
+
+    a6 = sprig.answer(
         succ_add, CLEMENT, """
         theorem succ_add (m n : nat) : succ m + n = succ (m + n) :=
         nat.rec_on n

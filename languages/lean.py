@@ -1,23 +1,12 @@
 import re
 import os, subprocess
 
+import docker
+
 from languages.base import Language
 from typing import Dict, List, NewType, Optional
 
 REGEX = '(theorem|lemma|example)\s([^\s]*)\s\(.*\)\s:\s(.*)\s:='
-
-def lean_validate(lean_code: str) -> bool:
-    f = open('tmp', 'w')
-    f.write(lean_code)
-    f.close()
-
-    out = subprocess.Popen(['lean', 'tmp'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    stdout, stderr = out.communicate()
-
-    os.remove('tmp')
-
-    return out.returncode > 0
-
 
 class Lean4(Language):
     """
@@ -30,6 +19,27 @@ class Lean4(Language):
     """
 
     name = "Lean4"
+    docker_client = docker.from_env()
+
+
+    def lean_validate(self, lean_code: str) -> bool:
+        f = open(f'{os.getcwd()}/tmp_file', 'w')
+        f.write(lean_code)
+        f.close()
+
+        try:
+            self.docker_client.containers.run(
+                'lean',
+                ['/bin/sh', '-c', '/root/.elan/bin/lean /tmp_file'],
+                volumes={f'{os.getcwd()}/tmp_file': {'bind': '/tmp_file', 'mode': 'ro'}},
+                remove=True
+                )
+        except:
+            os.remove(f'{os.getcwd()}/tmp_file')
+            return False
+
+        os.remove(f'{os.getcwd()}/tmp_file')
+        return True
 
     def judge_low_level(self, root_question: str, branch: list[tuple[str, int]],
                         machine_proof: str) -> bool:
@@ -49,7 +59,7 @@ class Lean4(Language):
         """
 
         # The low-level proof should not contain a sorry
-        assert 'sorry' not in machine_proof
+        assert 'sorry' not in machine_proof, 'Proof is not a machine proof (contains sorry)'
 
         # Accumulate content of proof, ignoring challenged elements and what follows them
         proof_elements = []
@@ -57,12 +67,13 @@ class Lean4(Language):
             challenge_starts = list(re.compile('-- chal').finditer(proof_attempt))
             challenge_start = challenge_starts[chal_nb]
 
-            proof_elements.append(proof_attempt[:challenge_start])
+            proof_elements.append(proof_attempt[:challenge_start.start()])
         proof_elements.append(machine_proof)
 
         # Validate proof with lean
         proof = '\n'.join(proof_elements)
-        assert lean_validate(proof)
+        if not self.lean_validate(proof):
+            return False
 
         return True
 
