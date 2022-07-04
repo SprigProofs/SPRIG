@@ -21,6 +21,12 @@ class Lean4(Language):
 
     name = "Lean4"
     docker_client = docker.from_env()
+    # Check if image is built
+    try:
+        docker_client.images.get('sprig/lean')
+    except:
+        print('Building docker image')
+        docker_client.images.build(path='.', tag='sprig/lean')
 
 
     def lean_validate(self, lean_code: str) -> bool:
@@ -30,7 +36,7 @@ class Lean4(Language):
 
         try:
             self.docker_client.containers.run(
-                'lean',
+                'sprig/lean',
                 ['/bin/sh', '-c', '/root/.elan/bin/lean /tmp_file'],
                 volumes={f'{os.getcwd()}/tmp_file': {'bind': '/tmp_file', 'mode': 'ro'}},
                 remove=True
@@ -66,7 +72,7 @@ class Lean4(Language):
         proof_elements = []
         for proof_attempt, chal_nb in branch:
             challenge_starts = list(re.compile('-- chal').finditer(proof_attempt))
-            challenge_start = challenge_starts[chal_nb].start()
+            challenge_start = challenge_starts[chal_nb]
 
             proof_elements.append(proof_attempt[:challenge_start.start()])
         proof_elements.append(machine_proof)
