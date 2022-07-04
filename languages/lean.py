@@ -23,10 +23,11 @@ class Lean4(Language):
     docker_client = docker.from_env()
     # Check if image is built
     try:
-        docker_client.images.get('sprig/lean')
+        docker_client.images.get('sprig/lean4')
     except:
         print('Building docker image')
-        docker_client.images.build(path='.', tag='sprig/lean')
+        docker_client.images.build(path='.', tag='sprig/lean4')
+        print('Build done')
 
 
     def lean_validate(self, lean_code: str) -> bool:
@@ -36,7 +37,7 @@ class Lean4(Language):
 
         try:
             self.docker_client.containers.run(
-                'sprig/lean',
+                'sprig/lean4',
                 ['/bin/sh', '-c', '/root/.elan/bin/lean /tmp_file'],
                 volumes={f'{os.getcwd()}/tmp_file': {'bind': '/tmp_file', 'mode': 'ro'}},
                 remove=True
