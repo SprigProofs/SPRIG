@@ -1,22 +1,29 @@
 <template>
-    <p class="mb-2">The responses of X to each possible move of O are given in color and claimed to
-        all be wining for {{ winner }}.
-    </p>
-    <ul class="space-y-4">
-        <li v-for="d in data">
-            <ChallengePart :instance="instance" :challenge="d.challenge">
-                <div class="flex  space-x-4">
-                    <TicTacToe class="w-28" :grid="d.board" :size="200" :color="d.colors" />
-                    <div class="flex flex-col justify-around">
-                        <LabeledData label="Winner">
-                            {{ winner }}
-                        </LabeledData>
-                        <LabeledData label="Next player">{{ player }}</LabeledData>
+    <div v-if="attempt.height > 0">
+        <p class="mb-2">The responses of X to each possible move of O are given in color and claimed to
+            all be wining for {{ winner }}.
+        </p>
+        <ul class="space-y-4">
+            <li v-for="d in data">
+                <ChallengePart :instance="instance" :challenge="d.challenge">
+                    <div class="flex  space-x-4">
+                        <TicTacToe class="w-28" :grid="d.board" :size="200" :color="d.colors" />
+                        <div class="flex flex-col justify-around">
+                            <LabeledData label="Winner">
+                                {{ winner }}
+                            </LabeledData>
+                            <LabeledData label="Next player">{{ player }}</LabeledData>
+                        </div>
                     </div>
-                </div>
-            </ChallengePart>
-        </li>
-    </ul>
+                </ChallengePart>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Machine level -->
+    <div v-else>
+        <TicTacToe :highlight="attempt.proof" :grid="getState(attempt.parent, instance).board"/>
+    </div>
 </template>
 
 <script setup lang="ts">

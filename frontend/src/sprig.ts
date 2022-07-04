@@ -396,69 +396,71 @@ interface ActionData {
     target: Challenge | ProofAttempt | Sprig | Challenge[];
 }
 
-// Lean: {
-// name: "Lean",
-// describe: (object: ProofAttempt | Challenge, instance: Sprig, details: Descr) => {
-//     if (details === Descr.TITLE) {
-//         return object.uid();
-//     } else if (details === Descr.SHORT) {
-//         return object.uid();
-//     } else {
-//         return object.uid();
-//     }
-// },
-// title(claim: ProofAttempt) {
-//     const m = claim.statement.match(/(theorem|lemma) \S+\s/m,);
-//     if (m) {
-//         return m[0].trim();
-//     } else {
-//         console.warn("Cannot parse title", claim);
-//         return "Cannot parse title";
-//     }
-// },
-// shortDescription(claim: Claim) {
-//     return claim.statement;
-//     const m = claim.statement.match(/(?:theorem|lemma) \S+\s(.*):=/m);
-//     if (m) {
-//         return m[1].trim();
-//     } else {
-//         console.warn("Cannot make shortDescription", claim);
-//         return "Cannot parse statement";
-//     }
-// },
-// longDescription(claim: Claim) {
-//     return claim.statement;
-// }
-// }
+class User {
+    name: string;
+    balance: number;
+    challenges: Challenge[];
+    attempts: ProofAttempt[];
+    constructor(name: string, balance: number, instances: Record<string, Sprig>) {
+        this.name = name;
+        this.balance = balance;
+        this.challenges = [];
+        this.attempts = [];
+        _.forEach(instances, (instance) => {
+            _.forEach(instance.challenges, (challenge) => {
+                if (challenge.author === name) {
+                    this.challenges.push(challenge);
+                }
+            })
+            _.forEach(instance.proofs, (proof) => {
+                if (proof.author === name) {
+                    this.attempts.push(proof);
+                }
+            });
+        });
+    }
+    countAttempts(...status: Status[]): number {
+        return _.sum(_.map(this.attempts, (attempt) => status.includes(attempt.status) ? 1 : 0));
+    }
+    countChallenges(...status: Status[]): number {
+        return _.sum(_.map(this.challenges, (challenge) => status.includes(challenge.status) ? 1 : 0));
+    }
+}
+
+
 const isLocalhost = (location.hostname === "localhost" || location.hostname === "127.0.0.1");
-const API_BASE = isLocalhost ? "http://localhost:8601/" : "http://sprig.therandom.space/api/";
+const API_BASE = isLocalhost ? "http://localhost:8601/" : "https://sprig.therandom.space/api/";
 
 console.log(location.hostname, isLocalhost, API_BASE);
 
-function logFail(title: string, data: Object) {
-    console.error(title, data);
-    ElNotification.error({
-        title: title,
-        message: JSON.stringify(data, null, 2),
-    });
+/**
+ * Inform about an error.
+ * @param title Title of the notification to send.
+ * @param message Content of the notification to send.
+ * @param data More data to log to the console.
+ */
+function logFail(title: string, message: string, data: any) {
+    console.error(title, message, data);
+    ElNotification.error({ title, message, });
 }
 const api = {
     async get(path: string[]) {
         const url = API_BASE + path.join("/");
         const resp = await fetch(url)
             .catch(err => {
-                logFail("Error fetching data", { url, err });
+                logFail("Error while fetching data", "The backend may be down. Are you online ?", { url, err });
                 return Promise.reject(err);
             });
         if (resp.ok) {
             return await resp.json()
                 .catch(err => {
-                    logFail("Failed to parse JSON", { url, err, resp });
+                    logFail("Failed to parse JSON", "This a website internal error, please report it.", { url, err, resp });
                     return Promise.reject(err);
                 });
         } else {
-            logFail("Server returned error", { url, resp });
-            throw new Error(`Server returned error ${resp.status}`);
+            const data = await resp.json()
+            logFail(data.detail, "", data)
+            throw new Error(data);
         }
     },
     async fetchAllInstances(): Promise<Record<string, Sprig>> {
@@ -484,23 +486,24 @@ const api = {
             headers: {"content-type": "application/json"},
             body: body ? JSON.stringify(body) : "",
         }).catch(err => {
-            logFail("Error posting data", { url, err, body });
+            logFail("Error with posting data", "The backend may be down. Are you online ?", { url, err, body });
             return Promise.reject(err);
         });
 
         if (resp.ok) {
             return await resp.json()
                 .catch(err => {
-                    logFail("Failed to parse JSON", { url, err, body, resp });
+                    logFail("Failed to parse JSON", "This a website internal error, please report it.", { url, err, resp });
                     return Promise.reject(err);
                 });
         } else {
-            logFail("Server returned error", { url, resp, body });
-            throw new Error(`Server returned error ${resp.status}`);
+            const data = await resp.json()
+            logFail(data.detail, "", data)
+            throw new Error(data);
         }
     },
 
-    async challenge(instanceHash: string, challengeHash: string, skeptic: string) {
+    async challenge(instanceHash: string, challengeHash: string, skeptic: string): Promise<void> {
         return await this.post(['challenge', instanceHash, challengeHash], { skeptic }, null);
     },
 
@@ -541,7 +544,7 @@ function linkTo(obj: ProofAttempt | Challenge | Sprig | string) {
     } else if (obj instanceof Challenge) {
         return { name: "proofAttempt", params: { instanceHash: obj.instanceHash, hash: obj.parent } };
     } else {
-        return { name: "user", params: { user: obj } };
+        return { name: "user", params: { name: obj } };
     }
 }
 
@@ -559,7 +562,7 @@ export {
     api, STATUSES, STATUS_DISPLAY_NAME, Unit,
     decided, Challenge, Sprig, Status,
     ProofAttempt, Parameters, Action, ActionData, linkTo,
-    dayjs, copy,
+    dayjs, copy, User,
 };
 
 // ok

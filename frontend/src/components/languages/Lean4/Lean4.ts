@@ -59,7 +59,7 @@ function getChallenges(proof: string): Block[] {
 function extractTitle(proofAttempt: string, challengeNb: number): string {
     const challenges = getChallenges(proofAttempt);
     const claim = challenges[challengeNb].content;
-    return claim.match(/(theorem|lemma|example)\s*(\S+)/m)[2];
+    return claim.match(/((theorem|lemma|example)\s*\S+)/m)[0];
 }
 
 function collectPreviousDefs(instance: Sprig, start: string | null, removeChallengeTags: boolean = true): string {

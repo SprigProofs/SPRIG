@@ -1,5 +1,8 @@
 <template>
-  <Button color="yellow" icon="md-add-round" @click="openDialog()">New proof</Button>
+  <div>
+  <Button class="w-full" color="yellow" icon="md-add-round" @click.prevent="openDialog()">
+    <span class="whitespace-nowrap">New proof</span>
+  </Button>
   <SlideOver v-model="slideOpen" panel-title="New proof attempt">
     <div class="space-y-4">
       <div v-if="!preview">
@@ -44,6 +47,7 @@
 
 
   </SlideOver>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -53,7 +57,6 @@ import { computed, nextTick, provide, ref } from 'vue';
 import { Challenge, Sprig, copy, ProofAttempt, Status, linkTo } from '../../sprig';
 import { Button, SlideOver } from '../small';
 import { store } from '../../store';
-import { collectPreviousDefs, getChallenges } from '../languages/Lean4/Lean4';
 import LANGS from '../languages';
 import ProofAttemptPageVue from '../pages/ProofAttemptPage.vue';
 import dayjs from 'dayjs';

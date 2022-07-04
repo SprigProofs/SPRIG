@@ -3,14 +3,11 @@
 www.sprig.ch
 
 A description of the SPRIG protocol can be found here: https://export.arxiv.org/abs/2102.03044v1
+A test version of the website is available at: https://sprig.therandom.space
 
 This repository contains a centralised version of the SPRIG protocol
 whose purpose is to experiment with the protocol
 and to serve as future reference for a decentralised version.
-
-The protocol is implemented as a library
-in [`sprig.py`](./sprig.py) and a Web API is
-developped in [`api.py`](./api.py).
 
 There are four parts in this repository:
  - The SPRIG Library, written in Python and without any dependency -> [`sprig.py`](./sprig.py)
@@ -29,17 +26,16 @@ It can handle claim and challenges, stakes and bounties and updates SPRIG Trees 
 
 ## Languages
 
-Status: *Almost Done*
+Status: *Completed*
 Dependencies: Python 3.8
 
 Languages specify the format of claims and the low level verification mechanisms.
-Support for [Lean 3](https://leanprover.github.io/) should work in most cases, 
-but need more testing.
+Support for [Lean 4](https://leanprover.github.io/) works but subtle edge cases could be exploited.
 We implemented a toy language to represent Tic Tac Toe games, which is complete.
 
 ## Web API / Server
 
-Status: *In progress*
+Status: *Completed*
 Dependencies: Python 3.8, FastAPI
 
 The API / Server is the interface from the library code to the web, so that modifications of SPRIG trees
@@ -48,10 +44,13 @@ and communicates via the standard JSON format.
 
 ## Web Interface
 
-Status: *In progress*
-Dependencies: Vue 3, Vite
+Status: *Mostly done*
+Dependencies: Vue 3, Vite, npm
 
 The Web interface is the user facing part of the project.
+It is currently capable of every interaction that is needed with the SPRIG protocol
+and displays everything there is to know. However, we are still working on
+making the interface more user-friendly, consistent and efficient.
 
 ### For developpers
 
@@ -84,5 +83,4 @@ uvicorn api:api
 
 Alternatively, if you have `make`, `poetry` and `npm` installed,
 you can run `make install` to get the dependencies and
-then `make run` or `make dev` to start the server in production
-or development mode.
+then `make dev` to start the server in development mode.

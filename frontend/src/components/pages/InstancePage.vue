@@ -1,5 +1,5 @@
 <template>
-    <Embed404 v-if="!instance"/>
+    <Embed404 v-if="!!!instance"/>
     <div v-else>
         <div class="max-w-7xl mx-auto">
             <header class="p-8 pb-2">
@@ -84,8 +84,6 @@
                     </button>
                 </div> -->
 
-                        <!-- <code class="mt-2"><pre class="overflow-auto">{{ attempt.proof }}</pre>
-                </code> -->
                         <component :is="lang.ProofDisplay" :instance="instance" :attemptHash="attempt.hash" />
                     </section>
 
@@ -118,6 +116,7 @@ import Languages from '../languages';
 import LanguageTag from '../small/LanguageTag.vue';
 import { computed } from '@vue/reactivity';
 import Embed404 from '../medium/Embed404.vue';
+import { Sprig } from '../../sprig';
 
 const props = defineProps({
     instanceHash: {
@@ -126,15 +125,15 @@ const props = defineProps({
     },
 });
 
-const instance = reactive(store.instances[props.instanceHash]);
-const lang = reactive(Languages[instance?.language]);
-const attempt = reactive(instance?.rootAttempt());
+const instance = computed(() => store.instances[props.instanceHash]);
+const lang = computed(() => Languages[instance.value?.language]);
+const attempt = computed(() => instance.value?.rootAttempt());
 // const claim = instance.claims[props.hash];
-const params = reactive(instance?.params);
+const params = computed(() => instance.value?.params);
 
 const showPreviousDefinitions = ref(false);
 
-const actions = computed(() => instance?.allActions().map(action => {
+const actions = computed(() => instance.value?.allActions().map(action => {
     return {
         open: true,
         ...action,

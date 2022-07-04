@@ -148,24 +148,6 @@
         <el-collapse-item title="Instance parameters">
           <Parameters :params="params" :highlight="attempt.height" />
         </el-collapse-item>
-        <el-collapse-item title="Previous designs">
-          <section>
-            <h2 class="small-title pb-2">Summary</h2>
-            <el-descriptions border class="mb-4">
-              <el-descriptions-item label="Downstakes">
-                <Price amount="100" />
-              </el-descriptions-item>
-              <el-descriptions-item label="Upstakes">
-                <Price amount="5" />
-              </el-descriptions-item>
-              <el-descriptions-item label="Challenge cost">
-                <Price amount="37" />
-              </el-descriptions-item>
-              <el-descriptions-item label="Depth">3 / 7</el-descriptions-item>
-            </el-descriptions>
-          </section>
-
-        </el-collapse-item>
         <el-collapse-item title="Raw data">
           <pre class="text-sm text-gray-500">{{ attempt }}</pre>
         </el-collapse-item>
@@ -186,6 +168,7 @@ import Action from '../medium/Action.vue';
 import { useRoute, useRouter } from 'vue-router';
 import Languages from '../languages';
 import { computed } from '@vue/reactivity';
+import Embed404 from '../medium/Embed404.vue';
 
 
 const props = defineProps({

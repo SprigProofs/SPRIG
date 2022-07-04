@@ -5,8 +5,9 @@ import pytest
 from fastapi.testclient import TestClient
 import json
 
-from api import all_instances_filenames, api, load, path_from_hash
+from api import all_instances_filenames, api, load, path_from_hash, save
 from sprig import *
+from tests.test_fixtures import example_tictactoe
 
 client = TestClient(api)
 
@@ -130,11 +131,23 @@ def test_post_new_instance() -> None:
 
 
 def test_challenge_claim_api() -> None:
-    tmp = path_from_hash('42424')
-    shutil.copy(path_from_hash('00001'), tmp)
-    try:
-        response = client.post('/challenge/42424/C1', json={'skeptic': 'diego'})
-        assert response.status_code == 200
-        assert set(response.json()) == {'balance', 'parent', 'challenge'}
-    finally:
-        os.remove(tmp)
+    DAY = 86_400_000
+    with time_mode('real'):
+        sprig = Sprig.start(
+            'TicTacToe', Parameters(3, 100, DAY, DAY, [1, 1, 0], [0, 1, 1], [0, 1, 1], 1),
+            Address("Diego"), "...|XX.|... O plays X wins", """1 -> 6
+            2 -> 6
+            3 -> 6
+            6 -> 1
+            7 -> 6
+            8 -> 6
+            9 -> 6
+            """)
+        save(sprig, '42424')
+        try:
+            response = client.post('/challenge/42424/C1', params={'skeptic': 'diego'})
+            print(response.json())
+            assert response.status_code == 200
+            assert set(response.json()) == {'balance', 'parent', 'challenge'}
+        finally:
+            path_from_hash('42424').unlink()

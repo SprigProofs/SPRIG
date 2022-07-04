@@ -6,7 +6,8 @@ import docker
 from languages.base import Language
 from typing import Dict, List, NewType, Optional
 
-REGEX = '(theorem|lemma|example)\s([^\s]*)\s\(.*\)\s:\s(.*)\s:='
+REGEX = r'(theorem|lemma|example)\s([^\s]*)\s\(.*\)\s:\s(.*)\s:='
+
 
 class Lean4(Language):
     """
@@ -65,7 +66,7 @@ class Lean4(Language):
         proof_elements = []
         for proof_attempt, chal_nb in branch:
             challenge_starts = list(re.compile('-- chal').finditer(proof_attempt))
-            challenge_start = challenge_starts[chal_nb]
+            challenge_start = challenge_starts[chal_nb].start()
 
             proof_elements.append(proof_attempt[:challenge_start.start()])
         proof_elements.append(machine_proof)
@@ -98,7 +99,8 @@ class Lean4(Language):
         challenge_starts = list(re.compile('-- chal').finditer(proof_attempt))
         challenge_ends = list(re.compile('-- endchal').finditer(proof_attempt))
 
-        challenge_start, challenge_end = challenge_starts[chal_nb].end() + 1, challenge_ends[chal_nb].start()
+        challenge_start = challenge_starts[chal_nb].end() + 1
+        challenge_end = challenge_ends[chal_nb].start()
         challenged_text = proof_attempt[challenge_start:challenge_end]
 
         challenged_thm = re.match(REGEX, challenged_text.strip())
@@ -111,16 +113,27 @@ class Lean4(Language):
 
         # Verify coherence of markers
         assert len(attempt_starts) == len(attempt_ends)
-        assert all([attempt_starts[i].end() < attempt_ends[i].start() for i in range(len(attempt_starts))])
-        assert all([attempt_ends[i].end() < attempt_starts[i + 1].start() for i in range(len(attempt_starts) - 1)])
+        assert all(
+            [attempt_starts[i].end() < attempt_ends[i].start() for i in range(len(attempt_starts))])
+        assert all([
+            attempt_ends[i].end() < attempt_starts[i + 1].start()
+            for i in range(len(attempt_starts) - 1)
+        ])
 
         # Verify a sorry between each pair of markers
-        assert all([len(re.findall(r"\bsorry\b", attempt[attempt_starts[i].end():attempt_ends[i].start()])) == 1 for i in range(len(attempt_starts))])
+        assert all([
+            len(re.findall(r"\bsorry\b",
+                           attempt[attempt_starts[i].end():attempt_ends[i].start()])) == 1
+            for i in range(len(attempt_starts))
+        ])
 
         # Verify no sorry outside of pairs of markers
         if len(attempt_starts) > 0:
             assert 'sorry' not in attempt[:attempt_starts[0].start()]
-            assert all(['sorry' not in attempt[attempt_ends[i].end():attempt_starts[i + 1].start()] for i in range(len(attempt_starts) - 1)])
+            assert all([
+                'sorry' not in attempt[attempt_ends[i].end():attempt_starts[i + 1].start()]
+                for i in range(len(attempt_starts) - 1)
+            ])
             assert 'sorry' not in attempt[attempt_ends[-1].end():]
         else:
             assert 'sorry' not in attempt
@@ -141,11 +154,14 @@ class Lean4(Language):
 
         # Verify there is only one, it contains one sorry and no other sorries outside of marks
         assert len(attempt_starts) == len(attempt_ends) == 1
-        assert len(re.findall(r"\bsorry\b", root_question[attempt_starts[0].end():attempt_ends[0].start()])) == 1
+        assert 1 == len(
+            re.findall(r"\bsorry\b",
+                       root_question[attempt_starts[0].end():attempt_ends[0].start()]))
         assert 'sorry' not in root_question[:attempt_starts[0].start()]
         assert 'sorry' not in root_question[attempt_ends[0].end():]
 
-        challenged_thm = re.match(REGEX, root_question[attempt_starts[0].end() + 1:attempt_ends[0].start()].strip())
+        challenged_thm = re.match(
+            REGEX, root_question[attempt_starts[0].end() + 1:attempt_ends[0].start()].strip())
         assert challenged_thm is not None
 
         return True

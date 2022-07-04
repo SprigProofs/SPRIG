@@ -13,7 +13,7 @@ defineProps({
 
 </script>
 
-<template>
+<!-- <template>
     <Tooltip>
         Currently {{ (amount * ALGO_TO_USD).toFixed(2) }}$
 
@@ -21,4 +21,8 @@ defineProps({
             <span class="inline-block">{{ amount }}<Algo class="ml-0.5"></Algo></span>
         </template>
     </Tooltip>
+</template> -->
+
+<template>
+    <span class="inline-block">{{ amount }}<Algo class="ml-0.5"></Algo></span>
 </template>

@@ -4,16 +4,14 @@ This file contains the code of the API / Server.
 It reads and updates the sprig instances in the data/ folder.
 """
 
-import json
 import os
 from pathlib import Path
 import traceback
 from typing import Any, Iterator
-from xmlrpc.client import boolean
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Request, HTTPException
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.params import Depends
 from pydantic import BaseModel
 
 os.environ["BANK_FILE"] = str((Path(__file__).parent / "data" / "api_bank").absolute())
@@ -21,7 +19,7 @@ os.environ["BANK_FILE"] = str((Path(__file__).parent / "data" / "api_bank").abso
 import sprig
 import utils
 
-DEV =os.environ.get("DEV", "").lower() in ("true", "1", "yes", "y'")
+DEV = os.environ.get("DEV", "").lower() in ("true", "1", "yes", "y'")
 ROOT_PATH = "/api" if not DEV else ""
 api = FastAPI(root_path=ROOT_PATH)
 
@@ -67,6 +65,19 @@ def load(instance_hash: str) -> sprig.Sprig:
     return sprig.Sprig.loads(path_from_hash(instance_hash).read_text())
 
 
+@api.exception_handler(AssertionError)
+async def unicorn_exception_handler(request: Request, exc: AssertionError) -> JSONResponse:
+    if len(exc.args) > 0:
+        detail = exc.args[0]
+    else:
+        detail = "Unkown error, please report this."
+        traceback.print_tb(exc.__traceback__)
+    return JSONResponse(
+        status_code=400,
+        content={"detail": detail},
+    )
+
+
 class ParameterData(BaseModel):
     root_height: int
     max_length: int
@@ -97,9 +108,13 @@ def get_everything() -> Any:
 
     everything = {}
     for file in all_instances_filenames():
-        instance = json.loads(file.read_text())
-        instance['hash'] = file.stem
-        everything[file.stem] = instance
+        instance = load(file.stem)
+        with sprig.time_mode('real'):
+            instance.distribute_all_bets()
+        save(instance, file.stem)
+        data = instance.dump_as_dict()
+        data['hash'] = file.stem
+        everything[file.stem] = data
 
     return everything
 
@@ -135,7 +150,6 @@ def add_new_instance(new_instance: SprigInitData) -> dict[str, Any]:  # SprigDat
 
         data = instance.dump_as_dict()
         data['hash'] = h
-        print(data)
         return data
 
 
@@ -176,7 +190,7 @@ def new_challenge(skeptic: sprig.Address, claim_hash: sprig.Hash,
 class NewProofAttemptData(BaseModel):
     statement: str
     author: sprig.Address
-    machine_level: boolean
+    machine_level: bool
 
 
 @api.post("/proof/{instance_hash}/{challenge_hash}")

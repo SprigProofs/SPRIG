@@ -10,6 +10,7 @@ import { StatusTag, LanguageTag } from '../small';
 import InstanceEmbed from '../medium/InstanceEmbed.vue';
 import AttemptEmbed from '../medium/AttemptEmbed.vue';
 import ChallengeEmbed from '../medium/ChallengeEmbed.vue';
+import UserEmbed from '../medium/UserEmbed.vue';
 
 const statuses = reactive({
   [Status.CHALLENGED]: true,
@@ -22,7 +23,7 @@ const REWARD = "Reward";
 const OPEN_UNTIL = "Open until";
 const RELEVANCE = "Relevance";
 const NEW = "New";
-const sortMethods = reactive([NEW, REWARD, OPEN_UNTIL]);
+const sortMethods = reactive([REWARD, NEW, OPEN_UNTIL]);
 enum Types {
   CHALLENGE = "Challenges",
   ATTEMPT = "Proof Attempts",
@@ -34,7 +35,7 @@ const selectedTypes = reactive({
   [Types.CHALLENGE]: true,
   [Types.ATTEMPT]: true,
   [Types.INSTANCE]: true,
-  [Types.USER]: false,
+  [Types.USER]: true,
 });
 const search = ref("");
 
@@ -83,9 +84,8 @@ function drop(event, droppedMethod) {
 function getWeights(o, type: Types) {
   const weights = {};
   const now = dayjs();
-  const timeDiff = (d: dayjs.Dayjs) => now.diff(d, "hours", true);
+  const timeDiff = (d: dayjs.Dayjs) => now.diff(d, "minutes", true);
   switch (type) {
-    // TODO: Set all weights
     case Types.CHALLENGE:
       const challenge: Challenge = o;
       weights[REWARD] = -challenge.possibleReward(store.instances[challenge.instanceHash].params);
@@ -101,7 +101,9 @@ function getWeights(o, type: Types) {
       const instance_ = store.instances[attempt.instanceHash];
       weights[REWARD] = -attempt.possibleReward(instance_.params);
       weights[NEW] = timeDiff(attempt.createdAt);
-      weights[OPEN_UNTIL] = -1;
+      weights[OPEN_UNTIL] = decided(attempt.status)
+        ? 99999999999999
+        : timeDiff(attempt.expires(instance_));
       weights[RELEVANCE] = -1;
       break;
 
@@ -109,7 +111,9 @@ function getWeights(o, type: Types) {
       const instance: Sprig = o;
       weights[REWARD] = -instance.totalBounties();
       weights[NEW] = timeDiff(instance.rootAttempt().createdAt);
-      weights[OPEN_UNTIL] = -1;
+      weights[OPEN_UNTIL] = decided(instance.rootAttempt().status)
+        ? 99999999999999
+        : timeDiff(instance.rootAttempt().expires(instance));
       weights[RELEVANCE] = -1;
       break;
 
@@ -174,14 +178,9 @@ const results = computed<{ key: string, challenge?: Challenge, instance?: Sprig,
   }
 
   if (selectedTypes[Types.USER]) {
-    all = all.concat(_.values(store.instances)
-      .flatMap(instance => _.values(instance.proofs)
-        .map(p => p.author)
-        .concat(_.values(instance.challenges)
-          .map(c => c.author)))
-      .filter(user => user !== null && user.toLowerCase().includes(search.value.toLocaleLowerCase()))
+    all = all.concat(_.keys(store.bank)
+      .filter(user => !user.includes('@') && user.toLowerCase().includes(search.value.toLowerCase()))
       .map(user => ({ key: user, user }))
-
     )
   }
 
@@ -251,11 +250,11 @@ const results = computed<{ key: string, challenge?: Challenge, instance?: Sprig,
     <TransitionGroup tag="ol" class="space-y-6">
       <li v-for="result in results" :key="result.key" class="transition">
         <router-link :to="linkTo(result.attempt || result.challenge || result.instance || result.user)"
-          class="p-4 block bg-white rounded-sm shadow-sm hover:shadow-md w-full border">
+          class="card">
           <AttemptEmbed v-if="result.attempt" :hash="result.attempt.hash" :instance="store.instances[result.attempt.instanceHash]" />
           <InstanceEmbed v-else-if="result.instance" :hash="result.instance.hash"></InstanceEmbed>
-          <ChallengeEmbed v-else-if="result.challenge" :challenge="result.challenge" :instance="store.instances[result.challenge.hash]" />
-          <pre v-else>{{ result }}</pre>
+          <ChallengeEmbed v-else-if="result.challenge" :hash="result.challenge.hash" :instance="store.instances[result.challenge.instanceHash]" />
+          <UserEmbed v-else-if="result.user" :name="result.user" />
           <!-- <pre>{{ weightDebug(result.attempt || result.claim || result.instance, selectedType) }}</pre> -->
 
         </router-link>
@@ -264,9 +263,9 @@ const results = computed<{ key: string, challenge?: Challenge, instance?: Sprig,
 
     <section v-if="results.length === 0">
       <el-empty description="Nothing to show here. Try broadening your search.">
-        <button class="rounded border bg-blue-100 pl-2 pr-4 py-2 border-blue-700 shadow hover:-translate-y-0.5 hover:shadow-md transition transform">
-          <v-icon name="md-add-round" class="fill-blue-800"/>
-          New SPRIG instance</button>
+        <router-link to="/new">
+          <Button icon="md-add-round" color="blue">New SPRIG instance</Button>
+        </router-link>
       </el-empty>
     </section>
   </div>

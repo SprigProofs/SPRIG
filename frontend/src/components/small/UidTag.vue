@@ -17,11 +17,10 @@ const props = withDefaults(defineProps<Props>(), {
     tooltip: true,
 });
 
-const link = linkTo(props.object);
+const link = linkTo(props.object || props.instance);
+const linkText = props.object?.uid() || props.instance.uid();
 
-const status = props.object instanceof Sprig
-    ? props.object.rootAttempt().status
-    : props.object.status;
+const status = props.object?.status || props.instance.rootAttempt().status;
 
 const linkClasses = {
     [Status.CHALLENGED]: 'bg-yellow-50 border-yellow-300 hover:bg-yellow-200',
@@ -39,7 +38,7 @@ const linkClasses = {
                 px-1 py-0.5 border-b transition
                 rounded focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 "
                 :class="linkClasses[status]"
-                >{{ object.uid()}}</RouterLink>
+                >{{ linkText }}</RouterLink>
         </template>
 
         <AttemptEmbed v-if="tooltip && object instanceof ProofAttempt"
@@ -47,13 +46,13 @@ const linkClasses = {
             :hash="object.hash" />
         <ChallengeEmbed v-else-if="tooltip && object instanceof Challenge"
             :instance="instance"
-            :challenge="object" />
+            :hash="object.hash" />
         <InstanceEmbed v-else :hash="instance.hash" />
     </Tooltip>
 
     <RouterLink v-else
         :to="link" class="text-gray-800 italic text-sm font-mono
         rounded focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 "
-        >{{ object.uid()}}</RouterLink>
+        >{{ linkText }}</RouterLink>
 
 </template>
