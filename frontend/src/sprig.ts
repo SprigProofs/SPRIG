@@ -548,6 +548,14 @@ function linkTo(obj: ProofAttempt | Challenge | Sprig | string) {
     }
 }
 
+interface SprigObject {
+    instance: Sprig;
+    challenge?: Challenge;
+    attempt?: ProofAttempt;
+    user?: string;
+    key: string;
+}
+
 function copy(text): void {  // TODO: What is the best way to copy stuff ?
     const textArea = document.createElement("textarea");
     textArea.value = text;
@@ -562,7 +570,7 @@ export {
     api, STATUSES, STATUS_DISPLAY_NAME, Unit,
     decided, Challenge, Sprig, Status,
     ProofAttempt, Parameters, Action, ActionData, linkTo,
-    dayjs, copy, User,
+    dayjs, copy, User, SprigObject,
 };
 
 // ok

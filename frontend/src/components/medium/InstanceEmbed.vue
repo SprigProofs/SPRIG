@@ -66,16 +66,12 @@ import Languages from '../languages';
 import dayjs from 'dayjs/esm';
 
 
-const props = defineProps({
-  hash: {
-    type: String,
-    required: true,
-  }
-});
+const props = defineProps<{
+  instance: Sprig;
+}>();
 
-const instance: Sprig = store.instances[props.hash];
-const rootAttempt: ProofAttempt = instance.rootAttempt();
-const lang = Languages[instance.language];
-const expires = rootAttempt.expires(instance);
+const rootAttempt: ProofAttempt = props.instance.rootAttempt();
+const lang = Languages[props.instance.language];
+const expires = rootAttempt.expires(props.instance);
 
 </script>

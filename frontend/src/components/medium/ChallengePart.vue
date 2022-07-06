@@ -47,11 +47,7 @@
 
     <SlideOver v-model="isAttemptPanelOpen" :panelTitle="'Proof attempts on ' + challenge.hash">
 
-      <ul class="divide-y -mt-4">
-        <li v-for="attempt in challenge.attempts" :key="attempt" class="py-4">
-          <AttemptEmbed :hash="attempt" :instance="instance" />
-        </li>
-      </ul>
+      <SprigNodeList :data="attempts" />
 
     </SlideOver>
   </div>
@@ -71,6 +67,7 @@ import User from './User.vue';
 import { computed } from '@vue/reactivity';
 import NewProofButton from './NewProofButton.vue';
 import ChallengeButton from './ChallengeButton.vue';
+import SprigNodeList from './SprigNodeList.vue';
 
 interface Props {
   challenge: Challenge;
@@ -97,6 +94,11 @@ const status = computed(() => props.challenge.status);
 const attempt = computed(() => props.instance.proofs[props.challenge.parent]);
 const timeForQuestions = computed(() => props.instance.params.timeForQuestions);
 const challengeCost = computed(() => props.instance.params.costToChallenge(attempt.value));
+const attempts = computed(() => props.challenge.attempts.map(a => ({
+  key: a,
+  attempt: props.instance.proofs[a],
+  instance: props.instance,
+})));
 
 // Internal data
 const isAttemptPanelOpen = ref(false);

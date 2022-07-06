@@ -47,7 +47,7 @@ const linkClasses = {
         <ChallengeEmbed v-else-if="tooltip && object instanceof Challenge"
             :instance="instance"
             :hash="object.hash" />
-        <InstanceEmbed v-else :hash="instance.hash" />
+        <InstanceEmbed v-else :instance="instance" />
     </Tooltip>
 
     <RouterLink v-else

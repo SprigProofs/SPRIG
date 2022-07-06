@@ -4,13 +4,13 @@ import { computed, reactive, ref } from 'vue';
 import _ from 'lodash';
 import dayjs from 'dayjs/esm';
 
-import { Status, decided, Sprig, ProofAttempt, Parameters, Challenge, linkTo } from '../../sprig';
+import { Status, decided, Sprig, ProofAttempt, Parameters, Challenge, linkTo, SprigObject } from '../../sprig';
 import { store } from '../../store';
 import { StatusTag, LanguageTag } from '../small';
-import InstanceEmbed from '../medium/InstanceEmbed.vue';
 import AttemptEmbed from '../medium/AttemptEmbed.vue';
 import ChallengeEmbed from '../medium/ChallengeEmbed.vue';
 import UserEmbed from '../medium/UserEmbed.vue';
+import SprigNodeList from '../medium/SprigNodeList.vue';
 
 const statuses = reactive({
   [Status.CHALLENGED]: true,
@@ -138,7 +138,7 @@ function weightDebug(o, type: Types) {
   return weights;
 }
 
-const results = computed<{ key: string, challenge?: Challenge, instance?: Sprig, attempt?: ProofAttempt; user: string }[]>(() => {
+const results = computed<SprigObject[]>(() => {
   const sortKey = (type) => (a, b) => combineWeights(getWeights(a, type))
     - combineWeights(getWeights(b, type));
 
@@ -153,6 +153,7 @@ const results = computed<{ key: string, challenge?: Challenge, instance?: Sprig,
         .map(challenge => ({
           key: challenge.uid(),
           challenge,
+          instance: store.instances[challenge.instanceHash],
         })));
   }
 
@@ -174,6 +175,7 @@ const results = computed<{ key: string, challenge?: Challenge, instance?: Sprig,
       .map(attempt => ({
         key: attempt.uid(),
         attempt,
+        instance: store.instances[attempt.instanceHash],
       })));
   }
 
@@ -247,19 +249,7 @@ const results = computed<{ key: string, challenge?: Challenge, instance?: Sprig,
       {{ results.length }} Result{{ results.length != 1 ? 's' : '' }}
     </h2>
 
-    <TransitionGroup tag="ol" class="space-y-6">
-      <li v-for="result in results" :key="result.key" class="transition">
-        <router-link :to="linkTo(result.attempt || result.challenge || result.instance || result.user)"
-          class="card">
-          <AttemptEmbed v-if="result.attempt" :hash="result.attempt.hash" :instance="store.instances[result.attempt.instanceHash]" />
-          <InstanceEmbed v-else-if="result.instance" :hash="result.instance.hash"></InstanceEmbed>
-          <ChallengeEmbed v-else-if="result.challenge" :hash="result.challenge.hash" :instance="store.instances[result.challenge.instanceHash]" />
-          <UserEmbed v-else-if="result.user" :name="result.user" />
-          <!-- <pre>{{ weightDebug(result.attempt || result.claim || result.instance, selectedType) }}</pre> -->
-
-        </router-link>
-      </li>
-    </TransitionGroup>
+    <SprigNodeList :data="results" />
 
     <section v-if="results.length === 0">
       <el-empty description="Nothing to show here. Try broadening your search.">
