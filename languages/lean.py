@@ -29,7 +29,6 @@ class Lean4(Language):
         docker_client.images.build(path='.', tag='sprig/lean4')
         print('Build done')
 
-
     def lean_validate(self, lean_code: str) -> bool:
         f = open(f'{os.getcwd()}/tmp_file', 'w')
         f.write(lean_code)
@@ -37,11 +36,12 @@ class Lean4(Language):
 
         try:
             self.docker_client.containers.run(
-                'sprig/lean4',
-                ['/bin/sh', '-c', '/root/.elan/bin/lean /tmp_file'],
-                volumes={f'{os.getcwd()}/tmp_file': {'bind': '/tmp_file', 'mode': 'ro'}},
-                remove=True
-                )
+                'sprig/lean4', ['/bin/sh', '-c', '/root/.elan/bin/lean /tmp_file'],
+                volumes={f'{os.getcwd()}/tmp_file': {
+                    'bind': '/tmp_file',
+                    'mode': 'ro'
+                }},
+                remove=True)
         except:
             os.remove(f'{os.getcwd()}/tmp_file')
             return False
@@ -66,7 +66,7 @@ class Lean4(Language):
             True if the proof is correct, False otherwise.
         """
 
-        # The low-level proof should not contain a sorry
+        # Sanity check: low-level proof should not contain a sorry (it is checked in validate_attempt)
         assert 'sorry' not in machine_proof, 'Proof is not a machine proof (contains sorry)'
 
         # Accumulate content of proof, ignoring challenged elements and what follows them
@@ -111,7 +111,7 @@ class Lean4(Language):
         challenged_text = proof_attempt[challenge_start:challenge_end]
 
         challenged_thm = re.match(REGEX, challenged_text.strip())
-        assert challenged_thm is not None
+        assert challenged_thm is not None, "The parent challenged cannot be parsed. Please report this, it should not happen."
         challenged_header = challenged_text[challenged_thm.start():challenged_thm.end() + 1]
 
         # Read attempt
@@ -119,35 +119,39 @@ class Lean4(Language):
         attempt_ends = list(re.compile('-- endchal').finditer(attempt))
 
         # Verify coherence of markers
-        assert len(attempt_starts) == len(attempt_ends)
-        assert all(
-            [attempt_starts[i].end() < attempt_ends[i].start() for i in range(len(attempt_starts))])
+        assert len(attempt_starts) == len(
+            attempt_ends), 'The number of -- chal and -- endchal markers is not the same.'
+        assert all([
+            attempt_starts[i].end() < attempt_ends[i].start() for i in range(len(attempt_starts))
+        ]), 'Mismatch of challenge markers.'
         assert all([
             attempt_ends[i].end() < attempt_starts[i + 1].start()
             for i in range(len(attempt_starts) - 1)
-        ])
+        ]), 'Mismatch of challenge markers.'
 
         # Verify a sorry between each pair of markers
         assert all([
             len(re.findall(r"\bsorry\b",
                            attempt[attempt_starts[i].end():attempt_ends[i].start()])) == 1
             for i in range(len(attempt_starts))
-        ])
+        ]), 'Not all challenge contain a sorry.'
 
         # Verify no sorry outside of pairs of markers
         if len(attempt_starts) > 0:
-            assert 'sorry' not in attempt[:attempt_starts[0].start()]
+            assert 'sorry' not in attempt[:attempt_starts[0].start(
+            )], 'There is a sorry outside of a challenge.'
             assert all([
                 'sorry' not in attempt[attempt_ends[i].end():attempt_starts[i + 1].start()]
                 for i in range(len(attempt_starts) - 1)
-            ])
-            assert 'sorry' not in attempt[attempt_ends[-1].end():]
+            ]), 'There is a sorry outside of a challenge.'
+            assert 'sorry' not in attempt[attempt_ends[-1].end(
+            ):], 'There is a sorry outside of a challenge.'
         else:
-            assert 'sorry' not in attempt
+            assert 'sorry' not in attempt, "A machine level proof should not contain a sorry."
 
         # TODO: improve this check
         # Verify that challenged claim is proven again
-        assert challenged_header.strip() in attempt
+        assert challenged_header.strip() in attempt, "The challenged claim is not proven again."
 
         return True
 
@@ -160,24 +164,30 @@ class Lean4(Language):
         attempt_ends = list(re.compile('-- endchal').finditer(root_question))
 
         # Verify there is only one, it contains one sorry and no other sorries outside of marks
-        assert len(attempt_starts) == len(attempt_ends) == 1
+        assert len(attempt_starts) == len(
+            attempt_ends
+        ) == 1, "The root question should contain exactly one of both challenge markers."
         assert 1 == len(
-            re.findall(r"\bsorry\b",
-                       root_question[attempt_starts[0].end():attempt_ends[0].start()]))
-        assert 'sorry' not in root_question[:attempt_starts[0].start()]
-        assert 'sorry' not in root_question[attempt_ends[0].end():]
+            re.findall(r"\bsorry\b", root_question[attempt_starts[0].end():attempt_ends[0].start()])
+        ), "The root question should contain exactly one sorry between the challenge markers."
+        assert 'sorry' not in root_question[:attempt_starts[0].start(
+        )], "The root question contains a sorry outside of the challenge markers."
+        assert 'sorry' not in root_question[attempt_ends[0].end(
+        ):], "The root question contains a sorry outside of the challenge markers."
 
         challenged_thm = re.match(
             REGEX, root_question[attempt_starts[0].end() + 1:attempt_ends[0].start()].strip())
-        assert challenged_thm is not None
+        assert challenged_thm is not None, "The root question cannot be parsed."
 
         return True
 
     def nb_of_challenges(self, proof: str) -> int:
-        """Return the number of points that a proof can be challenged."""
+        """Return the number of points on which a proof can be challenged.
+
+        This is called only with syntaxic validity checked."""
         attempt_starts = list(re.compile('-- chal').finditer(proof))
         attempt_ends = list(re.compile('-- endchal').finditer(proof))
 
-        assert len(attempt_starts) == len(attempt_ends)
+        assert len(attempt_starts) == len(attempt_ends), 'Sanity check'
 
         return len(attempt_starts)

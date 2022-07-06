@@ -71,7 +71,9 @@ class Language:
         raise NotImplementedError
 
     def nb_of_challenges(self, proof: str) -> int:
-        """Return the number of points that a proof can be challenged."""
+        """Return the number of points on which a proof can be challenged.
+
+        This is called only with syntaxic validity checked."""
         raise NotImplementedError
 
     # Serialisation
