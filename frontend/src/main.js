@@ -14,6 +14,7 @@ import ProofAttemptPage from './components/pages/ProofAttemptPage.vue'
 import InstancePage from './components/pages/InstancePage.vue'
 import NewInstancePage from './components/pages/NewInstancePage.vue'
 import UserPage from './components/pages/UserPage.vue'
+import DocsPage from './components/pages/DocsPage.vue'
 import { OhVueIcon, addIcons } from "oh-vue-icons";
 import { PiPikachu, CiAlgo, MdClearRound, MdCheckRound, MdMenu, MdModeedit, MdCancel, MdCheckcircle, MdOfflineboltSharp, MdKeyboarddoublearrowdown, MdKeyboarddoublearrowup, MdBolt, MdOfflinebolt, MdQuestionmarkRound, MdInfoRound, MdAccesstimeRound, MdPersonRound, FaMountain, MdLockclock, MdLockopenRound, MdPriorityhighRound, MdCloseRound, MdDownload, MdDownloading, MdExpandmoreRound, MdAddRound, MdLockoutline, HiSolidQuestionMarkCircle, MdVisibility, MdVisibilityoff, MdCopyall } from "oh-vue-icons/icons";
 
@@ -70,6 +71,7 @@ const routes = [
     { path: '/homeHidden', component: Home, name: 'homeHidden'},
     { path: '/search', component: Search },
     { path: '/new', component: NewInstancePage },
+    { path: '/docs', component: DocsPage },
     { path: '/i/:instanceHash/:hash', component: ProofAttemptPage, props: true, name: 'proofAttempt' },
     { path: '/i/:instanceHash', component: InstancePage, props: true, name: 'instance' },
     { path: '/u/:name', component: UserPage, props: true, name: 'user' },

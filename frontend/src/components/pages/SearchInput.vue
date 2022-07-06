@@ -11,6 +11,7 @@ import AttemptEmbed from '../medium/AttemptEmbed.vue';
 import ChallengeEmbed from '../medium/ChallengeEmbed.vue';
 import UserEmbed from '../medium/UserEmbed.vue';
 import SprigNodeList from '../medium/SprigNodeList.vue';
+import LANGS from '../languages';
 
 const statuses = reactive({
   [Status.CHALLENGED]: true,
@@ -142,14 +143,23 @@ const results = computed<SprigObject[]>(() => {
   const sortKey = (type) => (a, b) => combineWeights(getWeights(a, type))
     - combineWeights(getWeights(b, type));
 
+  const searchLower = search.value.toLowerCase();
+
   var all = [];
   if (selectedTypes[Types.CHALLENGE]) {
     all = all.concat(
       _.values(store.instances)
         .flatMap((instance: Sprig) => _.values(instance.challenges))
         // TODO: filter according to search. But we need languages for that.
-        .filter(challenge => statuses[challenge.status])
-        .filter(challenge => languages[store.instances[challenge.instanceHash].language])
+        .filter(challenge => {
+          const lang = store.instances[challenge.instanceHash].language;
+          return statuses[challenge.status]
+            && languages[lang]
+            && (
+              LANGS[lang].title(challenge, store.instances[challenge.instanceHash]).toLowerCase().includes(searchLower)
+              || challenge.author?.toLowerCase().includes(searchLower)
+            );
+        })
         .map(challenge => ({
           key: challenge.uid(),
           challenge,
@@ -161,6 +171,8 @@ const results = computed<SprigObject[]>(() => {
     all = all.concat(_.values(store.instances)
       .filter(instance => statuses[instance.rootAttempt().status])
       .filter(instance => languages[instance.language])
+      .filter(instance => instance.rootQuestion.toLowerCase().includes(searchLower)
+        || instance.author().includes(searchLower))
       .map(instance => ({
         key: instance.uid(),
         instance,
@@ -170,7 +182,8 @@ const results = computed<SprigObject[]>(() => {
   if (selectedTypes[Types.ATTEMPT]) {
     all = all.concat(_.values(store.instances)
       .flatMap(instance => _.values(instance.proofs))
-      .filter(attempt => statuses[attempt.status] && attempt.proof.toLowerCase().includes(search.value.toLowerCase()))
+      .filter(attempt => statuses[attempt.status]
+        && (attempt.proof.toLowerCase().includes(searchLower) || attempt.author.includes(searchLower)))
       .filter(attempt => languages[store.instances[attempt.instanceHash].language])
       .map(attempt => ({
         key: attempt.uid(),
@@ -181,7 +194,7 @@ const results = computed<SprigObject[]>(() => {
 
   if (selectedTypes[Types.USER]) {
     all = all.concat(_.keys(store.bank)
-      .filter(user => !user.includes('@') && user.toLowerCase().includes(search.value.toLowerCase()))
+      .filter(user => !user.includes('@') && user.toLowerCase().includes(searchLower))
       .map(user => ({ key: user, user }))
     )
   }

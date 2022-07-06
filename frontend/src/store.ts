@@ -1,18 +1,20 @@
 import { api, Parameters, ProofAttempt, Sprig, User } from "./sprig";
-import { reactive } from "vue";
+import { reactive, Ref } from "vue";
 
-export const store = reactive<{
-    instances: Record<string, Sprig>,
-    bank: Record<string, number>,
-    loaded: boolean,
-    fail: boolean,
-    user: string,
-    reload: () => Promise<void>,
-    challenge: (instance: string, challenge: string) => Promise<void>,
-    newInstance: (language: string, params: Parameters, rootClaim: string, proof: string) => Promise<Sprig>,
-    newProofAttempt: (instance: string, challenge: string, isMachineLevel: boolean, proof: string) => Promise<ProofAttempt>,
-    getUser: (name: string) => User,
-}>({
+interface Store {
+    instances: Record<string, Sprig>;
+    bank: Record<string, number>;
+    loaded: boolean;
+    fail: boolean;
+    user: string;
+    reload: () => Promise<void>;
+    challenge: (instance: string, challenge: string) => Promise<void>;
+    newInstance: (language: string, params: Parameters, rootClaim: string, proof: string) => Promise<Sprig>;
+    newProofAttempt: (instance: string, challenge: string, isMachineLevel: boolean, proof: string) => Promise<ProofAttempt>;
+    getUser: (name: string) => User;
+}
+
+export const store: Store = reactive<Store>({
     instances: {},
     bank: {},
     loaded: false,
