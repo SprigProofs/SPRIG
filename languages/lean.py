@@ -1,7 +1,7 @@
 import re
 import os, subprocess
 
-import docker
+import docker  # type: ignore
 
 from languages.base import Language
 from typing import Dict, List, NewType, Optional

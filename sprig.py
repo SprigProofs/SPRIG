@@ -869,12 +869,12 @@ theorem add_comm (m n : nat) : m + n = n + m := sorry
 
     time_passes(sprig)
 
-    a3 = sprig.answer(c3.hash, DIEGO, """
+    a3 = sprig.answer(
+        c3.hash, DIEGO, """
         -- chal
         theorem succ_add (m n : nat) : succ m + n = succ (m + n) := sorry
         -- endchal
-        """
-    )
+        """)
 
     time_passes(sprig)
 
@@ -882,12 +882,12 @@ theorem add_comm (m n : nat) : m + n = n + m := sorry
 
     time_passes(sprig)
 
-    a4 = sprig.answer(c4.hash, DIEGO, """
+    a4 = sprig.answer(
+        c4.hash, DIEGO, """
         -- chal
         theorem succ_add (m n : nat) : succ m + n = succ (m + n) := sorry
         -- endchal
-        """
-    )
+        """)
 
     time_passes(sprig)
 
@@ -895,12 +895,12 @@ theorem add_comm (m n : nat) : m + n = n + m := sorry
 
     time_passes(sprig)
 
-    a5 = sprig.answer_low_level(c5.hash, DIEGO, """
+    a5 = sprig.answer_low_level(
+        c5.hash, DIEGO, """
         -- chal
         theorem succ_add (m n : nat) : succ m + n = succ (m + n) := 2
         -- endchal
-        """
-    )
+        """)
 
     time_passes(sprig)
 
