@@ -103,7 +103,13 @@ function title(object: ProofAttempt | Challenge, instance: Sprig): string {
 
 function attemptTemplate(challenge: string, instance: Sprig): string {
     const attempt = instance.proofs[instance.challenges[challenge].parent];
-    const separator = `\n\n-- Modify and submit only what is below this line --\n\n`
+    const separator = `
+
+-- You can use every statement above in your proof,
+-- they come from the previous claims.
+-- However, modify and submit only what is below this line --
+
+`;
     const challengeStatement = getChallenges(attempt.proof)[attempt.challenges.indexOf(challenge)].content;
     return collectPreviousDefs(instance, challenge, true) + separator + challengeStatement;
 }

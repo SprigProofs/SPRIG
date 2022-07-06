@@ -6,21 +6,25 @@
   <SlideOver v-model="slideOpen" panel-title="New proof attempt">
     <div class="space-y-4">
       <div v-if="!preview">
-        <div>
-          <div class="flex space-x-4 items-baseline">
-            <h3 class="flex-grow text-sm font-medium text-gray-700">Template</h3>
-            <Button :icon="templateVisible ? 'md-visibilityoff' : 'md-visibility'"
-              @click.prevent="templateVisible = !templateVisible">{{
-              templateVisible ? 'Hide' : 'Show'
-            }}</Button>
-            <Button icon="md-copyall" @click="copy(template)">Copy</Button>
-          </div>
-          <pre v-show="templateVisible"
-            class="text-sm whitespace-pre-wrap text-gray-600">{{ template }}</pre>
-        </div>
+        <div class="prose">
+          <p>
+            For more details about the format, please refer to
+            <a class="hover:text-purple-700">the documentation</a> (TBD).
+            We provide here a template to make writting the proof easier.
+          </p>
 
-        <div class="mt-t 6">
-          <label for="proofAttempt" class="block text-sm font-medium text-gray-700">
+          <div class="relative min-h-[3rem] mt-2">
+            <div class="absolute right-4 -top-4 flex justify-end space-x-4">
+              <Button :icon="templateVisible ? 'md-visibilityoff' : 'md-visibility'"
+                @click.prevent="templateVisible = !templateVisible">{{
+                templateVisible ? 'Hide' : 'Show'
+              }}</Button>
+              <Button icon="md-copyall" @click="copy(template)">Copy</Button>
+            </div>
+            <pre class="mt-0" v-show="templateVisible">{{ template }}</pre>
+          </div>
+
+          <label for="proofAttempt" class="">
             Proof attempt
           </label>
           <div class="mt-1">
@@ -63,7 +67,7 @@ import dayjs from 'dayjs';
 import { useRouter } from 'vue-router';
 
 const slideOpen = ref(false);
-const templateVisible = ref(true);
+const templateVisible = ref(false);
 const preview = ref(false);
 const instancePreview = ref(null);
 const proofInput = ref("");
