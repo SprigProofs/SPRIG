@@ -15,7 +15,7 @@ import UserEmbed from '../medium/UserEmbed.vue';
 const statuses = reactive({
   [Status.CHALLENGED]: true,
   [Status.UNCHALLENGED]: true,
-  [Status.VALIDATED]: false,
+  [Status.VALIDATED]: true,
   [Status.REJECTED]: false
 });
 
@@ -35,7 +35,7 @@ const selectedTypes = reactive({
   [Types.CHALLENGE]: true,
   [Types.ATTEMPT]: true,
   [Types.INSTANCE]: true,
-  [Types.USER]: true,
+  [Types.USER]: false,
 });
 const search = ref("");
 

@@ -33,7 +33,7 @@ const contributions = (user.attempts as Contribution[]).concat(user.challenges);
     <TripleGraph class="h-64" :data="user.challenges" />
 
     <h3 class="small-title mt-6 mb-4">{{ name }}'s contributions</h3>
-    <ul class="space-y-4">
+    <ul v-if="contributions.length > 0" class="space-y-4">
       <li v-for="c in contributions" >
         <router-link :to="linkTo(c)" class="card">
           <component :is="c instanceof ProofAttempt ? AttemptEmbed : ChallengeEmbed"
@@ -41,6 +41,12 @@ const contributions = (user.attempts as Contribution[]).concat(user.challenges);
         </router-link>
       </li>
     </ul>
+
+    <el-empty v-else description="Nothing to show here. Try to submit or challenge a proof!">
+      <router-link to="/new">
+        <Button icon="md-add-round" color="blue">New SPRIG instance</Button>
+      </router-link>
+    </el-empty>
 
   </div>
 </template>

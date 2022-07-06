@@ -9,12 +9,11 @@ const props = defineProps<{
     challengeHash: string | null;
 }>();
 
-const challenge = props.instance.challenges[props.challengeHash];
-
 let text: string;
 if (props.challengeHash === null) {
     text = getChallenges(props.instance.rootQuestion)[0].content;
 } else {
+    const challenge = props.instance.challenges[props.challengeHash];
     const proofAttempt = props.instance.proofs[challenge.parent];
     const challengeNb = proofAttempt.challenges.indexOf(challenge.hash);
     text = getChallenges(proofAttempt.proof)[challengeNb].content;

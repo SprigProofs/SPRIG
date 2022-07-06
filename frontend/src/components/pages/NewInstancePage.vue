@@ -54,49 +54,49 @@ function newCostRow(height: number) {
     questionBounty: height,
     key: Math.random().toString().slice(2, 10),
     height: 0  // placeholder
-  })
+  });
 
-  costs.forEach((row, height) => row.height = height)
+  costs.forEach((row, height) => row.height = height);
 }
 
 const costsMiddleRows = computed(() => {
   const middle = [...costs];
-  middle.splice(0, 1)
+  middle.splice(0, 1);
   middle.pop();
   return middle.reverse();
-})
+});
 
 const invalidInputs = computed(() => {
   const fails = [];
   if (timeForAnswers.value.asMinutes() < 1)
-    fails.push("The time to answer challenges must be greater than one minute.")
+    fails.push("The time to answer challenges must be greater than one minute.");
 
   if (timeForQuestions.value.asMinutes() < 1)
-    fails.push("The time ask questions must be greater than one minute.")
+    fails.push("The time ask questions must be greater than one minute.");
 
   // When an imput is not a number, its value is "", which is < 100
   if (maxProofSize.value < 100) {
-    fails.push("The maximum proof size must be a number greater than 100.")
+    fails.push("The maximum proof size must be a number greater than 100.");
   }
 
   costs.forEach((row) => {
     if (row.height == 0) {
       if (row.downstake != 0)
-        fails.push(`Downstake for height ${row.height} must be zero.`)
+        fails.push(`Downstake for height ${row.height} must be zero.`);
     } else if (row.downstake < 1)
-      fails.push(`Downstake for height ${row.height} must be greater than 1.`)
+      fails.push(`Downstake for height ${row.height} must be greater than 1.`);
 
     if (row.height == costs.length - 1) {
       if (row.upstake != 0)
-      fails.push(`Upstake for height ${row.height} must be zero.`)
+        fails.push(`Upstake for height ${row.height} must be zero.`);
     } else if (row.upstake < 1)
-      fails.push(`Upstake for height ${row.height} must be greater than 1.`)
+      fails.push(`Upstake for height ${row.height} must be greater than 1.`);
 
     if (row.height == 0) {
       if (row.questionBounty != 0)
-      fails.push(`Question Bounty for height ${row.height} must be zero.`)
+        fails.push(`Question Bounty for height ${row.height} must be zero.`);
     } else if (row.questionBounty < 1)
-      fails.push(`Question bounty for height ${row.height} must be greater than 1.`)
+      fails.push(`Question bounty for height ${row.height} must be greater than 1.`);
   });
 
   if (root_question.value === "")
@@ -106,22 +106,22 @@ const invalidInputs = computed(() => {
     fails.push("Add a proof attempt");
 
   return fails;
-})
+});
 
 function createInstance() {
   const upstakes = costs.map(row => row.upstake);
   const downstakes = costs.map(row => row.downstake);
   const questionBounties = costs.map(row => row.questionBounty);
   const params = new Parameters({
-        rootHeight: costs.length,
-        maxLength: maxProofSize.value,
-        timeForQuestions: timeForQuestions.value,
-        timeForAnswers: timeForAnswers.value,
-        upstakes: upstakes,
-        downstakes: downstakes,
-        questionBounties: questionBounties,
-        verificationCost: 1,
-    });
+    rootHeight: costs.length,
+    maxLength: maxProofSize.value,
+    timeForQuestions: timeForQuestions.value,
+    timeForAnswers: timeForAnswers.value,
+    upstakes: upstakes,
+    downstakes: downstakes,
+    questionBounties: questionBounties,
+    verificationCost: 1,
+  });
 
   store.newInstance(
     selectedLanguage.value,
@@ -129,8 +129,8 @@ function createInstance() {
     root_question.value,
     proof_attempt.value,
   ).then(instance => {
-    nextTick(() => router.push(linkTo(instance)))
-  })
+    nextTick(() => router.push(linkTo(instance)));
+  });
 }
 
 </script>
@@ -166,8 +166,8 @@ function createInstance() {
                       <div class="space-y-4">
                         <div v-for="lang in Languages" :key="lang.name" class="relative flex items-start">
                           <div class="flex items-center h-5">
-                            <input type="radio" v-model="selectedLanguage" :value="lang.name"
-                              :id="lang.name" :aria-describedby="`${lang.name}-description`" name="language"
+                            <input type="radio" v-model="selectedLanguage" :value="lang.name" :id="lang.name"
+                              :aria-describedby="`${lang.name}-description`" name="language"
                               class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300" />
                           </div>
                           <div class="ml-3 text-sm">
@@ -181,19 +181,19 @@ function createInstance() {
 
                   <div class="sm:flex sm:space-x-6 space-y-6 sm:space-y-0">
                     <!-- Max question time -->
-                    <DurationPicker id="time_for_questions" label="Time for questions" v-model="timeForQuestions"/>
+                    <DurationPicker id="time_for_questions" label="Time for questions" v-model="timeForQuestions" />
 
                     <!-- Answer time -->
-                    <DurationPicker id="time_for_answers" label="Time to answer challenges" v-model="timeForAnswers"/>
+                    <DurationPicker id="time_for_answers" label="Time to answer challenges" v-model="timeForAnswers" />
 
                   </div>
 
                   <!-- Max proof size -->
                   <div>
-                    <label for="max-proof-size" class="block text-sm font-medium text-gray-700">Maximum Proof size</label>
+                    <label for="max-proof-size" class="block text-sm font-medium text-gray-700">Maximum Proof
+                      size</label>
                     <div class="mt-1 relative rounded-md shadow-sm w-24">
-                      <input type="number" name="max-proof-size" id="max-proof-size"
-                        v-model="maxProofSize" min="100" />
+                      <input type="number" name="max-proof-size" id="max-proof-size" v-model="maxProofSize" min="100" />
                     </div>
                   </div>
 
@@ -218,8 +218,8 @@ function createInstance() {
                               </th>
                             </tr>
                           </thead>
-                          <tbody class="divide-y divide-gray-200 bg-white" >
-                              <!-- Root claim -->
+                          <tbody class="divide-y divide-gray-200 bg-white">
+                            <!-- Root claim -->
                             <tr>
                               <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
                                 {{ costs.length - 1 }} (root)</td>
@@ -231,7 +231,8 @@ function createInstance() {
                                 <input type="number" min="1" v-model="costs[costs.length - 1].questionBounty">
                               </td>
                               <td class="relative">
-                                <button @click.prevent="newCostRow(costs.length - 1)" class="absolute text-sm top-full left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white px-1  text-green-600 hover:text-green-900 rounded">
+                                <button @click.prevent="newCostRow(costs.length - 1)"
+                                  class="absolute text-sm top-full left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white px-1  text-green-600 hover:text-green-900 rounded">
                                   New
                                 </button>
                               </td>
@@ -250,24 +251,26 @@ function createInstance() {
                               <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                                 <input type="number" min="1" v-model="row.questionBounty">
                               </td>
-                              <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                                <button @click.prevent="costs.splice(row.height, 1)" class="px-1 rounded text-indigo-600 hover:text-indigo-900">
+                              <td
+                                class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
+                                <button @click.prevent="costs.splice(row.height, 1)"
+                                  class="px-1 rounded text-indigo-600 hover:text-indigo-900">
                                   Remove
                                 </button>
-                                <button @click.prevent="newCostRow(row.height)" class="absolute top-full left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white px-1 rounded  text-green-600 hover:text-green-900">
+                                <button @click.prevent="newCostRow(row.height)"
+                                  class="absolute top-full left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white px-1 rounded  text-green-600 hover:text-green-900">
                                   New
                                 </button>
 
                               </td>
                             </tr>
 
-                              <!-- Machine level -->
+                            <!-- Machine level -->
                             <tr>
                               <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
                                 0 (machine)</td>
                               <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                                <input type="number" min="1" v-model="costs[0].upstake"
-                                  class="w-24">
+                                <input type="number" min="1" v-model="costs[0].upstake" class="w-24">
                               </td>
                               <td></td>
                               <td></td>
@@ -300,7 +303,8 @@ function createInstance() {
               <h3 class="text-lg font-medium leading-6 text-gray-900">
                 Initial proof attempt</h3>
               <p class="mt-1 text-sm text-gray-600">
-                For details on the format, see <span class="underline hover:text-purple-700">the documentation</span> (TBD).
+                For details on the format, see <span class="underline hover:text-purple-700">the documentation</span>
+                (TBD).
               </p>
             </div>
           </div>
@@ -314,13 +318,10 @@ function createInstance() {
                       Initial question
                     </label>
                     <div class="mt-1">
-                      <textarea id="about" name="about" rows="3"
-                        v-model="root_question"
+                      <textarea id="about" name="about" rows="3" v-model="root_question"
                         class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 mt-1 block w-full sm:text-sm border border-gray-300 rounded-md"
                         placeholder="theorem riemann_hypothesis ..." />
                     </div>
-                    <p class="mt-2 text-sm text-gray-500">
-                      The main question... </p>
                   </div>
 
                   <div>
@@ -328,28 +329,24 @@ function createInstance() {
                       Partial proof
                     </label>
                     <div class="mt-1">
-                      <textarea id="about" name="partial_proof" rows="7"
-                        v-model="proof_attempt"
+                      <textarea id="about" name="partial_proof" rows="7" v-model="proof_attempt"
                         class="font-mono shadow-sm focus:ring-indigo-500 focus:border-indigo-500 mt-1 block w-full sm:text-sm border border-gray-300 rounded-md"
                         placeholder="theorem riemann_hypothesis ..." />
                     </div>
-                    <p class="mt-2 text-sm text-gray-500">
-                      The main question... </p>
+                    <!-- <p class="mt-2 text-sm text-gray-500">
+                      The main question... </p> -->
                   </div>
 
                 </div>
                 <div class="px-4 py-3 bg-gray-50 sm:flex flex-row justify-between items-end sm:px-6">
                   <div class="text-sm text-gray-500 pb-3 sm:pb-0 sm:pr-6">
-                    <p v-if="invalidInputs.length > 0">There are still a few things to do before creating this instance:</p>
+                    <p v-if="invalidInputs.length > 0">There are still a few things to do before creating this instance:
+                    </p>
                     <ul class="list-disc list-inside">
-                      <li v-for="fail in invalidInputs"
-                        class="">{{ fail }}</li>
+                      <li v-for="fail in invalidInputs" class="">{{ fail }}</li>
                     </ul>
                   </div>
-                  <button type="submit"
-                    @click.prevent="createInstance()"
-                    :disabled="invalidInputs.length > 0"
-                    class="flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600
+                  <button type="submit" @click.prevent="createInstance()" :disabled="invalidInputs.length > 0" class="flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600
                     hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500
                     disabled:bg-gray-400 disabled:cursor-not-allowed
                     ">Publish</button>

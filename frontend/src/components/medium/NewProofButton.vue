@@ -19,7 +19,7 @@
             class="text-sm whitespace-pre-wrap text-gray-600">{{ template }}</pre>
         </div>
 
-        <div>
+        <div class="mt-t 6">
           <label for="proofAttempt" class="block text-sm font-medium text-gray-700">
             Proof attempt
           </label>

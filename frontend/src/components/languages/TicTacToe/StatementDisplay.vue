@@ -6,10 +6,8 @@ import { getState, getMove } from './TicTacToe';
 
 const props = defineProps<{
     instance: Sprig,
-    challengeHash: string;
+    challengeHash: string | null;
 }>();
-
-const challenge = props.instance.challenges[props.challengeHash];
 
 const state = getState(props.challengeHash, props.instance);
 const colored = props.challengeHash

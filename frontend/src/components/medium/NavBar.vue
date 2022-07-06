@@ -5,7 +5,7 @@
                 <li><router-link to="/">Home</router-link></li>
                 <li><router-link to="/search">Explore</router-link></li>
                 <li><router-link to="/new">New</router-link></li>
-                <li><router-link :to="{ name: 'user', params: { name: store.user }}">Contributions</router-link></li>
+                <li><router-link :to="{ name: 'user', params: { name: store.user || 'Diego' }}">Contributions</router-link></li>
                 <li class="flex-grow text-right">
                     <input class="text-right mr-4 px-1 py-0.5 -my-0.5 border-0 w-24"
                         type="text"
