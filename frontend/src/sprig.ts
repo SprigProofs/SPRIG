@@ -388,6 +388,26 @@ class Sprig {
 
         return _.sortBy(actions, (action) => action.time);
     }
+
+    /**
+     * Compute the maximum reward someone can get by interacting with a challenge (challenging or proving).
+     * @param challenge The challenge hash on which an action might be taken.
+     */
+    maxRewardIfAction(challenge: string): number {
+        const chal = this.challenges[challenge];
+        if (chal.decided()) {
+            return 0;
+        } else if (chal.status === Status.CHALLENGED) {
+            return this.params.downstakes[chal.height];
+        } else {  // UNCHALLENGED
+            const attempt = this.proofs[chal.parent];
+            if (attempt.status == Status.CHALLENGED) {
+                return this.params.downstakes[chal.height];
+            } else {
+                return 0;
+            }
+        }
+    }
 }
 
 interface ActionData {

@@ -65,7 +65,7 @@ const readOnly = inject('readOnly', false);
 const challenge = props.instance.challenges[props.hash];
 const lang = LANGS[props.instance.language];
 const params: Parameters = props.instance.params;
-const bounty = challenge.possibleReward(params);
+const bounty = props.instance.maxRewardIfAction(props.hash);
 const attemptCost = challenge.costAddAttempt(params);
 const challengeCost = params.costToChallenge(props.instance.proofs[challenge.parent]);
 </script>
