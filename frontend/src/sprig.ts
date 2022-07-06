@@ -269,7 +269,7 @@ class Sprig {
         return this.allActions().filter(action => {
             if (action.target instanceof ProofAttempt) {
                 return action.target.hash === attempt.hash
-                    || action.target.parent === attempt.hash;
+                    || attempt.challenges.includes(action.target.parent);
             } else if (action.target instanceof Challenge) {
                 return action.target.hash === attempt.parent
                     || attempt.challenges.includes(action.target.hash);

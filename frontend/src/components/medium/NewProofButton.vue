@@ -10,7 +10,8 @@
           <p>
             For more details about the format, please refer to
             <a class="hover:text-purple-700">the documentation</a> (TBD).
-            We provide here a template to make writting the proof easier.
+            We provide here a template to make writting the proof in your favorite
+            editor easier.
           </p>
 
           <div class="relative min-h-[3rem] mt-2">
@@ -30,7 +31,7 @@
           <div class="mt-1">
             <textarea v-model="proofInput" id="proofAttempt" name="proofAttempt" rows="12"
               class="font-mono shadow-sm focus:ring-indigo-500 focus:border-indigo-500 mt-1 block w-full sm:text-sm border border-gray-300 rounded-md"
-              placeholder="theorem riemann_hypothesis ..." />
+              placeholder="theorem ..." />
           </div>
           <!-- <p class="mt-2 text-sm text-gray-500">
             The main question... </p> -->
@@ -39,7 +40,24 @@
       </div>
       <div v-else>
         <ProofAttemptPageVue instance-hash="preview" hash="X" :instance-value="instancePreview"
-          class="-m-6"/>
+          class="-m-8"/>
+
+        <div class="prose pt-4 w-full border-t">
+          <template v-if="instancePreview.proofs['X'].challenges.length == 0">
+            You are submiting a machine level proof, as there are no challengeable part.
+          </template><template v-else>
+            You are submiting a proof of height {{ instancePreview.proofs['X'].height }}
+            with {{ instancePreview.proofs['X'].challenges.length }} challengable claims.
+          </template>
+          This will cost a total of <Price :amount="costs.total" />:
+          <ul>
+            <li v-if="costs.upstake > 0"><Price :amount="costs.upstake" /> for the upstake (reimbursed if the proof is true)</li>
+            <li v-if="costs.downstake > 0"><Price :amount="costs.downstake" /> for the downstake (reimbursed if the proof is true)</li>
+            <li v-if="costs.verification > 0"><Price :amount="costs.verification" /> for machine verification</li>
+          </ul>
+
+        </div>
+
       </div>
 
       <div class="flex space-x-4 justify-end">
@@ -57,7 +75,7 @@
 <script setup lang="ts">
 import dedent from 'dedent';
 import _ from 'lodash';
-import { computed, nextTick, provide, ref } from 'vue';
+import { computed, nextTick, provide, reactive, ref } from 'vue';
 import { Challenge, Sprig, copy, ProofAttempt, Status, linkTo } from '../../sprig';
 import { Button, SlideOver } from '../small';
 import { store } from '../../store';
@@ -70,6 +88,12 @@ const slideOpen = ref(false);
 const templateVisible = ref(false);
 const preview = ref(false);
 const instancePreview = ref(null);
+const costs = reactive({
+  upstake: 0,
+  downstake: 0,
+  verification: 0,
+  total: 0,
+})
 const proofInput = ref("");
 
 const props = defineProps<{
@@ -86,11 +110,11 @@ async function publish() {
   store.newProofAttempt(
     props.instance.hash, props.challenge.hash,
     lang.challengeCount(proofInput.value) === 0,
-    proofInput.value)
-    .then((proofAttempt) => {
-      console.log("published", proofAttempt);
-      nextTick(() => router.push(linkTo(proofAttempt)));
-    })
+    proofInput.value
+  ).then((proofAttempt) => {
+    console.log("published", proofAttempt);
+    nextTick(() => router.push(linkTo(proofAttempt)));
+  })
 }
 
 function togglePreview() {
@@ -149,12 +173,17 @@ function togglePreview() {
     });
 
     instancePreview.value = sprig;
+    costs.downstake = sprig.params.downstakes[height];
+    costs.upstake = sprig.params.upstakes[height];
+    costs.verification = height == 0 ? sprig.params.verificationCost : 0;
+    costs.total = costs.downstake + costs.upstake + costs.verification;
   }
 }
 
 const attempt = props.instance.proofs[props.challenge.parent];
 const lang = LANGS[props.instance.language];
 const template = lang.attemptTemplate(props.challenge.hash, props.instance);
+const challengeCount = () => lang.challengeCount(proofInput.value);
 
 // So that the preview is readOnly.
 provide('readOnly', true);

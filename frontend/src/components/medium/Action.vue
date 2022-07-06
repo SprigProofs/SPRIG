@@ -4,7 +4,6 @@ import User from './User.vue';
 import { Time, Duration } from '../small';
 import UidTag from '../small/UidTag.vue';
 import { nextTick, ref, watch } from 'vue';
-import Time1 from '../small/Time.vue';
 
 
 const props = withDefaults(defineProps<{
@@ -124,8 +123,11 @@ function toggle() {
           <User :name="attempt.author" /> answered
           <!-- Note: challenge is always defined here, because ATTEMPT_CREATED does not happen on the root -->
           <UidTag :object="challenge" :instance="instance"/>
-          with this proof attempt and a bounty of
-          <Price :amount="params.downstakes[attempt.height]" />
+          with the <template v-if="attempt.height == 0">machine</template>
+          proof attempt <UidTag :object="attempt" :instance="instance" />
+          <template v-if="attempt.height > 0">
+            and a bounty of <Price :amount="params.downstakes[attempt.height]" />
+          </template>
         </span><span v-else-if="action.type === Action.CHALLENGE_ACTIVATED">
           <User :name="challenge.author" /> opened challenge
           <UidTag :object="challenge" :instance="instance"/> on <UidTag :object="attempt" :instance="instance"/>
@@ -148,7 +150,11 @@ function toggle() {
         </span><span v-else-if="action.type === Action.ATTEMPT_VALIDATED">
           <UidTag :object="attempt" :instance="instance"/> was validated.
         </span><span v-else-if="action.type === Action.CHALLENGE_REJECTED">
-          <UidTag :object="challenge" :instance="instance"/> was rejected.
+          Challenge <UidTag :object="challenge" :instance="instance"/> was not proven.
+        </span><span v-else-if="action.type === Action.CHALLENGE_VALIDATED">
+          Challenge <UidTag :object="challenge" :instance="instance"/> was proven
+          by <User :name="action.target.author" />
+          in <UidTag :object="action.target" :instance="instance"/>.
         </span><span v-else>
           {{ action.type }} needs more work...
         </span>

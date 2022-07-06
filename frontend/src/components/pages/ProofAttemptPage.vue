@@ -33,7 +33,7 @@
 
         <section class="prose pt-6">
           <p v-if="attempt.status == Status.UNCHALLENGED">
-            This proof attempt is currently
+            This <span v-if="attempt.height == 0">machine</span> proof attempt is currently
             <StatusTag :status="attempt.status" />
             so if nothing happens, it will be
             <StatusTag status="validated" />
