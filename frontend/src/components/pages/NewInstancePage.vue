@@ -303,8 +303,8 @@ function createInstance() {
               <h3 class="text-lg font-medium leading-6 text-gray-900">
                 Initial proof attempt</h3>
               <p class="mt-1 text-sm text-gray-600">
-                For details on the format, see <span class="underline hover:text-purple-700">the documentation</span>
-                (TBD).
+                For details on the format, see
+                <router-link to="/docs" target="_blank" class="hover:text-purple-700 after:content-['↗']">the documentation</router-link>.
               </p>
             </div>
           </div>

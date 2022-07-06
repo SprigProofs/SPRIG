@@ -9,7 +9,7 @@
         <div class="prose">
           <p>
             For more details about the format, please refer to
-            <a class="hover:text-purple-700">the documentation</a> (TBD).
+            <router-link to="/docs" target="_blank" class="hover:text-purple-700 after:content-['↗']">the docs</router-link>.
             We provide here a template to make writting the proof in your favorite
             editor easier.
           </p>
