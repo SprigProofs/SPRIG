@@ -801,37 +801,37 @@ def play_tictactoe(params: Parameters) -> Sprig:
 def play_lean(params: Parameters) -> Sprig:
     sprig = Sprig.start(
         Lean4().dump(), params, Address("Diego"), """
-        -- chal
-        theorem add_comm (m n : nat) : m + n = n + m := sorry
-        -- endchall""", """
-        import data.nat.basic
-        open nat
+-- chal
+theorem add_comm (m n : nat) : m + n = n + m := sorry
+-- endchall""", """
+import data.nat.basic
+open nat
 
-        variables m n : ℕ
+variables m n : ℕ
 
-        example : m + 0 = m := add_zero m
-        example : m + succ n = succ (m + n) := add_succ m n
+example : m + 0 = m := add_zero m
+example : m + succ n = succ (m + n) := add_succ m n
 
-        -- chal
-        theorem succ_pred (n : ℕ) : n ≠ 0 → succ (pred n) = n := sorry
-        -- endchal
+-- chal
+theorem succ_pred (n : ℕ) : n ≠ 0 → succ (pred n) = n := sorry
+-- endchal
 
-        -- chal
-        theorem zero_add (n : nat) : 0 + n = n := sorry
-        -- endchal
+-- chal
+theorem zero_add (n : nat) : 0 + n = n := sorry
+-- endchal
 
-        -- chal
-        theorem succ_add (m n : nat) : succ m + n = succ (m + n) := sorry
-        -- endchal
+-- chal
+theorem succ_add (m n : nat) : succ m + n = succ (m + n) := sorry
+-- endchal
 
-        -- chal
-        theorem add_assoc (m n k : nat) : m + n + k = m + (n + k) := sorry
-        -- endchal
+-- chal
+theorem add_assoc (m n k : nat) : m + n + k = m + (n + k) := sorry
+-- endchal
 
-        -- chal
-        theorem add_comm (m n : nat) : m + n = n + m := sorry
-        -- endchal
-        """)
+-- chal
+theorem add_comm (m n : nat) : m + n = n + m := sorry
+-- endchal
+""")
 
     time_passes(sprig)
 
