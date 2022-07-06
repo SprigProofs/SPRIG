@@ -149,7 +149,7 @@
           <Parameters :params="params" :highlight="attempt.height" />
         </el-collapse-item>
         <el-collapse-item title="Raw data">
-          <pre class="text-sm text-gray-500">{{ attempt }}</pre>
+          <pre class="text-sm text-gray-500 whitespace-pre-wrap">{{ attempt }}</pre>
         </el-collapse-item>
       </el-collapse>
     </section>
