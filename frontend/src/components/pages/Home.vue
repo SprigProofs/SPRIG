@@ -20,7 +20,7 @@
             </p>
 
             <div class="relative mx-12 -mt-24 bg-red-600/30 home-rectangle w-48 h-48">
-                <div v-if="showEverything">
+                <div v-if="false">
                     Lorem ipsum dolor sit amet consectetur adipisicing elit. Suscipit assumenda maxime nostrum officia earum consequatur deleniti
                 </div>
                 <span class="absolute
@@ -43,20 +43,26 @@
     <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 ">
         <ul class="w-full grid grid-cols-4 gap-8 -translate-y-1/2 ">
             <li
-                v-for="(count, title) in stats"
-                :key="title"
-                class="bg-white p-4 rounded shadow"
+                v-for="stat in stats" :key="stat.label" >
+                <router-link to="/search"
+                    class="p-4 border-t border-black flex items-center
+                        relative border-x-half
+                        to-white bg-gradient-to-b
+                    " :class="stat.color"
                 >
-                <LabeledData :label="title" >{{ count }}</LabeledData>
-            </li>
-            <li key="Total Bounties"
-                class="bg-white p-4 rounded shadow " >
-                <LabeledData label="Available bounties" >
-                    <Price :amount="totalBounties"/></LabeledData>
+                    <LabeledData :label="stat.label" >
+                        <template v-if="stat.label != 'Total Bounties'">
+                            {{ stat.value }}
+                        </template>
+                        <template v-else>
+                            <Price :amount="stat.value" />
+                        </template>
+                    </LabeledData>
+                </router-link>
             </li>
         </ul>
 
-        <div v-if="showEverything" class="mx-12 flex flex-col space-y-8 ">
+        <div v-if="showEverything" class=" flex flex-col space-y-8 ">
             <div class="even:self-end even:text-right">
                 <h2 class="font-title font-bold text-2xl
                     ">Join a comunity of truth seekers</h2>
@@ -71,7 +77,7 @@
             </div>
             <div class="even:self-end even:text-right">
                 <h2 class="font-title font-bold text-2xl
-                    ">Made in Switzerland</h2>
+                    ">A better peer review</h2>
                 <p class="text-gray-600 w-96 mt-2"
                     >Lorem ipsum dolor sit amet consectetur adipisicing elit. Enim delectus blanditiis quae incidunt omnis qui quasi consequuntur labore eius, doloribus magnam ratione iure? Nemo, omnis reiciendis perspiciatis sint consequuntur sit!</p>
             </div>
@@ -83,15 +89,22 @@
         my-8
         border-y border-black
         bg-gradient-to-tr to-purple-200 from-blue-200">
-        <div class="relative max-w-3xl mx-auto px-12 pt-8">
+        <div class="relative max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
             <h2 class="font-title font-bold text-2xl
                 pb-4 ">Meet the team</h2>
             <ul class="grid grid-cols-3 gap-8 ">
                 <li v-for="p in team"
                     class=" ">
-                    <div class="shadow rounded w-full h-36 bg-cover bg-center"
+                    <!-- <div class="shadow rounded w-full h-40 bg-cover bg-center"
                         :style="'background-image: url(\'' + p.image + '\');'"
+                        ></div> -->
+                    <div class="relative pb-[calc(3/4*100%)]">
+                        <div class="absolute w-full h-full top-0 left-0 right-0 bottom-0 bg-white
+                            shadow rounded-sm bg-cover bg-center
+                            "
+                            :style="'background-image: url(\'' + p.image + '\');'"
                         ></div>
+                    </div>
                     <div class="pt-2">
                         <div class="font-semibold">{{ p.name }}</div>
                         <div class="text-sm tracking-tight text-blue-900">{{ p.title }}</div>
@@ -120,7 +133,8 @@
         </div>
     </div>
 
-  <div class="-mt-8 bg-indigo-50">
+  <div v-if="true" class="h-full"></div>
+  <div v-else class="-mt-8 bg-indigo-50">
     <div class="max-w-3xl mx-auto py-12 px-4 sm:px-6 lg:px-8 lg:py-24 lg:flex lg:items-center lg:justify-between">
       <h2 class="text-3xl font-extrabold tracking-tight text-gray-900 md:text-4xl">
         <span class="block">Ready to dive in?</span>
@@ -151,14 +165,29 @@ const showEverything = route.name == 'homeHidden';
 
 // TODO: Compute the stats on the server
 const instances = _.values(store.instances);
-const stats = computed( () => {
-    return {
-        Claims: _.sumBy(instances, s => _.size(s.challenges)),
-        Challenges: _.sumBy(instances, s => _.size(_.filter(s.challenges, c => c.author !== null))),
-        Proofs: _.sumBy(instances, s => _.size(s.proofs)),
-    };
-});
-const totalBounties = computed(() => _.sumBy(instances, s => s.totalBounties()));
+
+const stats = computed(() => [
+    {
+        label: 'Claims',
+        value:_.sumBy(instances, s => _.size(s.challenges)),
+        color: 'from-blue-50',
+    },
+    {
+        label: 'Challenges',
+        value: _.sumBy(instances, s => _.size(_.filter(s.challenges, c => c.author !== null))),
+        color: 'from-yellow-50',
+    },
+    {
+        label: 'Proofs',
+        value: _.sumBy(instances, s => _.size(s.proofs)),
+        color: 'from-green-50',
+    },
+    {
+        label: 'Total Bounties',
+        value: _.sumBy(instances, s => s.totalBounties()),
+        color:'from-red-50',
+    },
+])
 
 
 const team = [
@@ -196,3 +225,16 @@ const team = [
 
 
 </script>
+
+<style>
+    .border-x-half:before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: calc(50% - 0.5px); /* Without this half pixel, it doesn't match perfectly */
+        width: 100%;
+        border-left: 1px solid #000;
+        border-right: 1px solid #000;
+    }
+</style>

@@ -42,7 +42,7 @@
         <ProofAttemptPageVue instance-hash="preview" hash="X" :instance-value="instancePreview"
           class="-m-8"/>
 
-        <div class="prose pt-4 w-full border-t">
+        <div class="prose pt-4 mt-4 w-full border-t">
           <template v-if="instancePreview.proofs['X'].challenges.length == 0">
             You are submiting a machine level proof, as there are no challengeable part.
           </template><template v-else>

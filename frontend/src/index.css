@@ -40,11 +40,16 @@
         @apply p-4 block bg-white rounded-sm shadow-sm hover:shadow-md w-full border;
     }
     .docblock {
-        @apply prose p-4 block bg-white rounded-md shadow w-full border;
+        @apply prose p-4 block bg-white rounded-sm shadow w-full border border-black;
     }
 
     input[type="number"] {
-        @apply w-24 focus:ring-indigo-500 focus:border-indigo-500 block sm:text-sm border-gray-300 rounded-md
+        /* hide spinner */
+        -moz-appearance: textfield;
+        -webkit-appearance: textfield;
+        appearance: textfield;
+
+        @apply focus:ring-2 focus:ring-indigo-500 focus:border-transparent block sm:text-sm border-gray-300 rounded-sm
     }
 
     .animate-rainbow {

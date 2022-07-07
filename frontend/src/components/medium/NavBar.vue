@@ -1,7 +1,7 @@
 <template>
     <div>
         <header class="fixed h-12 z-10 shadow w-screen border-b border-black bg-white">
-            <ul class="flex space-x-6 py-3 px-12 max-w-3xl mx-auto">
+            <ul class="flex space-x-6 py-3 max-w-3xl w-fill mx-auto px-4 sm:px-6 lg:px-8 ">
                 <li><router-link to="/">Home</router-link></li>
                 <li><router-link to="/search">Explore</router-link></li>
                 <li><router-link to="/new">New</router-link></li>
