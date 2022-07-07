@@ -32,6 +32,7 @@ class Lean4(Language):
 
     def lean_validate(self, lean_code: str) -> bool:
         """ Call lean to verify validity of machine proof """
+
         # Write code to file
         f = open(f'{os.getcwd()}/tmp_file', 'w')
         f.write(lean_code)
@@ -79,7 +80,8 @@ class Lean4(Language):
         """
 
         # Sanity check: low-level proof should not contain a sorry (it is checked in validate_attempt)
-        assert 'sorry' not in machine_proof, 'Proof is not a machine proof (contains sorry)'
+        #assert 'sorry' not in machine_proof, 'Proof is not a machine proof (contains sorry)'
+        return False
 
         # Accumulate content of proof, ignoring challenged elements and what follows them
         proof_elements = []
