@@ -214,7 +214,7 @@ const results = computed<SprigObject[]>(() => {
 
 <template>
   <div class="max-w-5xl mx-auto p-8">
-    <input type="text" v-model="search" class="w-full p-2 mb-6" placeholder="Search...">
+    <input type="text" v-model="search" class="w-full p-2 mb-6 rounded-sm" placeholder="Search...">
     <div class="bg-gray-100 rounded-sm border
             p-4
             grid grid-cols-3 gap-8">

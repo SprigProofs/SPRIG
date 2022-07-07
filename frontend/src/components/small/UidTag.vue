@@ -11,14 +11,20 @@ interface Props {
     instance: Sprig;
     object?: ProofAttempt|Challenge;
     tooltip?: boolean;
+    long?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     tooltip: true,
+    long: false,
 });
 
 const link = linkTo(props.object || props.instance);
-const linkText = props.object?.uid() || props.instance.uid();
+const linkText = props.long
+    ? props.object?.uid() || props.instance.uid()
+    : props.object
+        ? '/' + props.object.hash
+        : props.instance.uid();
 
 const status = props.object?.status || props.instance.rootAttempt().status;
 

@@ -7,7 +7,8 @@
         <!-- Top left -->
         <div class="space-x-2">
           <StatusTag class="" :status="rootAttempt.status" />
-          <LanguageTag :lang="instance.language"/>
+          <!-- <LanguageTag :lang="instance.language"/> -->
+          <span class="text-sm text-gray-700">Instance</span>
           <UidTag :tooltip="false" :instance="instance" />
         </div>
       </div>

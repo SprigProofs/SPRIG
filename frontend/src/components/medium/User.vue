@@ -18,7 +18,7 @@ const props = defineProps({
   <!-- <Tooltip :width="300">
     <UserEmbed :name="name" />
     <template #reference> -->
-      <span class="underline decoration-dashed">{{ name }}</span>
+      <span class="#underline decoration-dashed">{{ name }}</span>
     <!-- </template>
   </Tooltip> -->
 </template>

@@ -7,8 +7,12 @@
         <!-- Top left -->
         <div class="space-x-2">
           <StatusTag class="" :status="attempt.status" />
-          <LanguageTag :lang="instance.language" />
-          <UidTag  :tooltip="false" :object="attempt" :instance="instance"/>
+          <!-- <LanguageTag :lang="instance.language" /> -->
+          <span class="text-gray-700 text-sm">
+            <template v-if="attempt.height == 0">Machine proof</template>
+            <template v-else>Proof attempt</template>
+          </span>
+          <UidTag long :tooltip="false" :object="attempt" :instance="instance"/>
         </div>
       </div>
       <h3 class="text-lg pt-2  ">

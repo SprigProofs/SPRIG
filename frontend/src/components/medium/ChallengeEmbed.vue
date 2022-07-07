@@ -8,8 +8,9 @@
         <!-- Top left -->
         <div class="space-x-2">
           <StatusTag class="" :status="challenge.status" />
-          <LanguageTag :lang="instance.language" />
-          <UidTag :tooltip="false" :object="challenge" :instance="instance"/>
+          <!-- <LanguageTag :lang="instance.language" /> -->
+          <span class="text-sm text-gray-700">Claim</span>
+          <UidTag long :tooltip="false" :object="challenge" :instance="instance"/>
         </div>
       </div>
       <h3 class="text-lg pt-2  ">

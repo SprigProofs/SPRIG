@@ -32,7 +32,7 @@
             <div class="w-64 h-32 ml-auto mr-32 mt-4
                 home-rectangle bg-amber-600/30
                 flex-col justify-around">
-                <div class="font-ligh font-title text-slate-700">
+                <div class="font-ligh font-title text-black/60">
                     Sponsored by</div>
                 <img class=""
                     src="/algorand.svg" alt="Algorand logo">
@@ -99,7 +99,7 @@
                 </li>
             </ul>
 
-            <div class="flex bg-white -mb-12 border shadow p-6 items-center justify-between mt-10 ">
+            <div class="flex bg-white -mb-12 border border-black shadow p-6 items-center justify-between mt-10 ">
 
                 <div>
                     <h3 class="font-title font-bold text-xl">We are hiring</h3>
