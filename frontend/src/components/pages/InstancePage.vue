@@ -7,7 +7,7 @@
                 <div class="flex">
                     <StatusTag :status="attempt.status" />
                     <LanguageTag :lang="instance.language" class="ml-2" />
-                    <div class="ml-4 font-bold rounded-md">
+                    <div class="ml-4 font-bold ">
                         Bounty
                         <Price :amount="attempt.possibleReward(params)" />
                     </div>

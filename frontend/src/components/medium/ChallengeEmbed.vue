@@ -1,43 +1,51 @@
 <template>
 
   <div class="w-full group flex space-x-4">
-    <!-- First part of the card -->
+    <!-- Left side of the card -->
     <div class="flex flex-col flex-grow">
+
       <!-- First row -->
-      <div class="flex flex-row justify-between ">
-        <!-- Top left -->
-        <div class="space-x-2">
-          <StatusTag class="" :status="challenge.status" />
-          <!-- <LanguageTag :lang="instance.language" /> -->
-          <span class="text-sm text-gray-700">Claim</span>
-          <UidTag long :tooltip="false" :object="challenge" :instance="instance"/>
-        </div>
+      <div class="flex space-x-2 items-center">
+        <StatusTag class="" :status="challenge.status" />
+        <h3 class="text-lg small-title break-all">{{ lang.title(challenge, instance) }}</h3>
       </div>
-      <h3 class="text-lg pt-2  ">
-        <span class="small-title break-all">{{ lang.title(challenge, instance) }}</span>
-        <span v-if="challenge.author" class="text-sm text-gray-700"> challenged by <User :name="challenge.author"/></span>
-      </h3>
-      <component :is="lang.StatementDisplay" :instance="instance" :challenge-hash="challenge.hash" />
+
+      <!-- Second row -->
+      <component :is=lang.StatementDisplay :instance="instance" :challenge-hash="challenge.hash"
+        class="self-start flex-grow"/>
+
+      <!-- Third row -->
+      <div class="flex space-x-2 items-baseline">
+          <!-- <LanguageTag :lang="instance.language" /> -->
+          <UidTag long :tooltip="false" :object="challenge" :instance="instance"/>
+          <span class="text-gray-600 text-sm">
+            <span> · </span>
+            <template v-if="challenge.author">
+              Challenge by <User :name="challenge.author" />
+            </template><template v-else>Claim by <User :name="instance.proofs[challenge.parent].author"/></template>
+          </span>
+      </div>
+
     </div>
 
     <!-- Right of the card -->
     <div v-if="!decided(challenge.status)"
-      class="grid grid-cols-[auto_auto] gap-6 min-w-max">
+      class="grid text-right #grid-cols-[auto_auto] gap-6 min-w-max">
       <LabeledData label="Bounty">
         <Price :amount="bounty" />
       </LabeledData>
       <LabeledData :label="challenge.decided() ? 'Expired' : 'Expires'">
-        <Time :time="challenge.openUntil" />
+        <Time :time="challenge.openUntil" suffix />
       </LabeledData>
 
       <template v-if="!readOnly">
         <ChallengeButton v-if="challenge.status == Status.UNCHALLENGED"
           :challenge="challenge" :instance="instance"
-          class="col-span-2 self-end" />
+          class="#col-span-2 self-end" />
         <NewProofButton
           v-else-if="attemptCost !== null"
           :instance="instance" :challenge="challenge"
-          class="col-span-2 self-end"
+          class="#col-span-2 self-end"
           />
       </template>
     </div>

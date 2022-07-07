@@ -170,22 +170,22 @@ const stats = computed(() => [
     {
         label: 'Claims',
         value:_.sumBy(instances, s => _.size(s.challenges)),
-        color: 'from-blue-50',
+        color: 'from-blue-100',
     },
     {
         label: 'Challenges',
         value: _.sumBy(instances, s => _.size(_.filter(s.challenges, c => c.author !== null))),
-        color: 'from-yellow-50',
+        color: 'from-yellow-100',
     },
     {
         label: 'Proofs',
         value: _.sumBy(instances, s => _.size(s.proofs)),
-        color: 'from-green-50',
+        color: 'from-green-100',
     },
     {
         label: 'Total Bounties',
         value: _.sumBy(instances, s => s.totalBounties()),
-        color:'from-red-50',
+        color:'from-red-100',
     },
 ])
 
