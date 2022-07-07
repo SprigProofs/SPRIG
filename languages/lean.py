@@ -7,7 +7,7 @@ from languages.base import Language
 from typing import Dict, List, NewType, Optional
 
 REGEX = r'(theorem|lemma|example)\s([^\s]*)\s\(.*\)\s:\s(.*)\s:='
-
+DEV = os.environ.get("DEV", "").lower() in ("true", "1", "yes", "y'")
 
 class Lean4(Language):
     """
@@ -20,34 +20,46 @@ class Lean4(Language):
     """
 
     name = "Lean4"
-    docker_client = docker.from_env()
-    # Check if image is built
-    try:
-        docker_client.images.get('sprig/lean4')
-    except:
-        print('Building docker image')
-        docker_client.images.build(path='.', tag='sprig/lean4')
-        print('Build done')
+    if not DEV:
+        docker_client = docker.from_env()
+        # Check if image is built
+        try:
+            docker_client.images.get('sprig/lean4')
+        except:
+            print('Building docker image')
+            docker_client.images.build(path='.', tag='sprig/lean4')
+            print('Build done')
 
     def lean_validate(self, lean_code: str) -> bool:
+        """ Call lean to verify validity of machine proof """
+        # Write code to file
         f = open(f'{os.getcwd()}/tmp_file', 'w')
         f.write(lean_code)
         f.close()
 
-        try:
-            self.docker_client.containers.run(
-                'sprig/lean4', ['/bin/sh', '-c', '/root/.elan/bin/lean /tmp_file'],
-                volumes={f'{os.getcwd()}/tmp_file': {
-                    'bind': '/tmp_file',
-                    'mode': 'ro'
-                }},
-                remove=True)
-        except:
-            os.remove(f'{os.getcwd()}/tmp_file')
-            return False
+        # Call lean, potentially in a container
+        isValid = False
+        if DEV:
+            out = subprocess.Popen(['lean', f'"{os.getcwd()}/tmp_file"'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            stdout, stderr = out.communicate()
 
+            isValid = out.returncode == 0
+        else:
+            try:
+                self.docker_client.containers.run(
+                    'sprig/lean4', ['/bin/sh', '-c', '/root/.elan/bin/lean /tmp_file'],
+                    volumes={f'{os.getcwd()}/tmp_file': {
+                        'bind': '/tmp_file',
+                        'mode': 'ro'
+                    }},
+                    remove=True)
+                isValid = True
+            except:
+                isValid = False
+
+        # Delete file and return
         os.remove(f'{os.getcwd()}/tmp_file')
-        return True
+        return isValid
 
     def judge_low_level(self, root_question: str, branch: list[tuple[str, int]],
                         machine_proof: str) -> bool:
