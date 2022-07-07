@@ -2,7 +2,7 @@ import dedent from 'dedent';
 import _ from 'lodash';
 import { ProofAttempt, Challenge, Sprig } from "../../../sprig";
 
-const CHALENGE_START = "-- chal\n";
+const CHALENGE_START = "-- chal";
 const CHALENGE_END = "-- endchal";
 interface Block {
     start: number,
@@ -59,7 +59,7 @@ function getChallenges(proof: string): Block[] {
 function extractTitle(proofAttempt: string, challengeNb: number): string {
     const challenges = getChallenges(proofAttempt);
     const claim = challenges[challengeNb].content;
-    return claim.match(/((theorem|lemma|example)\s*\S+)/m)[0];
+    return claim.trim().match(/((theorem|lemma|example)\s*\S+)/m)[0];
 }
 
 function collectPreviousDefs(instance: Sprig, start: string | null, removeChallengeTags: boolean = true): string {
