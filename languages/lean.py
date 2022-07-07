@@ -81,7 +81,8 @@ class Lean4(Language):
 
         # Sanity check: low-level proof should not contain a sorry (it is checked in validate_attempt)
         #assert 'sorry' not in machine_proof, 'Proof is not a machine proof (contains sorry)'
-        return False
+        if 'sorry' in machine_proof:
+            return False
 
         # Accumulate content of proof, ignoring challenged elements and what follows them
         proof_elements = []
