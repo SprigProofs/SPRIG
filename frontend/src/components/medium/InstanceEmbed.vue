@@ -1,40 +1,40 @@
 <template>
   <div class="flex space-x-4">
     <!-- First part of the card -->
-    <div class="flex flex-col flex-grow">
+    <div class="flex flex-col flex-grow space-y-2">
+
       <!-- First row -->
-      <div class="flex flex-row justify-between ">
-        <!-- Top left -->
-        <div class="space-x-2">
-          <StatusTag class="" :status="rootAttempt.status" />
-          <!-- <LanguageTag :lang="instance.language"/> -->
-          <span class="text-sm text-gray-700">Instance</span>
-          <UidTag :tooltip="false" :instance="instance" />
-        </div>
+      <div class="flex space-x-2 items-center">
+        <StatusTag class="" :status="rootAttempt.status" />
+        <h3 class="text-lg small-title break-all">{{ lang.title(rootAttempt, instance) }}</h3>
       </div>
-      <h3 class="text-lg pt-2  ">
-        <span class="small-title break-all">{{ lang.title(rootAttempt, instance) }}</span>
-        <span class="text-sm text-gray-700">
-          by
-          <User :name="instance.author()" />
-        </span>
-      </h3>
-      <component :is="lang.StatementDisplay" :instance="instance" :challenge-hash="null"/>
-      <!-- <div class="leading-none rounded border-gray-200 p-2">
-        <div class="text-xs text-gray-600">Last action</div>
-        <p class="text-sm">Michael challenged claim #1a209b for 70</p>
-      </div> -->
+
+      <!-- Second row -->
+      <component :is=lang.StatementDisplay :instance="instance" :challenge-hash="null"
+        class="self-start flex-grow"/>
+
+
+      <!-- Third row -->
+      <div class="flex space-x-2 items-baseline">
+          <!-- <LanguageTag :lang="instance.language" /> -->
+          <UidTag long :tooltip="false" :instance="instance"/>
+          <span class="text-gray-600 text-sm">
+            <span> · </span>
+            Instance by <User :name="rootAttempt.author" />
+          </span>
+      </div>
 
     </div>
     <!-- Right of the card -->
     <div  class=" flex-shrink-0
           flex flex-col space-y-2 items-end">
       <div class="grid grid-cols-[auto_auto] gap-4">
+        <div></div>
         <LabeledData label="Bounties">
           <span class="font-extralight text-gray-600 text-sm pr-1.5">Σ</span>
           <Price :amount="instance.totalBounties()"/>
         </LabeledData>
-        <LabeledData :label="expires.isBefore(dayjs()) ? 'Expired' : 'Expires' "><Time :time="expires" /></LabeledData>
+        <!-- <LabeledData :label="expires.isBefore(dayjs()) ? 'Expired' : 'Expires' "><Time :time="expires" /></LabeledData> -->
 
         <LabeledData
           v-for="(count, status) in instance.counts()" :key="status"
