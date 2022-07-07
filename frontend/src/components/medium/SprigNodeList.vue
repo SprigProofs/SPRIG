@@ -1,8 +1,7 @@
 <script setup lang="ts">
 
 import {Sprig, ProofAttempt, Challenge, linkTo, SprigObject} from '../../sprig';
-import AttemptEmbed from '../medium/AttemptEmbed.vue';
-import ChallengeEmbed from '../medium/ChallengeEmbed.vue';
+import NodeEmbed from '../medium/NodeEmbed.vue';
 import InstanceEmbed from '../medium/InstanceEmbed.vue';
 import UserEmbed from '../medium/UserEmbed.vue';
 
@@ -11,10 +10,8 @@ const props = defineProps<{
 }>()
 
 function embedType(data: SprigObject) {
-    if (data.challenge) {
-        return ChallengeEmbed;
-    } else if (data.attempt) {
-        return AttemptEmbed;
+    if (data.challenge || data.attempt) {
+        return NodeEmbed;
     } else if (data.user) {
         return UserEmbed;
     } else {

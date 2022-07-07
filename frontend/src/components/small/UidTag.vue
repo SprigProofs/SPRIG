@@ -2,8 +2,7 @@
 import { RouterLink } from 'vue-router';
 import { Status, Challenge, ProofAttempt, Sprig, linkTo } from '../../sprig';
 import Tooltip from './Tooltip.vue';
-import AttemptEmbed from '../medium/AttemptEmbed.vue';
-import ChallengeEmbed from '../medium/ChallengeEmbed.vue';
+import NodeEmbed from '../medium/NodeEmbed.vue';
 import InstanceEmbed from '../medium/InstanceEmbed.vue';
 
 
@@ -41,22 +40,14 @@ const linkClasses = {
             <RouterLink :to="link" class="text-gray-800 italic text-sm font-mono
                 px-1 py-0.5 border-b transition
                 rounded focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 "
-                :class="linkClasses[status]"
-                >{{ linkText }}</RouterLink>
+                :class="linkClasses[status]">{{ linkText }}</RouterLink>
         </template>
 
-        <AttemptEmbed v-if="tooltip && object instanceof ProofAttempt"
-            :instance="instance"
-            :hash="object.hash" />
-        <ChallengeEmbed v-else-if="tooltip && object instanceof Challenge"
-            :instance="instance"
-            :hash="object.hash" />
+        <NodeEmbed v-if="tooltip && !!object" :instance="instance" :hash="object.hash" />
         <InstanceEmbed v-else :instance="instance" />
     </Tooltip>
 
-    <RouterLink v-else
-        :to="link" class="text-gray-800 italic text-sm font-mono
-        rounded focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 "
-        >{{ linkText }}</RouterLink>
+    <RouterLink v-else :to="link" class="text-gray-800 italic text-sm font-mono
+        rounded focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 ">{{ linkText }}</RouterLink>
 
 </template>

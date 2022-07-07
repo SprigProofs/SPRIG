@@ -62,7 +62,7 @@ import Time from '../small/Time.vue';
 import Button from '../small/Button.vue';
 import SlideOver from '../small/SlideOver.vue';
 import { inject, ref } from 'vue';
-import AttemptEmbed from './AttemptEmbed.vue';
+import NodeEmbed from './NodeEmbed.vue';
 import User from './User.vue';
 import { computed } from '@vue/reactivity';
 import NewProofButton from './NewProofButton.vue';

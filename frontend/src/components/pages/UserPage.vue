@@ -2,8 +2,7 @@
 import { store } from '../../store';
 import TripleGraph from '../medium/TripleGraph.vue';
 import { Challenge, ProofAttempt, User, linkTo } from '../../sprig';
-import AttemptEmbed from '../medium/AttemptEmbed.vue';
-import ChallengeEmbed from '../medium/ChallengeEmbed.vue';
+import NodeEmbed from '../medium/NodeEmbed.vue';
 
 const props = defineProps<{
   name: string,
@@ -34,10 +33,9 @@ const contributions = (user.attempts as Contribution[]).concat(user.challenges);
 
     <h3 class="small-title mt-6 mb-4">{{ name }}'s contributions</h3>
     <ul v-if="contributions.length > 0" class="space-y-4">
-      <li v-for="c in contributions" >
+      <li v-for="c in contributions">
         <router-link :to="linkTo(c)" class="card">
-          <component :is="c instanceof ProofAttempt ? AttemptEmbed : ChallengeEmbed"
-            :hash="c.hash" :instance="store.instances[c.instanceHash]" :key="c.uid()"/>
+          <NodeEmbed :hash="c.hash" :instance="store.instances[c.instanceHash]" :key="c.uid()" />
         </router-link>
       </li>
     </ul>

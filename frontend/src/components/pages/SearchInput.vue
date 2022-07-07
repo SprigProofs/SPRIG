@@ -7,9 +7,6 @@ import dayjs from 'dayjs/esm';
 import { Status, decided, Sprig, ProofAttempt, Parameters, Challenge, linkTo, SprigObject } from '../../sprig';
 import { store } from '../../store';
 import { StatusTag, LanguageTag } from '../small';
-import AttemptEmbed from '../medium/AttemptEmbed.vue';
-import ChallengeEmbed from '../medium/ChallengeEmbed.vue';
-import UserEmbed from '../medium/UserEmbed.vue';
 import SprigNodeList from '../medium/SprigNodeList.vue';
 import LANGS from '../languages';
 
