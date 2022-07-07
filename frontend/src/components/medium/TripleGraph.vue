@@ -5,7 +5,7 @@
 </template>
 
 <script setup lang="ts">
-import _ from 'lodash';
+import _, { attempt } from 'lodash';
 import { Challenge, dayjs, ProofAttempt, Status } from '../../sprig';
 import { onMounted, ref } from 'vue';
 import { store } from '../../store';
@@ -58,7 +58,11 @@ _.sortBy(events, e => e.t)
       current.pending++;
       current.total++;
     }
-    attempts.push({ ...current });
+    if (attempts.length > 0 && current.time.diff(attempts[attempts.length - 1].time, 'minutes') < 1) {
+      attempts[attempts.length - 1] = {...current};
+    } else {
+      attempts.push({ ...current });
+    }
   });
 attempts.push({
   ...current,
