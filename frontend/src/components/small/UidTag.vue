@@ -22,9 +22,7 @@ const props = withDefaults(defineProps<Props>(), {
 const link = linkTo(props.object || props.instance);
 const linkText = props.long
     ? props.object?.uid() || props.instance.uid()
-    : props.object
-        ? '/' + props.object.hash
-        : props.instance.uid();
+    : props.object?.hash || props.instance.uid();
 
 const status = props.object?.status || props.instance.rootAttempt().status;
 

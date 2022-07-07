@@ -26,7 +26,7 @@ enum Unit {
     MINUTES = "minute",
 }
 
-const ROOT_HASH = "0";
+const ROOT_HASH = "P0";
 enum Status {
     CHALLENGED = "challenged",
     UNCHALLENGED = "unchallenged",

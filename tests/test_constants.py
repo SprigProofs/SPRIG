@@ -3,7 +3,7 @@ import sprig
 
 
 def test_constants():
-    assert sprig.ROOT_HASH == '0'
+    assert sprig.ROOT_HASH == 'P0'
 
 
 common_params = dict(

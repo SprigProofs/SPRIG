@@ -25,7 +25,7 @@ Hash = NewType("Hash", str)
 Time = NewType("Time", int)
 Branch = list[tuple[str, int]]
 
-ROOT_HASH = Hash("0")
+ROOT_HASH = Hash("P0")
 SPRIG_ADDRESS = Address("@SPRIG")
 MACHINE_VERIF = Address("@MACHINE_VERIF")
 
@@ -452,7 +452,7 @@ SPRIG instance:
         Those hash needs to be added to the attempt/challenges dictionary before other hashes can be generated."""
 
         first = len(self.proofs) if for_attempts else len(self.challenges)
-        prefix = '' if for_attempts else 'C'
+        prefix = 'P' if for_attempts else 'C'
 
         return [Hash(prefix + str(first + i)) for i in range(count)]
 
