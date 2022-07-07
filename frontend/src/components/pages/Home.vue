@@ -7,20 +7,19 @@
         pb-24 border-b border-black
         bg-gradient-to-br from-blue-200 to-purple-200">
 
-        <div class="max-w-3xl mx-auto pt-12">
+        <div class="max-w-3xl mx-auto pt-12 px-4 sm:px-6 lg:px-8 ">
             <div class="mt-14"></div>
 
-            <a href="https://sprig.ch" class="home-rectangle shadow-xl p-8 bg-gray-100/30 ml-4 w-96 hover:shadow-2xl" >
+            <a href="https://sprig.ch" class="home-rectangle shadow-xl p-8 pr-1 bg-gray-100/30 w-96 hover:shadow-2xl" >
                 <img class="w-full -mt-28"
                     src="/sprig.png" alt="SPRIG">
             </a>
-            <p class="home-rectangle w-60 h-60 ml-auto -mt-16 mr-12
-                bg-blue-500/30 text-right text-2xl font-semibold">
+            <p class="home-rectangle w-60 h-60 ml-auto -mt-16 bg-blue-500/30 text-right text-2xl font-semibold">
                 Building trust in mathematical proofs
                 through blockchain technology and game theory.
             </p>
 
-            <div class="relative mx-16 -mt-24 bg-red-600/30 home-rectangle w-48 h-48">
+            <div class="relative mx-12 -mt-24 bg-red-600/30 home-rectangle w-48 h-48">
                 <div v-if="showEverything">
                     Lorem ipsum dolor sit amet consectetur adipisicing elit. Suscipit assumenda maxime nostrum officia earum consequatur deleniti
                 </div>
@@ -41,8 +40,8 @@
         </div>
     </div>
 
-    <div class="max-w-3xl mx-auto">
-        <ul class="grid grid-cols-4 gap-8 mx-12 -translate-y-1/2 ">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 ">
+        <ul class="w-full grid grid-cols-4 gap-8 -translate-y-1/2 ">
             <li
                 v-for="(count, title) in stats"
                 :key="title"
@@ -122,7 +121,7 @@
     </div>
 
   <div class="-mt-8 bg-indigo-50">
-    <div class="max-w-5xl mx-auto py-12 px-4 sm:px-6 lg:py-24 lg:px-8 lg:flex lg:items-center lg:justify-between">
+    <div class="max-w-3xl mx-auto py-12 px-4 sm:px-6 lg:px-8 lg:py-24 lg:flex lg:items-center lg:justify-between">
       <h2 class="text-3xl font-extrabold tracking-tight text-gray-900 md:text-4xl">
         <span class="block">Ready to dive in?</span>
         <span class="block text-indigo-600">Explore open challenges today.</span>
