@@ -510,6 +510,7 @@ SPRIG instance:
         attempt_hash = self.next_hashes()[0]
         nb_of_challenges = self.language.nb_of_challenges(proof)
         challenges_hashes = self.next_hashes(nb_of_challenges, for_attempts=False)
+        assert nb_of_challenges > 0, "Proof with no challenges must be submitted with answer_low_level."
 
         current_time = now()
         attempt = ProofAttempt(hash=attempt_hash,
@@ -803,7 +804,7 @@ def play_lean(params: Parameters) -> Sprig:
         Lean4().dump(), params, Address("Diego"), """
 -- chal
 theorem add_comm (m n : nat) : m + n = n + m := sorry
--- endchall""", """
+-- endchal""", """
 import data.nat.basic
 open nat
 
@@ -850,17 +851,18 @@ theorem add_comm (m n : nat) : m + n = n + m := sorry
         -- endchal
         """)
 
-    a2 = sprig.answer(
+    a2 = sprig.answer_low_level(
         c2.hash, DIEGO, """
-        theorem add_comm (m n : nat) : m + n = n + m :=
-            nat.rec_on n
-            (show m + 0 = 0 + m, by rewrite [add_zero, zero_add])
-            (assume n,
-                assume ih : m + n = n + m,
-                show m + succ n = succ n + m, from calc
-                m + succ n = succ (m + n) : by rw add_succ
-                        ... = succ (n + m) : by rw ih
-                        ... = succ n + m   : by rw succ_add)
+theorem add_comm (m n : nat) : m + n = n + m :=
+    nat.rec_on n
+    (show m + 0 = 0 + m, by rewrite [add_zero, zero_add])
+    (assume n,
+        assume ih : m + n = n + m,
+        show m + succ n = succ n + m, from calc
+        m + succ n = succ (m + n) : by rw add_succ
+                ... = succ (n + m) : by rw ih
+                ... = succ n + m   : by rw succ_add)
+
         """)
 
     time_passes(sprig)
@@ -904,19 +906,19 @@ theorem add_comm (m n : nat) : m + n = n + m := sorry
 
     time_passes(sprig)
 
-    a6 = sprig.answer(
+    a6 = sprig.answer_low_level(
         succ_add, CLEMENT, """
-        theorem succ_add (m n : nat) : succ m + n = succ (m + n) :=
-        nat.rec_on n
-        (show succ m + 0 = succ (m + 0), from rfl)
-        (assume n,
-            assume ih : succ m + n = succ (m + n),
-            show succ m + succ n = succ (m + succ n), from
-            calc
+theorem succ_add (m n : nat) : succ m + n = succ (m + n) :=
+    nat.rec_on n
+    (show succ m + 0 = succ (m + 0), from rfl)
+    (assume n,
+        assume ih : succ m + n = succ (m + n),
+        show succ m + succ n = succ (m + succ n), from
+        calc
             succ m + succ n = succ (succ m + n) : rfl
             ... = succ (succ (m + n)) : by rw ih
             ... = succ (m + succ n) : rfl)
-        """)
+""")
 
     time_passes(sprig, 4 * 1000 * 3600 * 24 + 1)
 
