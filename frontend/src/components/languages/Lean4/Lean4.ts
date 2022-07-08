@@ -64,7 +64,6 @@ function extractTitle(proofAttempt: string, challengeNb: number): string {
 
 function collectPreviousDefs(instance: Sprig, start: string | null, removeChallengeTags: boolean = true): string {
     if (start === undefined || start === null) return '';
-    console.log(start, instance.challenges)
     const challenge = instance.challenges[start];
     const parent = instance.proofs[challenge.parent];
     const challengeNb = parent.challenges.indexOf(challenge.hash);

@@ -8,7 +8,7 @@
                 <li><router-link :to="{ name: 'user', params: { name: store.user || 'Diego' }}">Contributions</router-link></li>
                 <li><router-link to="/docs">Docs</router-link></li>
                 <li class="flex-grow text-right">
-                    <input class="text-right mr-4 px-1 py-0.5 -my-0.5 border-0 w-24"
+                    <input class="text-right mr-4 px-1 py-0.5 -my-0.5 border-gray-400 border w-24"
                         type="text"
                         v-model="store.user">
                     <Price :amount="store.bank[store.user] || 0" />

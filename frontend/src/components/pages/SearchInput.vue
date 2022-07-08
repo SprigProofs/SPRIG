@@ -82,15 +82,14 @@ function drop(event, droppedMethod) {
 function getWeights(o, type: Types) {
   const weights = {};
   const now = dayjs();
-  const timeDiff = (d: dayjs.Dayjs) => now.diff(d, "minutes", true);
+  const timeDiff = (d: dayjs.Dayjs) => now.diff(d, "hours", true);
   switch (type) {
     case Types.CHALLENGE:
       const challenge: Challenge = o;
+
       weights[REWARD] = -challenge.possibleReward(store.instances[challenge.instanceHash].params);
       weights[NEW] = timeDiff(challenge.challengedAt || challenge.createdAt);
-      weights[OPEN_UNTIL] = decided(challenge.status)
-        ? 99999999999999
-        : timeDiff(challenge.openUntil);
+      weights[OPEN_UNTIL] = timeDiff(challenge.openUntil);
       weights[RELEVANCE] = -1;
       break;
 
@@ -99,9 +98,7 @@ function getWeights(o, type: Types) {
       const instance_ = store.instances[attempt.instanceHash];
       weights[REWARD] = -attempt.possibleReward(instance_.params);
       weights[NEW] = timeDiff(attempt.createdAt);
-      weights[OPEN_UNTIL] = decided(attempt.status)
-        ? 99999999999999
-        : timeDiff(attempt.expires(instance_));
+      weights[OPEN_UNTIL] = timeDiff(attempt.expires(instance_));
       weights[RELEVANCE] = -1;
       break;
 
@@ -126,7 +123,7 @@ function combineWeights(weights): number {
   var weight = 0;
   for (let i = 0; i < sortMethods.length; i++) {
     const method = sortMethods[i];
-    weight += weights[method] * 0.3 ** i;
+    weight += weights[method] * 0.2 ** i;
   }
   return weight;
 }
@@ -137,8 +134,6 @@ function weightDebug(o, type: Types) {
 }
 
 const results = computed<SprigObject[]>(() => {
-  const sortKey = (type) => (a, b) => combineWeights(getWeights(a, type))
-    - combineWeights(getWeights(b, type));
 
   const searchLower = search.value.toLowerCase();
 
@@ -196,13 +191,23 @@ const results = computed<SprigObject[]>(() => {
     )
   }
 
-  const getType = o => o.attempt ? Types.ATTEMPT : o.instance ? Types.INSTANCE : o.challenge ? Types.CHALLENGE : Types.USER;
-  const getItem = o => o.attempt || o.instance || o.challenge || o.user;
+  const getType = o => {
+    if (o.challenge)
+      return Types.CHALLENGE;
+    else if (o.attempt)
+      return Types.ATTEMPT;
+    else if (o.user)
+      return Types.USER;
+    else if (o.instance)
+      return Types.INSTANCE;
+  }
+  const getItem = o => o.attempt || o.challenge || o.user || o.instance;
 
   all.sort((a, b) => (
     combineWeights(getWeights(getItem(a), getType(a)))
     - combineWeights(getWeights(getItem(b), getType(b)))
   ));
+  console.log(all.map(o => weightDebug(getItem(o), getType(o))));
 
   return all;
 });
@@ -220,14 +225,14 @@ const results = computed<SprigObject[]>(() => {
         <div class="flex flex-wrap -mx-1 -my-1">
           <label v-for="v, s in statuses" :key="s" class="m-1 hover:brightness-105 cursor-pointer transition ">
             <input class="hidden" type="checkbox" :name="s" :id="s" v-model="statuses[s]">
-            <StatusTag :status="s" class="" :grayed="!statuses[s]" />
+            <StatusTag :status="s" class="transition-colors" :grayed="!statuses[s]" />
           </label>
         </div>
         <h2 class="small-title pt-2">Filter language</h2>
         <div class="flex flex-wrap -mx-1 -my-1">
           <label v-for="v, l in languages" :key="l" class="m-1 cursor-pointer hover:font-semibold transition">
             <input class="hidden" type="checkbox" :name="l" :id="l" v-model="languages[l]">
-            <LanguageTag :lang="l" :grayed="!v" />
+            <LanguageTag :lang="l" :grayed="!v" class="transition-all"/>
           </label>
         </div>
       </section>

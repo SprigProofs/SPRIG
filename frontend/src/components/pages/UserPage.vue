@@ -13,6 +13,7 @@ console.log(user)
 
 type Contribution = ProofAttempt | Challenge;
 const contributions = (user.attempts as Contribution[]).concat(user.challenges);
+contributions.sort((a, b) => -a.createdAt.diff(b.createdAt));
 </script>
 
 <template>

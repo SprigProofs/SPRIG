@@ -29,7 +29,7 @@
       </div>
     </div>
 
-    <div class="grid #grid-cols-[auto_auto] text-right min-w-max h-min gap-y-4 gap-x-8 ml-4">
+    <div class="grid #grid-cols-[auto_auto] #bg-gray-50 #border-l -m-4 p-4 text-right min-w-max h-min gap-y-4 gap-x-8 ml-4">
       <LabeledData label="Bounty"><Price :amount="bounty"/></LabeledData>
       <LabeledData :label="expires.isBefore(dayjs()) ? 'Expired' : 'Expires' "><Time :time="expires" suffix /></LabeledData>
       <!-- <LabeledData label="Claims">{{ _.size(attempt.challenges )}}</LabeledData> -->
@@ -71,7 +71,6 @@ const readOnly = inject('readOnly', false);
 
 const challenge = props.instance.challenges[props.hash];
 const isAttempt = !challenge;
-console.log(isAttempt, props.hash)
 const attempt: ProofAttempt = isAttempt
   ? props.instance.proofs[props.hash]
   : props.instance.proofs[challenge.parent];

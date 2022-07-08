@@ -31,11 +31,9 @@ defineProps({
 </script>
 
 <template>
-    <!-- <el-tag :type="grayed ? 'info' : statusType[status]" 
-        class="font-semibold transition">{{ STATUS_DISPLAY_NAME[status] }}</el-tag> -->
-    <span :class="grayed ? greyClass: statuses[status]" 
-        class="inline-flex px-2 h-6 items-center rounded 
-            border  
+    <span :class="grayed ? greyClass: statuses[status]"
+        class="inline-flex px-2 h-6 items-center rounded
+            border
             font-semibold text-xs transition">
         {{ STATUS_DISPLAY_NAME[status] }}
     </span>

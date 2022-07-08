@@ -41,7 +41,7 @@
     </div>
 
     <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 ">
-        <ul class="w-full grid grid-cols-4 gap-8 -translate-y-1/2 ">
+        <ul class="w-full grid grid-cols-4 items-center gap-4 sm:gap-8 -translate-y-1/2 ">
             <li
                 v-for="stat in stats" :key="stat.label" >
                 <router-link to="/search"
@@ -133,20 +133,18 @@
         </div>
     </div>
 
-  <div v-if="true" class="h-full"></div>
-  <div v-else class="-mt-8 bg-indigo-50">
-    <div class="max-w-3xl mx-auto py-12 px-4 sm:px-6 lg:px-8 lg:py-24 lg:flex lg:items-center lg:justify-between">
-      <h2 class="text-3xl font-extrabold tracking-tight text-gray-900 md:text-4xl">
-        <span class="block">Ready to dive in?</span>
-        <span class="block text-indigo-600">Explore open challenges today.</span>
-      </h2>
-      <div class="mt-8 flex lg:mt-0 lg:flex-shrink-0">
-        <div class="inline-flex rounded-md shadow">
-          <router-link to="/search" href="#" class="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"> Get started </router-link>
-        </div>
-      </div>
+  <div v-if="false" class="h-full"></div>
+<div class="max-w-3xl mx-auto pb-12 px-4 sm:px-6 lg:px-8 lg:flex lg:items-center lg:justify-between">
+    <h2 class="text-3xl font-extrabold tracking-tight text-gray-900 md:text-4xl">
+    <span class="block">Ready to dive in?</span>
+    <span class="block text-indigo-600">Explore open challenges today.</span>
+    </h2>
+    <div class="mt-8 flex lg:mt-0 lg:flex-shrink-0">
+    <div class="inline-flex rounded-md shadow">
+        <router-link to="/search" href="#" class="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"> Get started </router-link>
     </div>
-  </div>
+    </div>
+</div>
 
     <!-- <div class="h-64"></div> -->
 </div>
@@ -170,22 +168,22 @@ const stats = computed(() => [
     {
         label: 'Claims',
         value:_.sumBy(instances, s => _.size(s.challenges)),
-        color: 'from-blue-100',
+        color: 'from-blue-100 hover:via-blue-100',
     },
     {
         label: 'Challenges',
         value: _.sumBy(instances, s => _.size(_.filter(s.challenges, c => c.author !== null))),
-        color: 'from-yellow-100',
+        color: 'from-yellow-100 hover:via-yellow-100',
     },
     {
         label: 'Proofs',
         value: _.sumBy(instances, s => _.size(s.proofs)),
-        color: 'from-green-100',
+        color: 'from-green-100 hover:via-green-100',
     },
     {
         label: 'Total Bounties',
         value: _.sumBy(instances, s => s.totalBounties()),
-        color:'from-red-100',
+        color:'from-red-100 hover:via-red-100',
     },
 ])
 
