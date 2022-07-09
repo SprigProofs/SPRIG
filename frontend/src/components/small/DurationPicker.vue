@@ -12,7 +12,7 @@
                     @input="emitUpdate()"
                     class="focus:ring-indigo-500 focus:border-indigo-500 h-full py-0 pl-2 pr-7 border-transparent bg-transparent text-gray-500 sm:text-sm rounded-sm">
                     <option :value="Unit.DAYS">Day(s)</option>
-                    <option :value="Unit.HOURS" selected>Hour(s)</option>
+                    <option :value="Unit.HOURS">Hour(s)</option>
                     <option :value="Unit.MINUTES">Minute(s)</option>
                 </select>
             </div>

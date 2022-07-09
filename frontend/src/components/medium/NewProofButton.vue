@@ -40,10 +40,14 @@
 
       </div>
       <div v-else>
-        <ProofAttemptPageVue instance-hash="preview" hash="X" :instance-value="instancePreview"
-          class="-m-8"/>
+        <p class="text-sm text-gray-600 pb-4 border-b ">
+          Once published, your proof will look like the following:
+        </p>
 
-        <div class="prose pt-4 mt-4 w-full border-t">
+        <ProofAttemptPageVue instance-hash="preview" hash="X" :instance-value="instancePreview"
+          class="-mx-8 -my-4 "/>
+
+        <div class="prose pt-4 w-full border-t">
           <template v-if="instancePreview.proofs['X'].challenges.length == 0">
             You are submiting a machine level proof, as there are no challengeable part.
           </template><template v-else>
