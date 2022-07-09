@@ -4,34 +4,40 @@
         <div class="max-w-7xl mx-auto">
             <header class="p-8 pb-2">
 
-                <div class="flex">
+                <div class="flex mb-2">
                     <StatusTag :status="attempt.status" />
-                    <LanguageTag :lang="instance.language" class="ml-2" />
+                    <!-- <LanguageTag :lang="instance.language" class="ml-2" /> -->
                     <div class="ml-4 font-bold ">
                         Bounty
                         <Price :amount="attempt.possibleReward(params)" />
                     </div>
                 </div>
-                <h1 class="text-3xl font-bold font-title py-2">
+
+                <!-- <h1 class="text-3xl font-bold font-title py-2">
                     {{ lang.title(attempt, instance) }}
+                </h1> -->
+                <h1 class="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
+                {{ lang.title(attempt, instance) }}
                 </h1>
-                <div class="flex space-x-4 text-gray-800">
-                    <div>
-                        <v-icon name="md-person-round" class="mr-1" />
-                        <User :name="attempt.author" />
-                    </div>
-                    <div>
-                        <v-icon name="md-accesstime-round" class="mr-1" />
-                        <Time :time="attempt.createdAt" />
-                    </div>
-                    <div>
-                        <v-icon name="md-lockclock" class="mr-1" />
-                        <Time :time="attempt.createdAt" />
-                    </div>
-                    <div>
-                        <v-icon name="fa-mountain" class="mr-1" />
-                        <span>{{ attempt.height }} / {{ params.rootHeight }}</span>
-                    </div>
+
+                <div class="mt-1 flex flex-col sm:flex-row sm:flex-wrap sm:mt-0 sm:space-x-6">
+                <div class="mt-2 flex items-center text-sm text-gray-500">
+                    <v-icon name="md-person-round" class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" aria-hidden="true" />
+                    <User :name="attempt.author" />
+                </div>
+                <div class="mt-2 flex items-center text-sm text-gray-500">
+                    <v-icon name="fa-mountain" class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" aria-hidden="true" />
+                    <span>{{ params.rootHeight }}</span>
+                </div>
+                <div class="mt-2 flex items-center text-sm text-gray-500">
+                    <v-icon name="md-accesstime-round" class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400"
+                    aria-hidden="true" />
+                    Created&nbsp;<Time :time="attempt.createdAt" suffix />
+                </div>
+                <div class="mt-2 flex items-center text-sm text-gray-500">
+                    <v-icon name="md-lockclock" class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" aria-hidden="true" />
+                    Closing&nbsp;<Time :time="attempt.expires(instance)" suffix />
+                </div>
                 </div>
 
             </header>
