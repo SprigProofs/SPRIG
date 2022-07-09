@@ -30,7 +30,8 @@
           </label>
           <div class="mt-1">
             <textarea v-model="proofInput" id="proofAttempt" name="proofAttempt" rows="20"
-              class="font-mono shadow-sm focus:ring-indigo-500 focus:border-indigo-500 mt-1 block w-full sm:text-sm border border-gray-300 rounded-md"
+              autocorrect="false" spellcheck="false"
+              class="whitespace-pre font-mono shadow-sm focus:ring-indigo-500 focus:border-indigo-500 mt-1 block w-full sm:text-sm border border-gray-300 rounded-sm"
               placeholder="theorem ..." />
           </div>
           <!-- <p class="mt-2 text-sm text-gray-500">

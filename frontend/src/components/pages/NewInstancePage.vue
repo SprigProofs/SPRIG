@@ -317,7 +317,8 @@ function createInstance() {
                     </label>
                     <div class="mt-1">
                       <textarea id="about" name="about" rows="3" v-model="root_question"
-                        class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 mt-1 block w-full sm:text-sm border border-gray-300 rounded-sm"
+                        autocorrect="false" spellcheck="false"
+                        class="font-mono whitespace-pre shadow-sm focus:ring-indigo-500 focus:border-indigo-500 mt-1 block w-full sm:text-sm border border-gray-300 rounded-sm"
                         placeholder="theorem riemann_hypothesis ..." />
                     </div>
                   </div>
@@ -328,7 +329,8 @@ function createInstance() {
                     </label>
                     <div class="mt-1">
                       <textarea id="about" name="partial_proof" rows="7" v-model="proof_attempt"
-                        class="font-mono shadow-sm focus:ring-indigo-500 focus:border-indigo-500 mt-1 block w-full sm:text-sm border border-gray-300 rounded-sm"
+                        autocorrect="false" spellcheck="false"
+                        class="font-mono whitespace-pre shadow-sm focus:ring-indigo-500 focus:border-indigo-500 mt-1 block w-full sm:text-sm border border-gray-300 rounded-sm"
                         placeholder="theorem riemann_hypothesis ..." />
                     </div>
                     <!-- <p class="mt-2 text-sm text-gray-500">
