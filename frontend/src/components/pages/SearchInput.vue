@@ -78,6 +78,15 @@ function drop(event, droppedMethod) {
   sortMethods.splice(idxDropped, 1);
   sortMethods.splice(idxCurrent, 0, draggedMethod);
 }
+function doubleClick(method) {
+  const idx = sortMethods.indexOf(method);
+  sortMethods.splice(idx, 1);
+  if (idx != 0) {
+    sortMethods.splice(0, 0, method);
+  } else {
+    sortMethods.push(method);
+  }
+}
 
 function getWeights(o, type: Types) {
   const weights = {};
@@ -243,10 +252,12 @@ const results = computed<SprigObject[]>(() => {
                     ">
           <li v-for="method in sortMethods" :key="method" :draggable="true" @dragstart="startDrag($event, method)"
             @drop="drop($event, method)" @dragend="endDrag($event, method)" @dragenter="dragEnter($event, method)"
-            @dragexit="dragExit($event, method)" @dragover.prevent @dragenter.prevent class="cursor-move select-none
-                        hover:bg-gray-200 border-l-2 hover:border-l-gray-600 border-l-transparent border-y-gray-600
-                        py-2 rounded-sm -ml-4 px-4 w-full transition-all
-                        marker:text-gray-600">
+            @dragexit="dragExit($event, method)" @dragover.prevent @dragenter.prevent
+            @dblclick="doubleClick(method)"
+            class="cursor-move select-none
+              hover:bg-gray-200 border-l-2 hover:border-l-gray-600 border-l-transparent border-y-gray-600
+              py-2 rounded-sm -ml-4 px-4 w-full transition-all transform
+              marker:text-gray-600">
             {{ method }}</li>
         </TransitionGroup>
         <span class="text-xs text-gray-400">Tip: reorder to match your needs.</span>

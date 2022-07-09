@@ -29,8 +29,9 @@
             Proof attempt
           </label>
           <div class="mt-1">
-            <textarea v-model="proofInput" id="proofAttempt" name="proofAttempt" rows="12"
-              class="font-mono shadow-sm focus:ring-indigo-500 focus:border-indigo-500 mt-1 block w-full sm:text-sm border border-gray-300 rounded-md"
+            <textarea v-model="proofInput" id="proofAttempt" name="proofAttempt" rows="20"
+              autocorrect="false" spellcheck="false"
+              class="whitespace-pre font-mono shadow-sm focus:ring-indigo-500 focus:border-indigo-500 mt-1 block w-full sm:text-sm border border-gray-300 rounded-sm"
               placeholder="theorem ..." />
           </div>
           <!-- <p class="mt-2 text-sm text-gray-500">
@@ -60,10 +61,19 @@
 
       </div>
 
-      <div class="flex space-x-4 justify-end">
+      <div v-if="!proofSent" class="flex space-x-4 justify-end">
         <Button v-if="!preview" @click="togglePreview()" color="indigo" >Preview</Button>
         <Button v-else @click="togglePreview()" color="indigo" >Edit</Button>
         <Button v-if="preview" @click="publish()" color="indigo" filled>Publish</Button>
+      </div>
+      <div v-else class="flex justify-end">
+        <span class="rounded py-2 px-4 bg-indigo-500 text-white cursor-not-allowed">
+          <svg class="inline animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          Compiling proof...
+        </span>
       </div>
     </div>
 
@@ -87,6 +97,7 @@ import { useRouter } from 'vue-router';
 const slideOpen = ref(false);
 const templateVisible = ref(false);
 const preview = ref(false);
+const proofSent = ref(false);
 const instancePreview = ref(null);
 const costs = reactive({
   upstake: 0,
@@ -107,6 +118,7 @@ function openDialog() {
 }
 
 async function publish() {
+  proofSent.value = true;
   store.newProofAttempt(
     props.instance.hash, props.challenge.hash,
     lang.challengeCount(proofInput.value) === 0,
@@ -114,7 +126,9 @@ async function publish() {
   ).then((proofAttempt) => {
     console.log("published", proofAttempt);
     nextTick(() => router.push(linkTo(proofAttempt)));
-  })
+  }).catch((err) => {
+    proofSent.value = false;
+  });
 }
 
 function togglePreview() {

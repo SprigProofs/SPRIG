@@ -20,16 +20,13 @@
             </p>
 
             <div class="relative mx-12 -mt-24 bg-red-600/30 home-rectangle w-48 h-48">
-                <div v-if="false">
-                    Lorem ipsum dolor sit amet consectetur adipisicing elit. Suscipit assumenda maxime nostrum officia earum consequatur deleniti
-                </div>
                 <span class="absolute
                     top-[calc(100%-1rem)] left-[calc(100%-1rem)] w-16 h-16
                     hover:animate-spin-square
                     shadow home-rectangle bg-green-600/30"></span>
             </div>
 
-            <div class="w-64 h-32 ml-auto mr-32 mt-4
+            <div class="w-64 h-32 ml-auto mr-24 mt-4
                 home-rectangle bg-amber-600/30
                 flex-col justify-around">
                 <div class="font-ligh font-title text-black/60">
@@ -63,30 +60,33 @@
         </ul>
 
         <div v-if="showEverything" class=" flex flex-col space-y-8 ">
-            <div class="even:self-end even:text-right">
-                <h2 class="font-title font-bold text-2xl
-                    ">Join a comunity of truth seekers</h2>
+            <div v-for="content in texts" :key="content.title"
+                class="even:self-end even:text-right odd:border-l even:border-r border-t-small border-black p-4">
+                <h2 class="font-title font-bold text-2xl #text-orange-600
+                    ">{{ content.title }}</h2>
                 <p class="text-gray-600 w-96 mt-22"
-                    >Lorem ipsum dolor sit amet consectetur adipisicing elit. Enim delectus blanditiis quae incidunt omnis qui quasi consequuntur labore eius, doloribus magnam ratione iure? Nemo, omnis reiciendis perspiciatis sint consequuntur sit!</p>
+                    >{{ content.body }}</p>
             </div>
-            <div class="even:self-end even:text-right">
-                <h2 class="font-title font-bold text-2xl
-                    ">Built on Algorand</h2>
-                <p class="text-gray-600 w-96 mt-2"
-                    >Lorem ipsum dolor sit amet consectetur adipisicing elit. Enim delectus blanditiis quae incidunt omnis qui quasi consequuntur labore eius, doloribus magnam ratione iure? Nemo, omnis reiciendis perspiciatis sint consequuntur sit!</p>
-            </div>
-            <div class="even:self-end even:text-right">
-                <h2 class="font-title font-bold text-2xl
-                    ">A better peer review</h2>
-                <p class="text-gray-600 w-96 mt-2"
-                    >Lorem ipsum dolor sit amet consectetur adipisicing elit. Enim delectus blanditiis quae incidunt omnis qui quasi consequuntur labore eius, doloribus magnam ratione iure? Nemo, omnis reiciendis perspiciatis sint consequuntur sit!</p>
-            </div>
-
         </div>
+
+        <div class="relative pb-16 mx-auto flex flex-col items-center mt-12 bg-white p-4 w-fit text-center">
+            <h2 class="text-3xl font-extrabold tracking-tight text-gray-900 md:text-4xl">
+                <span class="block">Ready to dive in?</span>
+                <span class="block text-orange-600">Explore open challenges today.</span>
+            </h2>
+            <div class="absolute bottom-0 translate-y-1/2 border border-black p-[2px] transition-all bg-white">
+                <router-link to="/search" class="group flex items-center justify-center
+                    px-5 py-3 text-base font-semibold
+                    text-white #ring-1 ring-offset-2  hover:saturate-150 hover:-hue-rotate-30 duration-500 transition-all ring-black
+                    border border-black  bg-gradient-to-br from-orange-500 to-rose-500
+                    ">Get started <span class="ml-1 group-hover:translate-x-2 transition-transform">→</span></router-link>
+            </div>
+        </div>
+
     </div>
 
     <div v-if="showEverything" class="
-        my-8
+        mb-8
         border-y border-black
         bg-gradient-to-tr to-purple-200 from-blue-200">
         <div class="relative max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
@@ -133,20 +133,12 @@
         </div>
     </div>
 
-  <div v-if="false" class="h-full"></div>
-<div class="max-w-3xl mx-auto pb-12 px-4 sm:px-6 lg:px-8 lg:flex lg:items-center lg:justify-between">
-    <h2 class="text-3xl font-extrabold tracking-tight text-gray-900 md:text-4xl">
-    <span class="block">Ready to dive in?</span>
-    <span class="block text-indigo-600">Explore open challenges today.</span>
-    </h2>
-    <div class="mt-8 flex lg:mt-0 lg:flex-shrink-0">
-    <div class="inline-flex rounded-md shadow">
-        <router-link to="/search" href="#" class="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"> Get started </router-link>
+    <div class="mt-20 mb-8 text-gray-500 text-center">
+        You've reached the bottom of the page 🎉
+        <br>
+        It is now time to <router-link to="/search" class="underline hover:text-purple-500">explore</router-link>!
     </div>
-    </div>
-</div>
 
-    <!-- <div class="h-64"></div> -->
 </div>
 </template>
 
@@ -186,6 +178,21 @@ const stats = computed(() => [
         color:'from-red-100 hover:via-red-100',
     },
 ])
+
+const texts = [
+    {
+        title: 'Join a comunity of truth seekers',
+        body: 'Mathematicians consider a proof correct if given enough time and energy, a formal proof could be written.'
+    },
+    {
+        title: 'Built on Algorand',
+        body: 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Enim delectus blanditiis quae incidunt omnis qui quasi consequuntur labore eius, doloribus magnam ratione iure? Nemo, omnis reiciendis perspiciatis sint consequuntur sit!'
+    },
+    {
+        title: 'A better peer review',
+        body: 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Enim delectus blanditiis quae incidunt omnis qui quasi consequuntur labore eius, doloribus magnam ratione iure? Nemo, omnis reiciendis perspiciatis sint consequuntur sit!'
+    },
+]
 
 
 const team = [
@@ -235,4 +242,23 @@ const team = [
         border-left: 1px solid #000;
         border-right: 1px solid #000;
     }
+
+    .border-t-small {
+        position: relative;
+    }
+    .border-t-small::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 1px;
+        width: 4rem;
+        border-top: 1px solid #000;
+    }
+    .border-t-small:nth-child(even)::before {
+        right: 0;
+        left:unset;
+    }
+
+
 </style>
