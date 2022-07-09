@@ -4,7 +4,8 @@
         <div v-for="block in blocks">
             <ChallengePart
                 v-if="block.challenge" :preview="preview"
-                :instance="instance" :challenge="instance.challenges[attempt.challenges[block.challengeNb]]">
+                :instance="instance" :challenge="instance.challenges[attempt.challenges[block.challengeNb]]"
+                class="mb-4">
                 <pre class="whitespace-pre-wrap">{{ block.content }}</pre>
             </ChallengePart>
             <pre v-else class="whitespace-pre-wrap">{{ block.content }}</pre>

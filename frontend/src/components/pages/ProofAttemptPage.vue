@@ -32,26 +32,43 @@
         </div>
 
         <section class="prose pt-6">
-          <p v-if="attempt.status == Status.UNCHALLENGED">
+          <p v-if="attempt.status == Status.UNCHALLENGED && !isMachine">
             This <span v-if="attempt.height == 0">machine</span> proof attempt is currently
-            <StatusTag :status="attempt.status" />
-            so if nothing happens, it will be
+            <StatusTag :status="attempt.status" />.
+            <ul>
+              <li>
+                If nothing happens, it will be
+                <StatusTag status="validated"
+                /> <Time :time="attempt.expires(instance)" suffix /> and the stakes
+                of
+                <Price :amount="stakeHeld" /> will be refunded to
+                <User :name="attempt.author" />.
+              </li>
+
+              <li>
+                In the meantime, the proof can be
+                <StatusTag status="challenged" />
+                by locking a bounty of
+                <Price :amount="costToChallenge" />.
+              </li>
+
+              <li>
+                If this attempt is
+                <StatusTag status="rejected" />
+                because of a challenge, the challenger's bounty is refunded
+                and they win
+                <User :name="attempt.author" />'s
+                <Price :amount="downBounty" /> bounty.
+              </li>
+
+            </ul>
+
+          </p>
+          <p v-else-if="attempt.status == Status.UNCHALLENGED && isMachine">
+            This machine proof will be submitted for verification and will be directly
             <StatusTag status="validated" />
-            <Time :time="attempt.expires(instance)" suffix /> and the bounty
-            of
-            <Price :amount="stakeHeld" /> will be refunded to
-            <User :name="attempt.author" />.
-            If you think there is a mistake in this proof,
-            you can challenge one of its {{ nbClaims }} claims
-            and lock a bounty of
-            <Price :amount="costToChallenge" />.
-            If this attempt is
-            <StatusTag status="rejected" />
-            because of your challenge, your bounty is refunded
-            and you win an extra
-            <Price :amount="downBounty" />.
-            If someone posts a valid proof of your challenge,
-            the get your bounty instead.
+            or
+            <StatusTag status="rejected" />.
           </p>
           <p v-else-if="attempt.status == Status.CHALLENGED">
             This proof attempt is currently
@@ -60,20 +77,30 @@
               but you can challenge other claims for
               <Price :amount="costToChallenge" />
             </template>.
-            If all challenges get a valid response, this proof will be
-            <StatusTag status="validated" />
-            and
-            <User :name="attempt.author" /> will be refunded their bounty of
-            <Price :amount="stakeHeld" />.
-            Otherwise, the first challenge that get no valid response will
-            be rewarded with
-            <Price :amount="downBounty" /> and this proof attempt
-            becomes
-            <StatusTag status="rejected" />.
-            Every other successful challenge will only have its bounty refunded
-            and the bounties of answered challenges
-            will reward their answers with
-            <Price :amount="costToChallenge" />.
+            <ul>
+              <li>
+                If all challenges get a valid response, this proof will be
+                <StatusTag status="validated" />
+                and
+                <User :name="attempt.author" /> will be refunded their bounty of
+                <Price :amount="stakeHeld" />.
+              </li>
+
+              <li>
+                Otherwise, the first challenge that get no valid response will
+                be rewarded with
+                <Price :amount="downBounty" /> and this proof attempt
+                becomes
+                <StatusTag status="rejected" />.
+              </li>
+
+              <li>
+                Every other successful challenge will only have its bounty refunded
+                and the bounties of answered challenges
+                will reward their answers with
+                <Price :amount="costToChallenge" />.
+              </li>
+            </ul>
           </p>
           <p v-else-if="attempt.status == Status.VALIDATED">
             This proof attempt is currently
@@ -85,7 +112,6 @@
             <StatusTag status="rejected" />
             <template v-if="attempt.challenges.some(c => !instance.challenges[c].decided())">
               but some challenges are still open for debate.
-              When they are acc
             </template>
             <template v-else>
               and no more actions can be taken.
@@ -159,7 +185,7 @@
 <script setup lang="ts">
 
 import { inject, reactive, ref, watch } from 'vue';
-import { Status } from '../../sprig';
+import { Sprig, Status } from '../../sprig';
 import { store } from '../../store';
 import { Price, StatusTag, Time } from "../small";
 import User from '../medium/User.vue';
@@ -171,19 +197,12 @@ import { computed } from '@vue/reactivity';
 import Embed404 from '../medium/Embed404.vue';
 
 
-const props = defineProps({
-  instanceHash: {
-    type: String,
-    required: true,
-  },
-  hash: {
-    type: String,
-    required: true,
-  },
-  instanceValue: {
-    type: Object,
-    required: false,
-  },
+const props = withDefaults(defineProps<{
+  instanceHash: string,
+  hash: string,
+  instanceValue: Sprig,
+}>(), {
+  instanceValue: null,
 });
 
 const readOnly = inject('readOnly', false);
@@ -206,17 +225,9 @@ const actions = computed(() => instance.value?.actions(attempt.value).map(action
   };
 }));
 
+const isMachine = computed(() => attempt.value.height == 0);
 </script>
 
 <style>
-/* .group:hover .el-timeline-item__node,
-.group:hover .el-timeline-item__tail {
-    border-left-color: #fef3c7;
-    background-color: #ffdea1;
-} */
 
-.plus-pattern {
-  background-repeat: repeat;
-  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg  fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-}
 </style>
