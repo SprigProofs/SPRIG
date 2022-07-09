@@ -74,12 +74,12 @@
                 <span class="block">Ready to dive in?</span>
                 <span class="block text-orange-600">Explore open challenges today.</span>
             </h2>
-            <div class="absolute bottom-0 translate-y-1/2 border border-black p-[2px] bg-white">
-                <router-link to="/search" class="flex items-center justify-center
-                    px-5 py-3 text-base font-medium
-                    text-white #ring-1 ring-offset-2  hover:saturate-150 transition-all ring-black
-                    border border-black bg-gradient-to-br from-orange-500 to-rose-500
-                    ">Get started</router-link>
+            <div class="absolute bottom-0 translate-y-1/2 border border-black p-[2px] transition-all bg-white">
+                <router-link to="/search" class="group flex items-center justify-center
+                    px-5 py-3 text-base font-semibold
+                    text-white #ring-1 ring-offset-2  hover:saturate-150 hover:-hue-rotate-30 duration-500 transition-all ring-black
+                    border border-black  bg-gradient-to-br from-orange-500 to-rose-500
+                    ">Get started <span class="ml-1 group-hover:translate-x-2 transition-transform">→</span></router-link>
             </div>
         </div>
 
@@ -182,7 +182,7 @@ const stats = computed(() => [
 const texts = [
     {
         title: 'Join a comunity of truth seekers',
-        body: 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Enim delectus blanditiis quae incidunt omnis qui quasi consequuntur labore eius, doloribus magnam ratione iure? Nemo, omnis reiciendis perspiciatis sint consequuntur sit!'
+        body: 'Mathematicians consider a proof correct if given enough time and energy, a formal proof could be written.'
     },
     {
         title: 'Built on Algorand',
