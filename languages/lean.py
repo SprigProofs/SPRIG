@@ -12,11 +12,6 @@ DEV = os.environ.get("DEV", "").lower() in ("true", "1", "yes", "y'")
 class Lean4(Language):
     """
     Language that represents Lean proofs.
-
-    TODO: Explain in detail the format of:
-        - root questions
-        - proof attempts
-        - machine proofs
     """
 
     name = "Lean4"
@@ -41,7 +36,7 @@ class Lean4(Language):
         # Call lean, potentially in a container
         isValid = False
         if DEV:
-            out = subprocess.Popen(['lean', f'"{os.getcwd()}/tmp_file"'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            out = subprocess.Popen(['lean', f'{os.getcwd()}/tmp_file'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             stdout, stderr = out.communicate()
 
             isValid = out.returncode == 0
@@ -95,10 +90,7 @@ class Lean4(Language):
 
         # Validate proof with lean
         proof = '\n'.join(proof_elements)
-        if not self.lean_validate(proof):
-            return False
-
-        return True
+        return self.lean_validate(proof)
 
     def validate_attempt(self, root_question: str, branch: list[tuple[str, int]],
                          attempt: str) -> bool:

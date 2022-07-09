@@ -490,7 +490,7 @@ SPRIG instance:
         """Answer a challenge with a (non-machine) proof."""
 
         if challenge_hash is ROOT_HASH:
-            assert ROOT_HASH not in self.proofs, "The root question has already an attempt."
+            assert ROOT_HASH not in self.proofs, "The root question already has an attempt."
             height = self.params.protocol_height() - 1
             parents: Branch = []
         else:
@@ -555,6 +555,10 @@ SPRIG instance:
         assert challenge_hash in self.challenges, "No such challenge."
         challenge = self.challenges[challenge_hash]
         assert challenge.status is Status.CHALLENGED, "The challenge is not open."
+
+        parents = self.gather_branch(challenge_hash)
+        assert self.language.validate_attempt(self.root_question, parents,
+                                              machine_proof), "Invalid proof attempt."
 
         attempt = ProofAttempt(hash=self.next_hashes()[0],
                                parent=challenge_hash,
@@ -803,43 +807,28 @@ def play_lean(params: Parameters) -> Sprig:
     sprig = Sprig.start(
         Lean4().dump(), params, Address("Diego"), """
 -- chal
-theorem add_comm (m n : nat) : m + n = n + m := sorry
+theorem this_add_comm (m n : Nat) : m + n = n + m := sorry
 -- endchal""", """
-import data.nat.basic
-open nat
-
-variables m n : ℕ
+open Nat
 
 example : m + 0 = m := add_zero m
 example : m + succ n = succ (m + n) := add_succ m n
 
 -- chal
-theorem succ_pred (n : ℕ) : n ≠ 0 → succ (pred n) = n := sorry
+theorem this_succ_add (n m : Nat) : succ n + m = succ (n + m) := sorry
 -- endchal
 
 -- chal
-theorem zero_add (n : nat) : 0 + n = n := sorry
--- endchal
-
--- chal
-theorem succ_add (m n : nat) : succ m + n = succ (m + n) := sorry
--- endchal
-
--- chal
-theorem add_assoc (m n k : nat) : m + n + k = m + (n + k) := sorry
--- endchal
-
--- chal
-theorem add_comm (m n : nat) : m + n = n + m := sorry
+theorem this_add_comm (m n : Nat) : m + n = n + m := sorry
 -- endchal
 """)
 
     time_passes(sprig)
 
-    succ_add = sprig.proofs[ROOT_HASH].challenges[2]
+    succ_add = sprig.proofs[ROOT_HASH].challenges[0]
     c1 = sprig.challenge(MICHAEL, succ_add)
 
-    add_comm = sprig.proofs[ROOT_HASH].challenges[4]
+    add_comm = sprig.proofs[ROOT_HASH].challenges[1]
     c2 = sprig.challenge(MICHAEL, add_comm)
 
     time_passes(sprig)
@@ -847,22 +836,16 @@ theorem add_comm (m n : nat) : m + n = n + m := sorry
     a1 = sprig.answer(
         c1.hash, DIEGO, """
         -- chal
-        theorem succ_add (m n : nat) : succ m + n = succ (m + n) := sorry
+        theorem this_succ_add (n m : Nat) : succ n + m = succ (n + m) := sorry
         -- endchal
         """)
 
     a2 = sprig.answer_low_level(
         c2.hash, DIEGO, """
-theorem add_comm (m n : nat) : m + n = n + m :=
-    nat.rec_on n
-    (show m + 0 = 0 + m, by rewrite [add_zero, zero_add])
-    (assume n,
-        assume ih : m + n = n + m,
-        show m + succ n = succ n + m, from calc
-        m + succ n = succ (m + n) : by rw add_succ
-                ... = succ (n + m) : by rw ih
-                ... = succ n + m   : by rw succ_add)
-
+        theorem this_add_comm (m n : Nat) : m + n = n + m :=
+            Nat.recOn (motive := fun x => m + x = x + m) n
+                (by simp)
+                (fun m ih => by simp only [add_succ, this_succ_add, ih])
         """)
 
     time_passes(sprig)
@@ -874,7 +857,7 @@ theorem add_comm (m n : nat) : m + n = n + m :=
     a3 = sprig.answer(
         c3.hash, DIEGO, """
         -- chal
-        theorem succ_add (m n : nat) : succ m + n = succ (m + n) := sorry
+        theorem this_succ_add (n m : Nat) : succ n + m = succ (n + m) := sorry
         -- endchal
         """)
 
@@ -887,7 +870,7 @@ theorem add_comm (m n : nat) : m + n = n + m :=
     a4 = sprig.answer(
         c4.hash, DIEGO, """
         -- chal
-        theorem succ_add (m n : nat) : succ m + n = succ (m + n) := sorry
+        theorem this_succ_add (n m : Nat) : succ n + m = succ (n + m) := sorry
         -- endchal
         """)
 
@@ -899,26 +882,18 @@ theorem add_comm (m n : nat) : m + n = n + m :=
 
     a5 = sprig.answer_low_level(
         c5.hash, DIEGO, """
-        -- chal
-        theorem succ_add (m n : nat) : succ m + n = succ (m + n) := 2
-        -- endchal
+        theorem this_succ_add (n m : Nat) : succ n + m = succ (n + m) := 2
         """)
 
     time_passes(sprig)
 
     a6 = sprig.answer_low_level(
         succ_add, CLEMENT, """
-theorem succ_add (m n : nat) : succ m + n = succ (m + n) :=
-    nat.rec_on n
-    (show succ m + 0 = succ (m + 0), from rfl)
-    (assume n,
-        assume ih : succ m + n = succ (m + n),
-        show succ m + succ n = succ (m + succ n), from
-        calc
-            succ m + succ n = succ (succ m + n) : rfl
-            ... = succ (succ (m + n)) : by rw ih
-            ... = succ (m + succ n) : rfl)
-""")
+    theorem this_succ_add (n m : Nat) : succ n + m = succ (n + m) :=
+        Nat.recOn (motive := fun x => succ n + x = succ (n + x)) m
+            rfl
+            (fun m ih => by simp only [add_succ, ih])
+    """)
 
     time_passes(sprig, 4 * 1000 * 3600 * 24 + 1)
 
