@@ -27,17 +27,21 @@ class Lean4(Language):
             print('Build done')
 
     def lean_validate(self, lean_code: str) -> bool:
-        """ Call lean to verify validity of machine proof """
+        """
+        Call lean to verify validity of machine proof
+        """
+
+        random_id = os.urandom(16).hex()
 
         # Write code to file
-        f = open(f'{os.getcwd()}/tmp_file', 'w')
+        f = open(f'{os.getcwd()}/tmp_file{random_id}', 'w')
         f.write(lean_code)
         f.close()
 
         # Call lean, potentially in a container
         isValid = False
         if DEV:
-            out = subprocess.Popen(['lean', f'{os.getcwd()}/tmp_file'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            out = subprocess.Popen(['lean', f'{os.getcwd()}/tmp_file{random_id}'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             stdout, _ = out.communicate()
 
             isValid = out.returncode == 0
@@ -45,7 +49,7 @@ class Lean4(Language):
         else:
             feedback = self.docker_client.containers.run(
                 'sprig/lean4', ['/bin/sh', '-c', '/root/.elan/bin/lean /tmp_file ; echo $?'],
-                volumes={f'{os.getcwd()}/tmp_file': {
+                volumes={f'{os.getcwd()}/tmp_file{random_id}': {
                     'bind': '/tmp_file',
                     'mode': 'ro'
                 }},
@@ -55,9 +59,27 @@ class Lean4(Language):
             feedback = '\n'.join(feedback.strip().split('\n')[:-1])
 
         # Delete file and return
-        os.remove(f'{os.getcwd()}/tmp_file')
+        os.remove(f'{os.getcwd()}/tmp_file{random_id}')
         print(feedback)
         return isValid
+
+    def gather_and_validate(self, branch: list[tuple[str, int]], proof: str) -> bool:
+        """
+        Gather proof elements and call lean validate
+        """
+
+        # Accumulate content of proof, ignoring challenged elements and what follows them
+        proof_elements = []
+        for proof_attempt, chal_nb in branch:
+            challenge_starts = list(re.compile('-- chal').finditer(proof_attempt))
+            challenge_start = challenge_starts[chal_nb]
+
+            proof_elements.append(proof_attempt[:challenge_start.start()])
+        proof_elements.append(proof)
+
+        # Validate proof with lean
+        full_proof = '\n'.join(proof_elements)
+        return self.lean_validate(full_proof)
 
     def check_answer(self, root_question: str, branch: list[tuple[str, int]], proof: str) -> bool:
         """
@@ -107,23 +129,11 @@ class Lean4(Language):
         except:
             return False
 
-        # Sanity check: low-level proof should not contain a sorry (it is checked in validate_attempt)
-        #assert 'sorry' not in machine_proof, 'Proof is not a machine proof (contains sorry)'
+        # Sanity check: low-level proof should not contain a sorry
         if 'sorry' in machine_proof:
             return False
 
-        # Accumulate content of proof, ignoring challenged elements and what follows them
-        proof_elements = []
-        for proof_attempt, chal_nb in branch:
-            challenge_starts = list(re.compile('-- chal').finditer(proof_attempt))
-            challenge_start = challenge_starts[chal_nb]
-
-            proof_elements.append(proof_attempt[:challenge_start.start()])
-        proof_elements.append(machine_proof)
-
-        # Validate proof with lean
-        proof = '\n'.join(proof_elements)
-        return self.lean_validate(proof)
+        return self.gather_and_validate(branch, machine_proof)
 
     def validate_attempt(self, root_question: str, branch: list[tuple[str, int]],
                          attempt: str) -> bool:
@@ -183,6 +193,8 @@ class Lean4(Language):
             ):], 'There is a sorry outside of a challenge.'
         else:
             assert 'sorry' not in attempt, "A machine level proof should not contain a sorry."
+
+        assert self.gather_and_validate(branch, attempt)
 
         return True
 
