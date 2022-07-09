@@ -556,10 +556,6 @@ SPRIG instance:
         challenge = self.challenges[challenge_hash]
         assert challenge.status is Status.CHALLENGED, "The challenge is not open."
 
-        parents = self.gather_branch(challenge_hash)
-        assert self.language.validate_attempt(self.root_question, parents,
-                                              machine_proof), "Invalid proof attempt."
-
         attempt = ProofAttempt(hash=self.next_hashes()[0],
                                parent=challenge_hash,
                                author=claimer,

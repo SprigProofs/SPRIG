@@ -38,25 +38,52 @@ class Lean4(Language):
         isValid = False
         if DEV:
             out = subprocess.Popen(['lean', f'{os.getcwd()}/tmp_file'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-            stdout, stderr = out.communicate()
+            stdout, _ = out.communicate()
 
             isValid = out.returncode == 0
+            feedback = stdout.decode()
         else:
-            try:
-                self.docker_client.containers.run(
-                    'sprig/lean4', ['/bin/sh', '-c', '/root/.elan/bin/lean /tmp_file'],
-                    volumes={f'{os.getcwd()}/tmp_file': {
-                        'bind': '/tmp_file',
-                        'mode': 'ro'
-                    }},
-                    remove=True)
-                isValid = True
-            except:
-                isValid = False
+            feedback = self.docker_client.containers.run(
+                'sprig/lean4', ['/bin/sh', '-c', '/root/.elan/bin/lean /tmp_file ; echo $?'],
+                volumes={f'{os.getcwd()}/tmp_file': {
+                    'bind': '/tmp_file',
+                    'mode': 'ro'
+                }},
+                remove=True).decode()
+            
+            isValid = int(feedback.strip().split('\n')[-1]) == 0
+            feedback = '\n'.join(feedback.strip().split('\n')[:-1])
 
         # Delete file and return
         os.remove(f'{os.getcwd()}/tmp_file')
+        print(feedback)
         return isValid
+
+    def check_answer(self, root_question: str, branch: list[tuple[str, int]], proof: str) -> bool:
+        """
+        Check that a proof attempt answers the corresponding challenge
+        """
+
+        # Recover text of challenged proof attempt, and claim position
+        proof_attempt, chal_nb = branch[-1] if len(branch) > 0 else (root_question, 0)
+
+        # Recover challenged portion
+        challenge_starts = list(re.compile('-- chal').finditer(proof_attempt))
+        challenge_ends = list(re.compile('-- endchal').finditer(proof_attempt))
+
+        challenge_start = challenge_starts[chal_nb].end() + 1
+        challenge_end = challenge_ends[chal_nb].start()
+        challenged_text = proof_attempt[challenge_start:challenge_end]
+
+        challenged_thm = re.match(REGEX, challenged_text.strip())
+        assert challenged_thm is not None, "The parent challenged cannot be parsed. Please report this, it should not happen."
+        challenged_header = challenged_text[challenged_thm.start():challenged_thm.end() + 1]
+
+        # TODO: improve this check
+        # Verify that challenged claim is proven again
+        assert challenged_header.strip() in proof, "The challenged claim is not proven again."
+
+        return True
 
     def judge_low_level(self, root_question: str, branch: list[tuple[str, int]],
                         machine_proof: str) -> bool:
@@ -74,6 +101,11 @@ class Lean4(Language):
         Returns:
             True if the proof is correct, False otherwise.
         """
+
+        try:
+            self.check_answer(root_question, branch, machine_proof)
+        except:
+            return False
 
         # Sanity check: low-level proof should not contain a sorry (it is checked in validate_attempt)
         #assert 'sorry' not in machine_proof, 'Proof is not a machine proof (contains sorry)'
@@ -107,20 +139,7 @@ class Lean4(Language):
             attempt: the attempt to check for (syntaxic) validity.
         """
 
-        # Recover text of challenged proof attempt, and claim position
-        proof_attempt, chal_nb = branch[-1] if len(branch) > 0 else (root_question, 0)
-
-        # Recover challenged portion
-        challenge_starts = list(re.compile('-- chal').finditer(proof_attempt))
-        challenge_ends = list(re.compile('-- endchal').finditer(proof_attempt))
-
-        challenge_start = challenge_starts[chal_nb].end() + 1
-        challenge_end = challenge_ends[chal_nb].start()
-        challenged_text = proof_attempt[challenge_start:challenge_end]
-
-        challenged_thm = re.match(REGEX, challenged_text.strip())
-        assert challenged_thm is not None, "The parent challenged cannot be parsed. Please report this, it should not happen."
-        challenged_header = challenged_text[challenged_thm.start():challenged_thm.end() + 1]
+        self.check_answer(root_question, branch, attempt)
 
         # Read attempt
         attempt_starts = list(re.compile('-- chal').finditer(attempt))
@@ -165,10 +184,6 @@ class Lean4(Language):
         else:
             assert 'sorry' not in attempt, "A machine level proof should not contain a sorry."
 
-        # TODO: improve this check
-        # Verify that challenged claim is proven again
-        assert challenged_header.strip() in attempt, "The challenged claim is not proven again."
-
         return True
 
     def validate_top_level(self, root_question: str) -> bool:
@@ -194,6 +209,8 @@ class Lean4(Language):
         challenged_thm = re.match(
             REGEX, root_question[attempt_starts[0].end() + 1:attempt_ends[0].start()].strip())
         assert challenged_thm is not None, "The root question cannot be parsed."
+
+        assert self.lean_validate(root_question)
 
         return True
 
