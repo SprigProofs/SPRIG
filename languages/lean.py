@@ -8,6 +8,7 @@ from typing import Dict, List, NewType, Optional
 
 REGEX = r'(theorem|lemma|example)\s([^\s]*)\s\(.*\)\s:\s(.*)\s:='
 DEV = os.environ.get("DEV", "").lower() in ("true", "1", "yes", "y'")
+DUPLICATE_TOKENS = ['theorem', 'lemma', 'example', ':=']
 
 class Lean4(Language):
     """
@@ -141,7 +142,15 @@ class Lean4(Language):
             len(re.findall(r"\bsorry\b",
                            attempt[attempt_starts[i].end():attempt_ends[i].start()])) == 1
             for i in range(len(attempt_starts))
-        ]), 'Not all challenge contain a sorry.'
+        ]), 'Some marked theorems don\'t contain a sorry'
+
+        # Verify only one theorem between each pair of markers
+        for token in DUPLICATE_TOKENS:
+            assert all([
+                len(re.findall(f"{token}",
+                            attempt[attempt_starts[i].end():attempt_ends[i].start()])) <= 1
+                for i in range(len(attempt_starts))
+            ]), 'Several theorems between the same markers pair'
 
         # Verify no sorry outside of pairs of markers
         if len(attempt_starts) > 0:
