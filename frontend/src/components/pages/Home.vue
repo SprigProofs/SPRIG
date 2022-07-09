@@ -133,11 +133,13 @@
         </div>
     </div>
 
-    <div class="mt-20 mb-8 text-gray-500 text-center">
+    <div v-if="showEverything"
+        class="mt-20 mb-8 text-gray-500 text-center">
         You've reached the bottom of the page 🎉
         <br>
         It is now time to <router-link to="/search" class="underline hover:text-purple-500">explore</router-link>!
     </div>
+    <div v-else class="mt-28"></div>
 
 </div>
 </template>

@@ -100,7 +100,7 @@ const invalidInputs = computed(() => {
   });
 
   if (root_question.value === "")
-    fails.push("And an initial question");
+    fails.push("Add an initial question");
 
   if (proof_attempt.value === "")
     fails.push("Add a proof attempt");
