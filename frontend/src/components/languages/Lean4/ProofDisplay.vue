@@ -8,15 +8,14 @@
                 class="mb-4">
                 <pre class="whitespace-pre-wrap">{{ block.content }}</pre>
             </ChallengePart>
-            <pre v-else class="whitespace-pre-wrap">{{ block.content }}</pre>
+            <pre v-else class="whitespace-pre">{{ block.content }}</pre>
         </div>
     </article>
 </template>
 
 <script setup lang="ts">
-import dedent from 'dedent';
 
-import { Sprig } from '../../../sprig';
+import { Sprig, dedent } from '../../../sprig';
 import ChallengePart from '../../medium/ChallengePart.vue';
 import { computed } from '@vue/reactivity';
 import LabeledData from '../../small/LabeledData.vue';

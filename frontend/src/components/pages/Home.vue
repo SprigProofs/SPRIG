@@ -59,7 +59,7 @@
             </li>
         </ul>
 
-        <div v-if="showEverything" class=" flex flex-col space-y-8 ">
+        <div v-if="showEverything" class=" flex flex-col space-y-8 mb-12">
             <div v-for="content in texts" :key="content.title"
                 class="even:self-end even:text-right odd:border-l even:border-r border-t-small border-black p-4">
                 <h2 class="font-title font-bold text-2xl #text-orange-600
@@ -69,7 +69,7 @@
             </div>
         </div>
 
-        <div class="relative pb-16 mx-auto flex flex-col items-center mt-12 bg-white p-4 w-fit text-center">
+        <div class="relative pb-16 mx-auto flex flex-col items-center bg-white p-4 w-fit text-center">
             <h2 class="text-3xl font-extrabold tracking-tight text-gray-900 md:text-4xl">
                 <span class="block">Ready to dive in?</span>
                 <span class="block text-orange-600">Explore open challenges today.</span>

@@ -398,7 +398,7 @@ class Sprig {
         if (chal.decided()) {
             return 0;
         } else if (chal.status === Status.CHALLENGED) {
-            return this.params.downstakes[chal.height];
+            return this.params.questionBounties[chal.height];
         } else {  // UNCHALLENGED
             const attempt = this.proofs[chal.parent];
             if (attempt.status == Status.CHALLENGED) {
@@ -586,11 +586,22 @@ function copy(text): void {  // TODO: What is the best way to copy stuff ?
     document.body.removeChild(textArea)
 }
 
+function dedent(text: string): string {
+    // find common indentation, ignoring blank lines
+    const lines = text.split("\n");
+    const indent = _.chain(lines)
+        .filter(l => l.trim().length > 0)
+        .map(l => l.match(/^\s*/)[0].length)
+        .min()
+        .value();
+    return lines.map(l => l.slice(indent)).join("\n");
+
+}
 export {
     api, STATUSES, STATUS_DISPLAY_NAME, Unit,
     decided, Challenge, Sprig, Status,
     ProofAttempt, Parameters, Action, ActionData, linkTo,
-    dayjs, copy, User, SprigObject,
+    dayjs, copy, User, SprigObject, dedent,
 };
 
 // ok

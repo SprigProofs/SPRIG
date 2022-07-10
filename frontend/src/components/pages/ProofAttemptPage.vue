@@ -6,7 +6,7 @@
 
         <div class="flex mb-2">
             <StatusTag :status="attempt.status" />
-            <!-- <LanguageTag :lang="instance.language" class="ml-2" /> -->
+            <LanguageTag :lang="instance.language" class="ml-2" />
             <div class="ml-4 font-bold ">
                 Bounty
                 <Price :amount="attempt.possibleReward(params)" />
@@ -184,7 +184,7 @@
           <Parameters :params="params" :highlight="attempt.height" />
         </el-collapse-item>
         <el-collapse-item title="Raw data">
-          <pre class="text-sm text-gray-500 whitespace-pre-wrap">{{ attempt }}</pre>
+          <pre class="text-sm text-gray-500 whitespace-pre overflow-scroll">{{ attempt }}</pre>
         </el-collapse-item>
       </el-collapse>
     </section>
@@ -228,12 +228,13 @@ const costToChallenge = computed(() => params.value?.costToChallenge(attempt.val
 
 const showPreviousDefinitions = ref(false);
 
-const actions = computed(() => instance.value?.actions(attempt.value).map(action => {
-  return {
-    open: true,
-    ...action,
-  };
-}));
+const actions = [];
+// const actions = computed(() => instance.value?.actions(attempt.value).map(action => {
+//   return {
+//     open: true,
+//     ...action,
+//   };
+// }));
 
 const isMachine = computed(() => attempt.value.height == 0);
 </script>
