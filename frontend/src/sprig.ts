@@ -586,6 +586,10 @@ function copy(text): void {  // TODO: What is the best way to copy stuff ?
     document.body.removeChild(textArea)
 }
 
+/**
+ * Remove common indentation and leading/trailing whitespace from a string.
+ * @param text String to clean.
+ */
 function dedent(text: string): string {
     // find common indentation, ignoring blank lines
     const lines = text.split("\n");
@@ -594,9 +598,9 @@ function dedent(text: string): string {
         .map(l => l.match(/^\s*/)[0].length)
         .min()
         .value();
-    return lines.map(l => l.slice(indent)).join("\n");
-
+    return lines.map(l => l.slice(indent)).join("\n").trim();
 }
+
 export {
     api, STATUSES, STATUS_DISPLAY_NAME, Unit,
     decided, Challenge, Sprig, Status,
