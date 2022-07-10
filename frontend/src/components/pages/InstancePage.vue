@@ -100,7 +100,7 @@
         <section class="m-8">
             <el-collapse>
                 <el-collapse-item title="Raw data">
-                    <div class="text-sm text-gray-500">
+                    <div class="text-sm text-gray-500 overflow-sw">
                         <pre>{{ instance }}</pre>
                     </div>
                 </el-collapse-item>

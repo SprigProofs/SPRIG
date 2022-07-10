@@ -290,6 +290,7 @@ class Sprig {
         // Creation of the instance
         actions.push({
             time: this.rootAttempt().createdAt,
+            depth: this.params.rootHeight,
             type: Action.ROOT_CREATED,
             target: this,
         });
@@ -299,6 +300,7 @@ class Sprig {
             if (proof.parent) {  // The root proof attempt uses ROOT_CREATED
                 actions.push({
                     time: proof.createdAt,
+                    depth: proof.height,
                     type: Action.ATTEMPT_CREATED,
                     target: proof,
                 });
@@ -310,6 +312,7 @@ class Sprig {
             if (challenge.author !== null) {
                 actions.push({
                     time: challenge.challengedAt,
+                    depth: challenge.height,
                     type: Action.CHALLENGE_ACTIVATED,
                     target: challenge,
                 });
@@ -323,6 +326,7 @@ class Sprig {
             if (autoValidated.length > 0) {
                 actions.push({
                     time: autoValidated[0].openUntil,  // All should have the same openUntil
+                    depth: proof.height,
                     type: Action.AUTO_VALIDATION,
                     target: autoValidated,
                 });
@@ -340,12 +344,14 @@ class Sprig {
                 const validating = _.minBy(validated, (attempt) => attempt.expires(this));
                 actions.push({
                     time: validating.expires(this),
+                    depth: challenge.height,
                     type: Action.CHALLENGE_VALIDATED,
                     target: validating,
                 });
             } else if (challenge.status === Status.REJECTED) {
                 actions.push({
                     time: challenge.openUntil,
+                    depth: challenge.height,
                     type: Action.CHALLENGE_REJECTED,
                     target: challenge,
                 });
@@ -357,6 +363,7 @@ class Sprig {
             if (proof.height === 0) {
                 actions.push({
                     time: proof.createdAt,
+                    depth: proof.height,
                     type: proof.status === Status.VALIDATED
                         ? Action.MACHINE_VALIDATED
                         : Action.MACHINE_REJECTED,
@@ -366,6 +373,7 @@ class Sprig {
                 if (proof.status === Status.VALIDATED) {
                     actions.push({
                         time: proof.expires(this),
+                        depth: proof.height,
                         type: Action.ATTEMPT_VALIDATED,
                         target: proof,
                     });
@@ -375,6 +383,7 @@ class Sprig {
                     const rejecting = _.minBy(rejected, (challenge) => challenge.openUntil);
                     actions.push({
                         time: rejecting.openUntil,
+                        depth: proof.height,
                         type: Action.ATTEMPT_REJECTED,
                         target: rejecting,
                     });
@@ -382,11 +391,7 @@ class Sprig {
             }
         });
 
-        // Machine validation and rejection
-        _.forEach(this.proofs, (proof) => {
-        });
-
-        return _.sortBy(actions, (action) => action.time);
+        return _.sortBy(actions, (action) => [action.time.unix(), action.depth]);
     }
 
     /**
@@ -412,6 +417,7 @@ class Sprig {
 
 interface ActionData {
     time: dayjs.Dayjs;
+    depth: number;
     type: Action;
     target: Challenge | ProofAttempt | Sprig | Challenge[];
 }

@@ -65,7 +65,7 @@
 
       </div>
 
-      <div v-if="proofSent" class="flex space-x-4 justify-end">
+      <div v-if="!proofSent" class="flex space-x-4 justify-end">
         <Button v-if="!preview" @click="togglePreview()" color="indigo" >Preview</Button>
         <Button v-else @click="togglePreview()" color="indigo" >Edit</Button>
         <Button v-if="preview" @click="publish()" color="indigo" filled>Publish</Button>

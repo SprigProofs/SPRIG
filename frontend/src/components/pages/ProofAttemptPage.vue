@@ -228,13 +228,12 @@ const costToChallenge = computed(() => params.value?.costToChallenge(attempt.val
 
 const showPreviousDefinitions = ref(false);
 
-const actions = [];
-// const actions = computed(() => instance.value?.actions(attempt.value).map(action => {
-//   return {
-//     open: true,
-//     ...action,
-//   };
-// }));
+const actions = computed(() => instance.value?.actions(attempt.value).map(action => {
+  return {
+    open: true,
+    ...action,
+  };
+}));
 
 const isMachine = computed(() => attempt.value.height == 0);
 </script>
