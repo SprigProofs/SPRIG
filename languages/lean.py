@@ -10,6 +10,7 @@ REGEX = r'(theorem|lemma|example)\s([^\s]*)\s\(.*\)\s:\s(.*)\s:='
 DEV = os.environ.get("DEV", "").lower() in ("true", "1", "yes", "y'")
 DUPLICATE_TOKENS = ['theorem', 'lemma', 'example', ':=']
 
+
 class Lean4(Language):
     """
     Language that represents Lean proofs.
@@ -41,7 +42,9 @@ class Lean4(Language):
         # Call lean, potentially in a container
         isValid = False
         if DEV:
-            out = subprocess.Popen(['lean', f'{os.getcwd()}/tmp_file{random_id}'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            out = subprocess.Popen(['lean', f'{os.getcwd()}/tmp_file{random_id}'],
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.STDOUT)
             stdout, _ = out.communicate()
 
             isValid = out.returncode == 0
@@ -49,12 +52,14 @@ class Lean4(Language):
         else:
             feedback = self.docker_client.containers.run(
                 'sprig/lean4', ['/bin/sh', '-c', '/root/.elan/bin/lean /tmp_file ; echo $?'],
-                volumes={f'{os.getcwd()}/tmp_file{random_id}': {
-                    'bind': '/tmp_file',
-                    'mode': 'ro'
-                }},
+                volumes={
+                    f'{os.getcwd()}/tmp_file{random_id}': {
+                        'bind': '/tmp_file',
+                        'mode': 'ro'
+                    }
+                },
                 remove=True).decode()
-            
+
             isValid = int(feedback.strip().split('\n')[-1]) == 0
             feedback = '\n'.join(feedback.strip().split('\n')[:-1])
 
@@ -177,7 +182,7 @@ class Lean4(Language):
         for token in DUPLICATE_TOKENS:
             assert all([
                 len(re.findall(f"{token}",
-                            attempt[attempt_starts[i].end():attempt_ends[i].start()])) <= 1
+                               attempt[attempt_starts[i].end():attempt_ends[i].start()])) <= 1
                 for i in range(len(attempt_starts))
             ]), 'Several theorems between the same markers pair'
 
