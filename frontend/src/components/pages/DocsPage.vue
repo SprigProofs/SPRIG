@@ -21,7 +21,11 @@
     </div>
 
     <div class="docblock">
-        <h2>Lean</h2>
+        <h2>Lean 4</h2>
+
+        <h3>Root question</h3>
+        <h3>Proof attempt</h3>
+        <h3>Machine proof</h3>
     </div>
 
     <div class="docblock">

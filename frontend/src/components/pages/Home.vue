@@ -124,7 +124,7 @@
 
                     <div></div>
                 <a href="mailto:info@sprig.ch"
-                    class="flex flex-col items-center mt-2 mr-6 border-2 border-slate-500 bg-white py-3 px-6 shadow
+                    class="flex flex-col items-center mt-2 mr-6 border-2 border-black bg-white py-3 px-6 shadow
                     hover:shadow-md transition hover:bg-blue-50 ">
                     <span class="font-semibold">Work together</span>
                     <span class="text-sm text-gray-600">info@sprig.ch</span>

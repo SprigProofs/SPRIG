@@ -65,19 +65,15 @@
 
       </div>
 
-      <div v-if="!proofSent" class="flex space-x-4 justify-end">
+      <div v-if="proofSent" class="flex space-x-4 justify-end">
         <Button v-if="!preview" @click="togglePreview()" color="indigo" >Preview</Button>
         <Button v-else @click="togglePreview()" color="indigo" >Edit</Button>
         <Button v-if="preview" @click="publish()" color="indigo" filled>Publish</Button>
       </div>
       <div v-else class="flex justify-end">
-        <span class="rounded py-2 px-4 bg-indigo-500 text-white cursor-not-allowed">
-          <svg class="inline animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-          Compiling proof...
-        </span>
+          <LoadingIndicator>
+            Submiting proof...
+          </LoadingIndicator>
       </div>
     </div>
 
@@ -90,7 +86,7 @@
 import _ from 'lodash';
 import { computed, nextTick, provide, reactive, ref } from 'vue';
 import { Challenge, Sprig, copy, ProofAttempt, Status, linkTo } from '../../sprig';
-import { Button, SlideOver } from '../small';
+import { Button, SlideOver, LoadingIndicator } from '../small';
 import { store } from '../../store';
 import LANGS from '../languages';
 import ProofAttemptPageVue from '../pages/ProofAttemptPage.vue';
