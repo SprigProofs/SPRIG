@@ -82,6 +82,7 @@ class Lean4(Language):
             challenge_start = challenge_starts[chal_nb]
 
             proof_elements.append(proof_attempt[:challenge_start.start()])
+        proof_elements.reverse()
         proof_elements.append(proof)
 
         # Validate proof with lean
