@@ -9,6 +9,8 @@ from typing import Dict, List, NewType, Optional
 REGEX = r'(theorem|lemma|example)\s([^\s]*)\s\(.*\)\s:\s(.*)\s:='
 DEV = os.environ.get("DEV", "").lower() in ("true", "1", "yes", "y'")
 DUPLICATE_TOKENS = ['theorem', 'lemma', 'example', ':=']
+OPENING_TAG = '--! SPRIG Claim'
+CLOSING_TAG = '--! Claim'
 
 class Lean4(Language):
     """
@@ -71,7 +73,7 @@ class Lean4(Language):
         # Accumulate content of proof, ignoring challenged elements and what follows them
         proof_elements = []
         for proof_attempt, chal_nb in branch:
-            challenge_starts = list(re.compile('-- chal').finditer(proof_attempt))
+            challenge_starts = list(re.compile(OPENING_TAG).finditer(proof_attempt))
             challenge_start = challenge_starts[chal_nb]
 
             proof_elements.append(proof_attempt[:challenge_start.start()])
@@ -85,13 +87,12 @@ class Lean4(Language):
         """
         Check that a proof attempt answers the corresponding challenge
         """
-
         # Recover text of challenged proof attempt, and claim position
         proof_attempt, chal_nb = branch[-1] if len(branch) > 0 else (root_question, 0)
 
         # Recover challenged portion
-        challenge_starts = list(re.compile('-- chal').finditer(proof_attempt))
-        challenge_ends = list(re.compile('-- endchal').finditer(proof_attempt))
+        challenge_starts = list(re.compile(OPENING_TAG).finditer(proof_attempt))
+        challenge_ends = list(re.compile(CLOSING_TAG).finditer(proof_attempt))
 
         challenge_start = challenge_starts[chal_nb].end() + 1
         challenge_end = challenge_ends[chal_nb].start()
@@ -101,9 +102,8 @@ class Lean4(Language):
         assert challenged_thm is not None, "The parent challenged cannot be parsed. Please report this, it should not happen."
         challenged_header = challenged_text[challenged_thm.start():challenged_thm.end() + 1]
 
-        # TODO: improve this check
         # Verify that challenged claim is proven again
-        assert challenged_header.strip() in proof, "The challenged claim is not proven again."
+        assert any([line.strip().startswith(challenged_header.strip()) for line in proof.split('\n')]), "The challenged claim is not proven again."
 
         return True
 
@@ -152,12 +152,12 @@ class Lean4(Language):
         self.check_answer(root_question, branch, attempt)
 
         # Read attempt
-        attempt_starts = list(re.compile('-- chal').finditer(attempt))
-        attempt_ends = list(re.compile('-- endchal').finditer(attempt))
+        attempt_starts = list(re.compile(OPENING_TAG).finditer(attempt))
+        attempt_ends = list(re.compile(CLOSING_TAG).finditer(attempt))
 
         # Verify coherence of markers
         assert len(attempt_starts) == len(
-            attempt_ends), 'The number of -- chal and -- endchal markers is not the same.'
+            attempt_ends), 'The number of OPENING_TAG and CLOSING_TAG markers is not the same.'
         assert all([
             attempt_starts[i].end() < attempt_ends[i].start() for i in range(len(attempt_starts))
         ]), 'Mismatch of challenge markers.'
@@ -203,8 +203,8 @@ class Lean4(Language):
         #assert lean_validate(root_question), "This is not a valid lean file"
 
         # Get markers
-        attempt_starts = list(re.compile('-- chal').finditer(root_question))
-        attempt_ends = list(re.compile('-- endchal').finditer(root_question))
+        attempt_starts = list(re.compile(OPENING_TAG).finditer(root_question))
+        attempt_ends = list(re.compile(CLOSING_TAG).finditer(root_question))
 
         # Verify there is only one, it contains one sorry and no other sorries outside of marks
         assert len(attempt_starts) == len(
@@ -230,8 +230,8 @@ class Lean4(Language):
         """Return the number of points on which a proof can be challenged.
 
         This is called only with syntaxic validity checked."""
-        attempt_starts = list(re.compile('-- chal').finditer(proof))
-        attempt_ends = list(re.compile('-- endchal').finditer(proof))
+        attempt_starts = list(re.compile(OPENING_TAG).finditer(proof))
+        attempt_ends = list(re.compile(CLOSING_TAG).finditer(proof))
 
         assert len(attempt_starts) == len(attempt_ends), 'Sanity check'
 

@@ -802,21 +802,21 @@ def play_tictactoe(params: Parameters) -> Sprig:
 def play_lean(params: Parameters) -> Sprig:
     sprig = Sprig.start(
         Lean4().dump(), params, Address("Diego"), """
--- chal
+--! SPRIG Claim
 theorem this_add_comm (m n : Nat) : m + n = n + m := sorry
--- endchal""", """
+--! Claim""", """
 open Nat
 
 example : m + 0 = m := add_zero m
 example : m + succ n = succ (m + n) := add_succ m n
 
--- chal
+--! SPRIG Claim
 theorem this_succ_add (n m : Nat) : succ n + m = succ (n + m) := sorry
--- endchal
+--! Claim
 
--- chal
+--! SPRIG Claim
 theorem this_add_comm (m n : Nat) : m + n = n + m := sorry
--- endchal
+--! Claim
 """)
 
     time_passes(sprig)
@@ -831,9 +831,9 @@ theorem this_add_comm (m n : Nat) : m + n = n + m := sorry
 
     a1 = sprig.answer(
         c1.hash, DIEGO, """
-        -- chal
+        --! SPRIG Claim
         theorem this_succ_add (n m : Nat) : succ n + m = succ (n + m) := sorry
-        -- endchal
+        --! Claim
         """)
 
     a2 = sprig.answer_low_level(
@@ -852,9 +852,9 @@ theorem this_add_comm (m n : Nat) : m + n = n + m := sorry
 
     a3 = sprig.answer(
         c3.hash, DIEGO, """
-        -- chal
+        --! SPRIG Claim
         theorem this_succ_add (n m : Nat) : succ n + m = succ (n + m) := sorry
-        -- endchal
+        --! Claim
         """)
 
     time_passes(sprig)
@@ -865,9 +865,9 @@ theorem this_add_comm (m n : Nat) : m + n = n + m := sorry
 
     a4 = sprig.answer(
         c4.hash, DIEGO, """
-        -- chal
+        --! SPRIG Claim
         theorem this_succ_add (n m : Nat) : succ n + m = succ (n + m) := sorry
-        -- endchal
+        --! Claim
         """)
 
     time_passes(sprig)
