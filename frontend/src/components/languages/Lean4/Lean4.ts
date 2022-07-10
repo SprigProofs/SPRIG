@@ -1,6 +1,5 @@
-import dedent from 'dedent';
 import _ from 'lodash';
-import { ProofAttempt, Challenge, Sprig } from "../../../sprig";
+import { ProofAttempt, Challenge, Sprig, dedent } from "../../../sprig";
 
 const CHALENGE_START = "-- chal";
 const CHALENGE_END = "-- endchal";
@@ -37,7 +36,8 @@ function getBlocks(proof: string): Block[] {
             let end = proof.indexOf(CHALENGE_START, i);
             if (end === -1) end = proof.length;
 
-            const content =dedent(proof.substring(i, end));
+            const content = dedent(proof.substring(i, end));
+            console.log(content, proof)
             if (content.length > 0) {
                 blocks.push({
                     start: i,

@@ -12,3 +12,4 @@ export { default as Tooltip } from './Tooltip.vue';
 export { default as Button } from './Button.vue';
 export { default as DurationPicker } from './DurationPicker.vue';
 export { default as SlideOver } from './SlideOver.vue';
+export { default as LoadingIndicator } from './LoadingIndicator.vue';

@@ -33,7 +33,6 @@
 </template>
 
 <script setup lang="ts">
-import dedent from 'dedent';
 import _ from 'lodash';
 import { computed, nextTick, provide, ref } from 'vue';
 import { Challenge, Sprig, copy, ProofAttempt, Status, linkTo } from '../../sprig';

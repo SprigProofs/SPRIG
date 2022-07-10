@@ -1,18 +1,31 @@
 <template>
-<div class="w-full bg-slate-100 flex flex-col p-8">
+<div class="w-full
+    bg-gradient-to-br from-blue-50 to-purple-50
+    #bg-slate-100 flex flex-col p-8">
 <article class="w-full max-w-[calc(65ch+2rem)] prose self-center space-y-4">
 
     <div class="docblock">
         <h1>Documentation</h1>
-        <p> Wow such empty...  </p>
+
     </div>
 
     <div class="docblock">
         <h2>Sprig glossary</h2>
+        <ul>
+            <li v-for="word in glossaryOrder" :key="word" :id="word">
+                <b class="mr-2">{{ word }}</b>
+                {{ glossary[word] }}
+            </li>
+        </ul>
+
     </div>
 
     <div class="docblock">
-        <h2>Lean</h2>
+        <h2>Lean 4</h2>
+
+        <h3>Root question</h3>
+        <h3>Proof attempt</h3>
+        <h3>Machine proof</h3>
     </div>
 
     <div class="docblock">
@@ -137,6 +150,77 @@
 </div>
 
 </template>
+
+<script setup lang="ts">
+const glossary = {
+    "Instance": `
+        A SPRIG instance is the tree that contains the whole debate about a root question.
+        It contains all the the related proof attempts, claim and challenges.
+        Two different instances are always independed from each other.
+    `,
+    "Root question": `
+        Every instance is started with a root question, which announcehat needs to be proven.
+    `,
+    "Proof Attempt": `
+        A proof attempt answers a challenge or the root question by givin more details
+        about why a given claim should be true.
+        Proof attempts can be either be partial formal proofs and contain gaps
+        that can be challenged, or they can be complete and are then called machine proofs.
+    `,
+    "Machine proof": `
+        A machine proof is a complete proof attempt, whose
+        truth value can be determined with certainty by a machine.
+        Machine proofs can thus not be challenged.
+    `,
+    "Claim": `
+        A claim is a part of a proof attempt that has not been formally proven,
+        and can be challenged.
+    `,
+    "Challenge": "Alternative name for a claim, used when that claim has been challenged.",
+    "SPRIG Tree": "Alternative name for a SPRIG instance, with emphasis on the tree structure.",
+    "SPRIG": `
+        Short for Smart Proofs via Recursive Information Gathering,
+        it is the name of the protocol used on this website.
+    `,
+
+    "Challenged": `
+        Status of a claim that has been challenged by locking a bounty.
+        This bounty is either given to the first person that can prove
+        the claim (i.e. submit a proof attempt that is ultimately validated),
+        or is refunded to the challenger once every proof attempt have been rejected
+        and the time for submiting them is over.
+        A proof attempt is challenged when one of its claims is challenged
+        and none is rejected.
+    `,
+    "Unchallenged": `
+        Status of a claim that has not been challenged.
+        An Unchallenged claim becomes validated once the time for
+        starting challenges is over.
+        A proof attempt is unchallenged when all its claims are unchallenged.
+    `,
+    "Validated": `
+        A claim is considered true and has the status of validated
+        either if it is a correct machine proof,
+        if it was not challenged in the given time,
+        or if it was challenged and the challenge was answered
+        by a correct proof attempt.
+        A proof attempt is validated when all its claims are validated.
+    `,
+    "Rejected": `
+        A claim is considered false and has the status of rejected
+        if is a incorrect machine proof or
+        if is challenged and the challenge
+        does not receive a correct proof attempt in the allowed time.
+        A proof attempt is rejected when one of its claims is rejected.
+    `,
+    "Decided": `
+        A claim, challenge or proof attempt is decided
+        if it has the status of validated or rejected.
+        Once decided, no more changes can be made to it.
+    `,
+};
+const glossaryOrder = Object.keys(glossary).sort();
+</script>
 
 <style>
 code::after, code::before {

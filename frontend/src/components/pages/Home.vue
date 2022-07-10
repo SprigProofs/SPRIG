@@ -59,7 +59,7 @@
             </li>
         </ul>
 
-        <div v-if="showEverything" class=" flex flex-col space-y-8 ">
+        <div v-if="showEverything" class=" flex flex-col space-y-8 mb-12">
             <div v-for="content in texts" :key="content.title"
                 class="even:self-end even:text-right odd:border-l even:border-r border-t-small border-black p-4">
                 <h2 class="font-title font-bold text-2xl #text-orange-600
@@ -69,7 +69,7 @@
             </div>
         </div>
 
-        <div class="relative pb-16 mx-auto flex flex-col items-center mt-12 bg-white p-4 w-fit text-center">
+        <div class="relative pb-16 mx-auto flex flex-col items-center bg-white p-4 w-fit text-center">
             <h2 class="text-3xl font-extrabold tracking-tight text-gray-900 md:text-4xl">
                 <span class="block">Ready to dive in?</span>
                 <span class="block text-orange-600">Explore open challenges today.</span>
@@ -124,7 +124,7 @@
 
                     <div></div>
                 <a href="mailto:info@sprig.ch"
-                    class="flex flex-col items-center mt-2 mr-6 border-2 border-slate-500 bg-white py-3 px-6 shadow
+                    class="flex flex-col items-center mt-2 mr-6 border-2 border-black bg-white py-3 px-6 shadow
                     hover:shadow-md transition hover:bg-blue-50 ">
                     <span class="font-semibold">Work together</span>
                     <span class="text-sm text-gray-600">info@sprig.ch</span>
@@ -133,11 +133,13 @@
         </div>
     </div>
 
-    <div class="mt-20 mb-8 text-gray-500 text-center">
+    <div v-if="showEverything"
+        class="mt-20 mb-8 text-gray-500 text-center">
         You've reached the bottom of the page 🎉
         <br>
         It is now time to <router-link to="/search" class="underline hover:text-purple-500">explore</router-link>!
     </div>
+    <div v-else class="mt-28"></div>
 
 </div>
 </template>

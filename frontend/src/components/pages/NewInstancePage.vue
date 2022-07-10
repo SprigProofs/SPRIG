@@ -7,6 +7,8 @@ import { linkTo, Parameters, Unit } from '../../sprig';
 import { store } from '../../store';
 import Languages from '../languages';
 import DurationPicker from '../small/DurationPicker.vue';
+import Button from '../small/Button.vue';
+import LoadingIndicator from '../small/LoadingIndicator.vue';
 
 const router = useRouter();
 
@@ -46,6 +48,9 @@ const selectedLanguage = ref("Lean4");
 const maxProofSize = ref(10000);
 const root_question = ref("");
 const proof_attempt = ref("");
+const costToPublish = computed(() => costs[costs.length - 1].downstake);
+const isSubmitting = ref(false);
+
 
 function newCostRow(height: number) {
   costs.splice(height, 0, {
@@ -100,7 +105,7 @@ const invalidInputs = computed(() => {
   });
 
   if (root_question.value === "")
-    fails.push("And an initial question");
+    fails.push("Add an initial question");
 
   if (proof_attempt.value === "")
     fails.push("Add a proof attempt");
@@ -109,6 +114,7 @@ const invalidInputs = computed(() => {
 });
 
 function createInstance() {
+  isSubmitting.value = true;
   const upstakes = costs.map(row => row.upstake);
   const downstakes = costs.map(row => row.downstake);
   const questionBounties = costs.map(row => row.questionBounty);
@@ -130,6 +136,8 @@ function createInstance() {
     proof_attempt.value,
   ).then(instance => {
     nextTick(() => router.push(linkTo(instance)));
+  }).catch(error => {
+    isSubmitting.value = false;
   });
 }
 
@@ -346,10 +354,14 @@ function createInstance() {
                       <li v-for="fail in invalidInputs" class="">{{ fail }}</li>
                     </ul>
                   </div>
-                  <button type="submit" @click.prevent="createInstance()" :disabled="invalidInputs.length > 0" class="flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-sm text-white bg-indigo-600
-                    hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500
-                    disabled:bg-gray-400 disabled:cursor-not-allowed
-                    ">Publish</button>
+                  <Button v-if="!isSubmitting"
+                    type="submit" color="indigo" filled
+                    @click.prevent="createInstance()"
+                    :disabled="invalidInputs.length > 0"
+                    >Publish and lock&nbsp;<Price :amount="costToPublish"/></Button>
+                  <LoadingIndicator v-else>
+                    Submiting instance...
+                  </LoadingIndicator>
                 </div>
               </div>
             </form>

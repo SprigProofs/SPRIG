@@ -4,11 +4,20 @@
     <div class="max-w-7xl mx-auto ">
       <header class="mx-8 mt-8">
 
+        <div class="flex mb-2">
+            <StatusTag :status="attempt.status" />
+            <LanguageTag :lang="instance.language" class="ml-2" />
+            <div class="ml-4 font-bold ">
+                Bounty
+                <Price :amount="attempt.possibleReward(params)" />
+            </div>
+        </div>
+
         <div class="lg:flex lg:items-center lg:justify-between">
           <div class="flex-1 min-w-0">
-            <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
+            <h1 class="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
               {{ lang.title(attempt, instance) }}
-            </h2>
+            </h1>
             <div class="mt-1 flex flex-col sm:flex-row sm:flex-wrap sm:mt-0 sm:space-x-6">
               <div class="mt-2 flex items-center text-sm text-gray-500">
                 <v-icon name="md-person-round" class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" aria-hidden="true" />
@@ -175,7 +184,7 @@
           <Parameters :params="params" :highlight="attempt.height" />
         </el-collapse-item>
         <el-collapse-item title="Raw data">
-          <pre class="text-sm text-gray-500 whitespace-pre-wrap">{{ attempt }}</pre>
+          <pre class="text-sm text-gray-500 whitespace-pre overflow-scroll">{{ attempt }}</pre>
         </el-collapse-item>
       </el-collapse>
     </section>
@@ -195,6 +204,7 @@ import { useRoute, useRouter } from 'vue-router';
 import Languages from '../languages';
 import { computed } from '@vue/reactivity';
 import Embed404 from '../medium/Embed404.vue';
+import LanguageTag from '../small/LanguageTag.vue';
 
 
 const props = withDefaults(defineProps<{
@@ -218,12 +228,13 @@ const costToChallenge = computed(() => params.value?.costToChallenge(attempt.val
 
 const showPreviousDefinitions = ref(false);
 
-const actions = computed(() => instance.value?.actions(attempt.value).map(action => {
-  return {
-    open: true,
-    ...action,
-  };
-}));
+const actions = [];
+// const actions = computed(() => instance.value?.actions(attempt.value).map(action => {
+//   return {
+//     open: true,
+//     ...action,
+//   };
+// }));
 
 const isMachine = computed(() => attempt.value.height == 0);
 </script>
