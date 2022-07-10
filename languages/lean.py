@@ -10,7 +10,7 @@ REGEX = r'(theorem|lemma|example)\s([^\s]*)\s\(.*\)\s:\s(.*)\s:='
 DEV = os.environ.get("DEV", "").lower() in ("true", "1", "yes", "y'")
 DUPLICATE_TOKENS = ['theorem', 'lemma', 'example', ':=']
 OPENING_TAG = '--! SPRIG Claim'
-CLOSING_TAG = '--! Claim'
+CLOSING_TAG = '--! Claim end'
 
 
 class Lean4(Language):

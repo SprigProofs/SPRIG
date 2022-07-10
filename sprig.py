@@ -804,7 +804,7 @@ def play_lean(params: Parameters) -> Sprig:
         Lean4().dump(), params, Address("Diego"), """
 --! SPRIG Claim
 theorem this_add_comm (m n : Nat) : m + n = n + m := sorry
---! Claim""", """
+--! Claim end""", """
 open Nat
 
 example : m + 0 = m := add_zero m
@@ -812,11 +812,11 @@ example : m + succ n = succ (m + n) := add_succ m n
 
 --! SPRIG Claim
 theorem this_succ_add (n m : Nat) : succ n + m = succ (n + m) := sorry
---! Claim
+--! Claim end
 
 --! SPRIG Claim
 theorem this_add_comm (m n : Nat) : m + n = n + m := sorry
---! Claim
+--! Claim end
 """)
 
     time_passes(sprig)
@@ -833,7 +833,7 @@ theorem this_add_comm (m n : Nat) : m + n = n + m := sorry
         c1.hash, DIEGO, """
         --! SPRIG Claim
         theorem this_succ_add (n m : Nat) : succ n + m = succ (n + m) := sorry
-        --! Claim
+        --! Claim end
         """)
 
     a2 = sprig.answer_low_level(
@@ -854,7 +854,7 @@ theorem this_add_comm (m n : Nat) : m + n = n + m := sorry
         c3.hash, DIEGO, """
         --! SPRIG Claim
         theorem this_succ_add (n m : Nat) : succ n + m = succ (n + m) := sorry
-        --! Claim
+        --! Claim end
         """)
 
     time_passes(sprig)
@@ -867,7 +867,7 @@ theorem this_add_comm (m n : Nat) : m + n = n + m := sorry
         c4.hash, DIEGO, """
         --! SPRIG Claim
         theorem this_succ_add (n m : Nat) : succ n + m = succ (n + m) := sorry
-        --! Claim
+        --! Claim end
         """)
 
     time_passes(sprig)
