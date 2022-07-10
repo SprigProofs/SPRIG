@@ -4,6 +4,7 @@ import User from './User.vue';
 import { Time, Duration } from '../small';
 import UidTag from '../small/UidTag.vue';
 import { nextTick, ref, watch } from 'vue';
+import Algo from '../small/Algo.vue';
 
 
 const props = withDefaults(defineProps<{
@@ -77,7 +78,8 @@ const icon = {
     [Action.MACHINE_REJECTED]: rejectedIcon,
 }[props.action.type];
 
-const collapsable = title && buttonText;
+// I don't this that this is the best way to do this.
+const collapsable = false && title && buttonText;
 
 function takeAction() {
 
@@ -112,7 +114,9 @@ function toggle() {
           :class="{ '-rotate-90': collapsed }" />
 
         <span v-if="action.type === Action.ROOT_CREATED">
-          <User :name="instance.author()" /> created a new SPRIG instance with a bounty of
+          <User :name="instance.author()" /> created the instance
+          <UidTag :instance="instance" />
+          and locked a bounty of
           <Price :amount="params.downstakes[params.rootHeight-1]" />.
         <!-- </span><span v-else-if="action.type === Action.PARENT_CHALLENGED">
           <User :name="action.author" /> challenged the parent claim
@@ -124,15 +128,21 @@ function toggle() {
           <!-- Note: challenge is always defined here, because ATTEMPT_CREATED does not happen on the root -->
           <UidTag :object="challenge" :instance="instance"/>
           with the <template v-if="attempt.height == 0">machine</template>
-          proof attempt <UidTag :object="attempt" :instance="instance" />
+          proof attempt <UidTag :object="attempt" :instance="instance" />,
           <template v-if="attempt.height > 0">
-            and a bounty of <Price :amount="params.downstakes[attempt.height]" />
+            locking a bounty of <Price :amount="params.downstakes[attempt.height]" />
+            and an upstake of <Price :amount="params.upstakes[attempt.height]" />
           </template>
+          <template v-else>
+            paying <Price :amount="params.verificationCost" />
+            for verfication and
+            locking an upstake of <Price :amount="params.upstakes[attempt.height]" />
+          </template>.
         </span><span v-else-if="action.type === Action.CHALLENGE_ACTIVATED">
           <User :name="challenge.author" /> opened challenge
           <UidTag :object="challenge" :instance="instance"/> on <UidTag :object="attempt" :instance="instance"/>
           with a bounty of
-          <Price :amount="params.costToChallenge(attempt)" />
+          <Price :amount="params.questionBounties[challenge.height]" />.
         <!-- </span><span v-else-if="action.type === Action.CHALLENGE_ANSWERED">
           Challenge
           <UidTag :object="action.challenge" :instance="instance" /> was answered by
@@ -140,21 +150,46 @@ function toggle() {
           with
           <UidTag :object="action.attempt" :instance="instance" :tooltip="true" /> -->
         </span><span v-else-if="action.type === Action.AUTO_VALIDATION">
-          Time for questions has elapsed for <UidTag :object="instance.proofs[action.target[0].parent]" :instance="instance"/>, and no new challenges can be added.
+          Time for questions has elapsed for <UidTag :object="instance.proofs[action.target[0].parent]" :instance="instance"/>,
+          so <span v-for="(claim, i) in action.target" class="mr-1">
+            <UidTag :object="claim" :instance="instance" />
+            <span v-if="i < action.target.length - 2">, </span>
+            <span v-else-if="i == action.target.length - 2"> and </span>
+          </span>
+          <template v-if="action.target.length == 1">has</template>
+          <template v-else>have</template>
+          been automatically validated
+          and no new challenges can be added.
         </span><span v-else-if="action.type === Action.MACHINE_REJECTED">
-          The machine proof <UidTag :object="attempt" :instance="instance"/> was rejected.
+          The machine proof <UidTag :object="attempt" :instance="instance"/> was rejected
+          and <User :name="challenge.author" /> won
+          the upstake of <Price :amount="params.upstakes[attempt.height]" />.
+
         </span><span v-else-if="action.type === Action.MACHINE_VALIDATED">
-          The machine proof <UidTag :object="attempt" :instance="instance"/> was accepted.
+          The machine proof <UidTag :object="attempt" :instance="instance"/> was accepted
+          and <User :name="attempt.author" /> was refunded their stake
+          of <Price :amount="params.upstakes[attempt.height]" />.
         </span><span v-else-if="action.type === Action.ATTEMPT_REJECTED">
           <UidTag :object="attempt" :instance="instance"/> was rejected by challenge <UidTag :object="challenge" :instance="instance"/>.
+          <User :name="challenge.author" /> won
+          <User :name="attempt.author" />'s bounty of
+          <Price :amount="params.downstakes[attempt.height]" />.
+          <template v-if="!attempt.isRoot()">
+            The upstake of <Price :amount="params.upstakes[attempt.height]" /> goes to <User :name="instance.challenges[attempt.parent].author" />.
+          </template>
         </span><span v-else-if="action.type === Action.ATTEMPT_VALIDATED">
-          <UidTag :object="attempt" :instance="instance"/> was validated.
+          <UidTag :object="attempt" :instance="instance"/> was validated
+          and <User :name="attempt.author" /> was refunded their bounty
+          of <Price :amount="params.downstakes[attempt.height]" />.
         </span><span v-else-if="action.type === Action.CHALLENGE_REJECTED">
           Challenge <UidTag :object="challenge" :instance="instance"/> was not proven.
         </span><span v-else-if="action.type === Action.CHALLENGE_VALIDATED">
           Challenge <UidTag :object="challenge" :instance="instance"/> was proven
           by <User :name="action.target.author" />
           in <UidTag :object="action.target" :instance="instance"/>.
+          They win <User :name="challenge.author" />'s bounty of
+          <Price :amount="params.questionBounties[challenge.height]" />.
+
         </span><span v-else>
           {{ action.type }} needs more work...
         </span>
