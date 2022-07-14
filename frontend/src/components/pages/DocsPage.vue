@@ -53,14 +53,15 @@
         <p>
             Claims whose proof is not provided must be valid Lean4 statements,
             whose proof uses the <code>sorry</code> Lean tactic. Furthermore, such a claim
-            should be:
+            should:
             <ul>
                 <li>
-                    Surrounded by <code>--! SPRIG Claim</code> before and <code>--! Claim end</code>
+                    Be surrounded by <code>--! SPRIG Claim</code> before and <code>--! Claim end</code>
                     after Lean comments, each on a separate line.
                 </li>
                 <li>
-                    Of the form
+                    Start with <code>theorem</code>, <code>lemma</code> or <code>example</code>
+                    and end with sorry. More formally:
                     <pre>[theorem|lemma|example] name (arguments) : statement := sorry</pre>
                 </li>
 
@@ -82,6 +83,7 @@
 
         <h3>Proof attempts</h3>
 
+        <p>
             A proof attempt is a response to a challenged claim, whose goal is
             to provide more details towards the formal proof. A proof attempt is
             a valid piece of Lean4 code, that may rely on definitions and
@@ -93,14 +95,28 @@
             challenge, and the header string (from the type of proposotion to
             the `:=` separator) should appear exactly as is in the proof
             attempt.
+        </p>
+
+        <h3>Which claims can be used in proof attempts?</h3>
+        <p>
+            In order to reconstruct the full lean code of a proof attempt, the protocol
+            explores the SPRIG tree from the root question to the proof attempt, collecting
+            the code of each proof attempt until the challenged claim that leads to the
+            branch we are looking at. Therefore, you can use anything that is in a proof
+            attempt up in the tree, if it is before a challenge of the branch you are
+            currently on. For instance, if the proof attempt above the one you are
+            submitting contains 3 claims, and you are reponding to a challenge on the second
+            one, you can use the first claim but not the third one.
+        </p>
 
         <h3>Machine-level proof</h3>
-
+        <p>
             Machine-level proofs are special types of proof attempts. They
             should still answer to the challenged claim, but this time they
             should be fully proven. They can still use previous definitions and
             lemmas, but any proposition introduced in the proof attempt should
             be fully proven, without resorting to the `sorry` tactic.
+        </p>
 
     </div>
 
