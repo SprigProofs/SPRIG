@@ -108,9 +108,13 @@ function attemptTemplate(challenge: string, instance: Sprig): string {
 -- they come from the previous claims.
 -- However, modify and submit only what is below this line --
 
+--! SPRIG Claim
 `;
     const challengeStatement = getChallenges(attempt.proof)[attempt.challenges.indexOf(challenge)].content;
-    return collectPreviousDefs(instance, challenge, true) + separator + challengeStatement;
+    return collectPreviousDefs(instance, challenge, true)
+        + separator
+        + challengeStatement
+        + "\n--! Claim end";
 }
 
 function challengeCount(text: string): number {

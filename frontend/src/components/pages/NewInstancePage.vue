@@ -321,7 +321,7 @@ function createInstance() {
 
                   <div>
                     <label for="about" class="block text-sm font-medium text-gray-700">
-                      Initial question
+                      Root claim
                     </label>
                     <div class="mt-1">
                       <textarea id="about" name="about" rows="3" v-model="root_question"

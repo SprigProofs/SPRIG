@@ -180,7 +180,9 @@ class Challenge {
     }
     costAddAttempt(params: Parameters, isMachine: boolean = false): number | null {
         const attemptHeight = this.height - 1;
-        if (isMachine || attemptHeight == 0) {
+        if (this.status != Status.CHALLENGED) {
+            return null;
+        } else if (isMachine || attemptHeight == 0) {
             return params.verificationCost + params.upstakes[attemptHeight];
         } else if (this.height >= params.rootHeight || this.height <= 0) {
             return null;
