@@ -140,7 +140,7 @@
           </ol>
         </section>
 
-        <section class="flex flex-col flex-grow ">
+        <section class="flex flex-col w-full">
           <h2 class="small-title mb-2">Proof attempt</h2>
 
           <!-- <button

@@ -22,10 +22,86 @@
 
     <div class="docblock">
         <h2>Lean 4</h2>
+        <p>
+            We introduce here the syntax and semantics used when providing Lean
+            proofs. The version of Lean that is used is **Lean4**, though it could
+            be adaptated for earlier versions. We impose certain restrictions on top
+            of the Lean language in order to ease both the backend soundness checks
+            and the understanding of the protocol by the users.
+        </p>
 
         <h3>Root question</h3>
-        <h3>Proof attempt</h3>
-        <h3>Machine proof</h3>
+
+        <p>
+            A root question should be a valid Lean 4 file, possibly introducing
+            definitions and other useful elements in stating the desired
+            property, and contain a single challengeable element (see format
+            below), whose validity is claimed without being formally proven.
+        </p>
+
+        <h3>Claims</h3>
+
+        <p>
+            A proof attempt contain several propositions that aren't
+            formally proven. These propositions whose proof isn't provided are
+            the points of the proof attempt that can then be challenged by other
+            users if they are skeptical.
+            In order to ease the identification of
+            these challenge points and the soundness checks, we impose the
+            following format on these challengeable points.
+        </p>
+        <p>
+            Claims whose proof is not provided must be valid Lean4 statements,
+            whose proof uses the <code>sorry</code> Lean tactic. Furthermore, such a claim
+            should be:
+            <ul>
+                <li>
+                    Surrounded by <code>--! SPRIG Claim</code> before and <code>--! Claim end</code>
+                    after Lean comments, each on a separate line.
+                </li>
+                <li>
+                    Of the form
+                    <pre>[theorem|lemma|example] name (arguments) : statement := sorry</pre>
+                </li>
+
+            </ul>
+
+            Furthermore :
+            <ul>
+                <li>
+                    Proof outside of marker pairs should be fully proven, i.e not use the `sorry` tactic
+                </li>
+                <li>
+                    The space between a pair of markers should contain a single statement of the form above
+                </li>
+                <li>
+                    Pairs of markers shouldn't be nested or crossed.
+                </li>
+            </ul>
+        </p>
+
+        <h3>Proof attempts</h3>
+
+            A proof attempt is a response to a challenged claim, whose goal is
+            to provide more details towards the formal proof. A proof attempt is
+            a valid piece of Lean4 code, that may rely on definitions and
+            propositions introduced above it in the SPIG tree. A proof attempt
+            may introduce new lemmas or propositions, possibly while leaving
+            these new propositions unproven if the attempt isn't at the lowest
+            level; but should prove the challenge it responds to : This means
+            the proof attempt should prove the exact statement of its parent
+            challenge, and the header string (from the type of proposotion to
+            the `:=` separator) should appear exactly as is in the proof
+            attempt.
+
+        <h3>Machine-level proof</h3>
+
+            Machine-level proofs are special types of proof attempts. They
+            should still answer to the challenged claim, but this time they
+            should be fully proven. They can still use previous definitions and
+            lemmas, but any proposition introduced in the proof attempt should
+            be fully proven, without resorting to the `sorry` tactic.
+
     </div>
 
     <div class="docblock">

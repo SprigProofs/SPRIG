@@ -1,7 +1,7 @@
 import _ from 'lodash';
 import { ProofAttempt, Challenge, Sprig, dedent } from "../../../sprig";
 
-const CHALENGE_START = "--! SPRIG Claim ";
+const CHALENGE_START = "--! SPRIG Claim";
 const CHALENGE_END = "--! Claim end";
 interface Block {
     start: number,

@@ -178,9 +178,9 @@ class Challenge {
             ? params.questionBounties[this.height]
             : 0;
     }
-    costAddAttempt(params: Parameters): number | null {
+    costAddAttempt(params: Parameters, isMachine: boolean = false): number | null {
         const attemptHeight = this.height - 1;
-        if (attemptHeight == 0) {
+        if (isMachine || attemptHeight == 0) {
             return params.verificationCost + params.upstakes[attemptHeight];
         } else if (this.height >= params.rootHeight || this.height <= 0) {
             return null;
