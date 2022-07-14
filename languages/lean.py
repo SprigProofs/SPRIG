@@ -200,7 +200,7 @@ class Lean4(Language):
         else:
             assert 'sorry' not in attempt, "A machine level proof should not contain a sorry."
 
-        assert self.gather_and_validate(branch, attempt)
+        assert self.gather_and_validate(branch, attempt), "The proof is not valid Lean code"
 
         return True
 
