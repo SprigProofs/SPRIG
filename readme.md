@@ -58,7 +58,7 @@ All dependencies for the web can be installed with
 
 ```shell script
 cd frontend
-npn install
+npm install
 ```
 
 This will install:
