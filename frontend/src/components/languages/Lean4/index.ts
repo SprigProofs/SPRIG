@@ -1,6 +1,6 @@
 import StatementDisplay from './StatementDisplay.vue';
 import ProofDisplay from './ProofDisplay.vue';
-import { title, attemptTemplate, challengeCount } from './Lean4';
+import { title, attemptTemplate, challengeCount, fullText } from './Lean4';
 
 export default {
     name: "Lean4",
@@ -9,5 +9,6 @@ export default {
     attemptTemplate,
     challengeCount,
     StatementDisplay,
-    ProofDisplay
+    ProofDisplay,
+    fullText,
 };

@@ -141,7 +141,14 @@
         </section>
 
         <section class="flex flex-col w-full">
-          <h2 class="small-title mb-2">Proof attempt</h2>
+          <div class="flex justify-between items-center">
+            <h2 class="small-title mb-2">Proof attempt</h2>
+            <div v-if="lang.fullText"
+              class="flex text-gray-700 space-x-1 text-xl">
+                <Button icon="md-copyall" @click="copy(lang.fullText(attempt, instance))">Copy</Button>
+                <Button icon="md-simcarddownload-round" @click="download(`proof${attempt.uid()}.lean`, lang.fullText(attempt, instance))">Download</Button>
+            </div>
+          </div>
 
           <!-- <button
                     v-if="!showPreviousDefinitions"
@@ -194,7 +201,7 @@
 <script setup lang="ts">
 
 import { inject, reactive, ref, watch } from 'vue';
-import { Sprig, Status } from '../../sprig';
+import { copy, download, Sprig, Status } from '../../sprig';
 import { store } from '../../store';
 import { Price, StatusTag, Time } from "../small";
 import User from '../medium/User.vue';

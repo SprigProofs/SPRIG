@@ -1,5 +1,6 @@
 import { api, Parameters, ProofAttempt, Sprig, User } from "./sprig";
-import { reactive, Ref } from "vue";
+import { reactive } from "vue";
+import {  } from "@reach-sh/stdlib"
 
 interface Store {
     instances: Record<string, Sprig>;
@@ -7,6 +8,7 @@ interface Store {
     loaded: boolean;
     fail: boolean;
     user: string;
+    account: null | any;
     reload: () => Promise<void>;
     challenge: (instance: string, challenge: string) => Promise<void>;
     newInstance: (language: string, params: Parameters, rootClaim: string, proof: string) => Promise<Sprig>;
@@ -20,6 +22,7 @@ export const store: Store = reactive<Store>({
     loaded: false,
     fail: false,
     user: 'Diego',
+    account: null,
     async reload() {
         console.log('reload');
         store.fail = false;

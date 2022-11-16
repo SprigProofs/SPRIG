@@ -121,4 +121,9 @@ function challengeCount(text: string): number {
     return getChallenges(text).length;
 }
 
-export { title, attemptTemplate, challengeCount, getBlocks, getChallenges, extractTitle, collectPreviousDefs };
+function fullText(attempt: ProofAttempt, instance: Sprig): string {
+    return (collectPreviousDefs(instance, attempt.parent, true) + "\n" + attempt.proof).trim();
+}
+
+export { title, attemptTemplate, challengeCount, getBlocks, getChallenges,
+extractTitle, collectPreviousDefs, fullText };

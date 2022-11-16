@@ -4,7 +4,7 @@ import { computed, reactive, ref } from 'vue';
 import _ from 'lodash';
 import dayjs from 'dayjs/esm';
 
-import { Status, decided, Sprig, ProofAttempt, Parameters, Challenge, linkTo, SprigObject } from '../../sprig';
+import { Status, decided, Sprig, ProofAttempt, Parameters, Challenge, linkTo, type SprigObject } from '../../sprig';
 import { store } from '../../store';
 import { StatusTag, LanguageTag } from '../small';
 import SprigNodeList from '../medium/SprigNodeList.vue';

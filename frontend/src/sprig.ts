@@ -4,7 +4,7 @@ to the processing of the data.
 */
 
 import _, { at } from "lodash";
-import dayjs, { Dayjs } from 'dayjs/esm';
+import dayjs from 'dayjs/esm';
 import duration from 'dayjs/esm/plugin/duration';
 import relativeTime from 'dayjs/esm/plugin/relativeTime';  // for .humanize(  / fromNow()
 import calendar from 'dayjs/esm/plugin/calendar';  // for .calendar()
@@ -208,7 +208,7 @@ enum Action {
 }
 
 type ActionList = {
-    time: Dayjs,
+    time: dayjs.Dayjs,
     type: Action,
     author?: string,
     cost?: number,
@@ -584,7 +584,7 @@ interface SprigObject {
     key: string;
 }
 
-function copy(text): void {  // TODO: What is the best way to copy stuff ?
+function copy(text: string): void {  // TODO: What is the best way to copy stuff ?
     const textArea = document.createElement("textarea");
     textArea.value = text;
     document.body.appendChild(textArea);
@@ -592,6 +592,19 @@ function copy(text): void {  // TODO: What is the best way to copy stuff ?
     textArea.select();
     document.execCommand('copy')
     document.body.removeChild(textArea)
+}
+
+function download(filename: string, text: string) {
+  var element = document.createElement('a');
+  element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+  element.setAttribute('download', filename);
+
+  element.style.display = 'none';
+  document.body.appendChild(element);
+
+  element.click();
+
+  document.body.removeChild(element);
 }
 
 /**
@@ -612,8 +625,8 @@ function dedent(text: string): string {
 export {
     api, STATUSES, STATUS_DISPLAY_NAME, Unit,
     decided, Challenge, Sprig, Status,
-    ProofAttempt, Parameters, Action, ActionData, linkTo,
-    dayjs, copy, User, SprigObject, dedent,
+    ProofAttempt, Parameters, Action, type ActionData, linkTo,
+    dayjs, copy, download, User, type SprigObject, dedent
 };
 
 // ok

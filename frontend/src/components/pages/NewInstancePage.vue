@@ -6,7 +6,7 @@ import { useRouter } from 'vue-router';
 import { linkTo, Parameters, Unit } from '../../sprig';
 import { store } from '../../store';
 import Languages from '../languages';
-import DurationPicker from '../small/DurationPicker.vue';
+import DureePicker from '../small/DurationPicker.vue';
 import Button from '../small/Button.vue';
 import LoadingIndicator from '../small/LoadingIndicator.vue';
 
@@ -51,6 +51,7 @@ const proof_attempt = ref("");
 const costToPublish = computed(() => costs[costs.length - 1].downstake);
 const isSubmitting = ref(false);
 
+const minStake = 0.001;
 
 function newCostRow(height: number) {
   costs.splice(height, 0, {
@@ -88,19 +89,19 @@ const invalidInputs = computed(() => {
     if (row.height == 0) {
       if (row.downstake != 0)
         fails.push(`Downstake for height ${row.height} must be zero.`);
-    } else if (row.downstake < 1)
+    } else if (row.downstake < minStake)
       fails.push(`Downstake for height ${row.height} must be greater than 1.`);
 
     if (row.height == costs.length - 1) {
       if (row.upstake != 0)
         fails.push(`Upstake for height ${row.height} must be zero.`);
-    } else if (row.upstake < 1)
+    } else if (row.upstake < minStake)
       fails.push(`Upstake for height ${row.height} must be greater than 1.`);
 
     if (row.height == 0) {
       if (row.questionBounty != 0)
         fails.push(`Question Bounty for height ${row.height} must be zero.`);
-    } else if (row.questionBounty < 1)
+    } else if (row.questionBounty < minStake)
       fails.push(`Question bounty for height ${row.height} must be greater than 1.`);
   });
 
@@ -232,10 +233,10 @@ function createInstance() {
                               {{ costs.length - 1 }} (root)</td>
                             <td></td>
                             <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                              <input type="number" min="1" v-model="costs[costs.length - 1].downstake">
+                              <input type="number" :min="minStake" v-model="costs[costs.length - 1].downstake">
                             </td>
                             <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                              <input type="number" min="1" v-model="costs[costs.length - 1].questionBounty">
+                              <input type="number" :min="minStake" v-model="costs[costs.length - 1].questionBounty">
                             </td>
                             <td class="relative">
                               <button @click.prevent="newCostRow(costs.length - 1)"
@@ -250,13 +251,13 @@ function createInstance() {
                               {{ row.height }}
                             </td>
                             <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                              <input type="number" min="1" v-model="row.upstake">
+                              <input type="number" :min="minStake" v-model="row.upstake">
                             </td>
                             <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                              <input type="number" min="1" v-model="row.downstake">
+                              <input type="number" :min="minStake" v-model="row.downstake">
                             </td>
                             <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                              <input type="number" min="1" v-model="row.questionBounty">
+                              <input type="number" :min="minStake" v-model="row.questionBounty">
                             </td>
                             <td
                               class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
@@ -277,7 +278,7 @@ function createInstance() {
                             <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
                               0 (machine)</td>
                             <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                              <input type="number" min="1" v-model="costs[0].upstake" class="w-24">
+                              <input type="number" :min="minStake" v-model="costs[0].upstake" class="w-24">
                             </td>
                             <td></td>
                             <td></td>
@@ -287,7 +288,7 @@ function createInstance() {
 
                         </tbody>
                       </table>
-                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -310,7 +311,8 @@ function createInstance() {
                 Initial proof attempt</h3>
               <p class="mt-1 text-sm text-gray-600">
                 For details on the format, see
-                <router-link to="/docs" target="_blank" class="underline hover:text-purple-700 after:content-['↗']">the documentation</router-link>.
+                <router-link to="/docs" target="_blank" class="underline hover:text-purple-700 after:content-['↗']">the
+                  documentation</router-link>.
               </p>
             </div>
           </div>
@@ -324,8 +326,8 @@ function createInstance() {
                       Root claim
                     </label>
                     <div class="mt-1">
-                      <textarea id="about" name="about" rows="3" v-model="root_question"
-                        autocorrect="false" spellcheck="false"
+                      <textarea id="about" name="about" rows="3" v-model="root_question" autocorrect="false"
+                        spellcheck="false"
                         class="font-mono whitespace-pre shadow-sm focus:ring-indigo-500 focus:border-indigo-500 mt-1 block w-full sm:text-sm border border-gray-300 rounded-sm"
                         placeholder="theorem riemann_hypothesis ..." />
                     </div>
@@ -336,8 +338,8 @@ function createInstance() {
                       Partial proof
                     </label>
                     <div class="mt-1">
-                      <textarea id="about" name="partial_proof" rows="7" v-model="proof_attempt"
-                        autocorrect="false" spellcheck="false"
+                      <textarea id="about" name="partial_proof" rows="7" v-model="proof_attempt" autocorrect="false"
+                        spellcheck="false"
                         class="font-mono whitespace-pre shadow-sm focus:ring-indigo-500 focus:border-indigo-500 mt-1 block w-full sm:text-sm border border-gray-300 rounded-sm"
                         placeholder="theorem riemann_hypothesis ..." />
                     </div>
@@ -354,11 +356,10 @@ function createInstance() {
                       <li v-for="fail in invalidInputs" class="">{{ fail }}</li>
                     </ul>
                   </div>
-                  <Button v-if="!isSubmitting"
-                    type="submit" color="indigo" filled
-                    @click.prevent="createInstance()"
-                    :disabled="invalidInputs.length > 0"
-                    >Publish and lock&nbsp;<Price :amount="costToPublish"/></Button>
+                  <Button v-if="!isSubmitting" type="submit" color="indigo" filled @click.prevent="createInstance()"
+                    :disabled="invalidInputs.length > 0">Publish and lock&nbsp;
+                    <Price :amount="costToPublish" />
+                  </Button>
                   <LoadingIndicator v-else>
                     Submiting instance...
                   </LoadingIndicator>
@@ -374,7 +375,7 @@ function createInstance() {
 
 
 <style>
-  td > input {
-    width: 100% !important;
-  }
+td>input {
+  width: 100% !important;
+}
 </style>

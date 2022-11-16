@@ -15,8 +15,9 @@ import InstancePage from './components/pages/InstancePage.vue'
 import NewInstancePage from './components/pages/NewInstancePage.vue'
 import UserPage from './components/pages/UserPage.vue'
 import DocsPage from './components/pages/DocsPage.vue'
+import TestWeb3 from './components/pages/TestWeb3.vue';
 import { OhVueIcon, addIcons } from "oh-vue-icons";
-import { PiPikachu, CiAlgo, MdClearRound, MdCheckRound, MdMenu, MdModeedit, MdCancel, MdCheckcircle, MdOfflineboltSharp, MdKeyboarddoublearrowdown, MdKeyboarddoublearrowup, MdBolt, MdOfflinebolt, MdQuestionmarkRound, MdInfoRound, MdAccesstimeRound, MdPersonRound, FaMountain, MdLockclock, MdLockopenRound, MdPriorityhighRound, MdCloseRound, MdDownload, MdDownloading, MdExpandmoreRound, MdAddRound, MdLockoutline, HiSolidQuestionMarkCircle, MdVisibility, MdVisibilityoff, MdCopyall } from "oh-vue-icons/icons";
+import { PiPikachu, CiAlgo, MdClearRound, MdCheckRound, MdMenu, MdModeedit, MdCancel, MdCheckcircle, MdOfflineboltSharp, MdKeyboarddoublearrowdown, MdKeyboarddoublearrowup, MdBolt, MdOfflinebolt, MdQuestionmarkRound, MdInfoRound, MdAccesstimeRound, MdPersonRound, FaMountain, MdLockclock, MdLockopenRound, MdPriorityhighRound, MdCloseRound, MdDownload, MdDownloading, MdExpandmoreRound, MdAddRound, MdLockoutline, HiSolidQuestionMarkCircle, MdVisibility, MdVisibilityoff, MdCopyall, MdSimcarddownloadRound } from "oh-vue-icons/icons";
 
 // This should be replaced before production, with only what I use. See https://www.chartjs.org/docs/latest/getting-started/integration.html#bundlers-webpack-rollup-etc
 import Chart from 'chart.js/auto';
@@ -25,36 +26,37 @@ import {  } from 'chartjs-adapter-dayjs-3';
 // Browse icons at https://oh-vue-icons.js.org/
 // Don't forget to add the icon below too.
 addIcons(
-    MdClearRound,
-    MdCheckRound,
-    MdQuestionmarkRound,
-    HiSolidQuestionMarkCircle,
-    MdVisibility,
-    MdVisibilityoff,
-    MdCopyall,
-    MdMenu,
-    PiPikachu,
-    MdModeedit,
-    MdLockoutline,
-    MdOfflineboltSharp,
-    MdOfflinebolt,
     CiAlgo,
-    MdKeyboarddoublearrowdown,
-    MdKeyboarddoublearrowup,
+    FaMountain,
+    HiSolidQuestionMarkCircle,
+    MdAccesstimeRound,
+    MdAddRound,
+    MdBolt,
     MdCancel,
     MdCheckcircle,
-    MdBolt,
-    MdInfoRound,
-    MdAccesstimeRound,
-    MdPersonRound,
-    FaMountain,
-    MdLockclock,
-    MdLockopenRound,
-    MdPriorityhighRound,
+    MdCheckRound,
+    MdClearRound,
     MdCloseRound,
+    MdCopyall,
     MdDownloading,
     MdExpandmoreRound,
-    MdAddRound,
+    MdInfoRound,
+    MdKeyboarddoublearrowdown,
+    MdKeyboarddoublearrowup,
+    MdLockclock,
+    MdLockopenRound,
+    MdLockoutline,
+    MdMenu,
+    MdModeedit,
+    MdOfflinebolt,
+    MdOfflineboltSharp,
+    MdPersonRound,
+    MdPriorityhighRound,
+    MdQuestionmarkRound,
+    MdSimcarddownloadRound,
+    MdVisibility,
+    MdVisibilityoff,
+    PiPikachu,
 );
 
 addIcons({
@@ -68,6 +70,7 @@ addIcons({
 
 const routes = [
     { path: '/', component: Home },
+    { path: '/web3', component: TestWeb3 },
     { path: '/homeHidden', component: Home, name: 'homeHidden'},
     { path: '/search', component: Search },
     { path: '/new', component: NewInstancePage },

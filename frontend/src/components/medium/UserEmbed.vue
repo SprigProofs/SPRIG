@@ -4,11 +4,8 @@ import _ from 'lodash';
 import SimpleStats from "./SimpleStats.vue";
 import Tooltip from "../small/Tooltip.vue";
 import { store } from "../../store";
-import { computed, ComputedRef, ref } from "@vue/reactivity";
-import { User, Status, dayjs } from '../../sprig';
-import LabeledData from "../small/LabeledData.vue";
-import { Chart } from "chart.js";
-import { onMounted } from "vue";
+import { computed, type ComputedRef, ref } from "@vue/reactivity";
+import type { User } from '../../sprig';
 import TripleGraph from './TripleGraph.vue';
 
 const props = defineProps<{

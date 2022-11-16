@@ -1,3 +1,4 @@
+node_modules
 video/
 __pycache__
 data/
@@ -5,3 +6,4 @@ tmp
 .vscode/
 monthly_report.md
 sprig.pdf
+.reach
