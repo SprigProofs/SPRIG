@@ -2,6 +2,10 @@ import {loadStdlib} from '@reach-sh/stdlib';
 import * as backendClaim from './build/claim.main.mjs';
 import * as backendChallenge from './build/challenge.main.mjs';
 const stdlib = loadStdlib({...process.env, REACH_NO_WARN: 'Y'});
+stdlib.setProviderByName("TestNet");
+
+const securityConnection = null; // TODO: how do we connect to the account?
+
 
 // Acceptable time delay for the server to receive infos on the contract of a new interaction
 const delayAcceptation = 100;
@@ -126,6 +130,18 @@ const monitorEventsChallenge = async (ctc) => {
   ctc.events.announceWinner.monitor((event) => {console.log(`The winner is announced: the claim was ${event.what[0] ? "correct" : "incorrect"} and the winner is ${event.what[1]} with contract ${event.what[2]}`)});
 }
 
+const announceIsCorrect = (ctc) => {
+  ctc.apis.Sprig.announceWinner(true, 0);
+}
+
+const announceVerification = (ctc, verification) => {
+  ctc.apis.Sprig.announceVerification(verification);
+}
+
+const announceWinner = (ctc, index) => {
+  ctc.apis.Sprig.announceWinner(false, index);
+}
+
 
 // Test part
 
@@ -244,9 +260,58 @@ const fifthTest = async () =>
   } 
 }
 
+if (process.argv.length() > 2){
+  const [action, typeContract, addressContract] = process.argv[2].slice(2,5);
+  const backend = {"CHALLENGE":backendChallenge, "ANSWER":backendAnswer}[typeContract];
+  const accountSprig = await stdlib.newAccountFromMnemonic(securityConnection);
+  const addressSprig = accountSprig.getAddress();
+  const ctc = accountSprig.contract(backend, JSON.parse(addressContract));
+  switch (action) {
+    case "VERIFY":
+      const [addressSkeptic,
+            time,
+            wagerUp,
+            wagerDown,
+            hashInteraction,
+            isBottom
+            ] = process.argv.slice(5);
+        let b = none;
+        switch (typeContract){
+          case "CHALLENGE":
+            b = verifyChallenge(ctc, addressSprig, hashInteraction, parseInt(time), parseInt(wagerDown));
+            break;
+          case "ANSWER":
+            b = verifyAnswer(ctc, addressSprig, addressSkeptic, hashInteraction, parseInt(time), parseInt(wagerUp), parseInt(wagerDown), isBottom=="true");
+            break;
+          default:
+            throw new Error("type contract not handled.")
+        }
+      console.log(b);
+      break;
+    case "ADD_PARTICIPANT":
+      const [addressNewParticipant,
+            addressContractNewParticipant,
+            ] = process.argv.slice(5);
+      ctc.apis.Sprig.addParticipant(addressNewParticipant, addressContractNewParticipant);
+      break;
+    case "ANNOUNCE_VERIFICATION":
+      const verification = process.argv[5];
+      ctc.apis.Sprig.announceVerification(verification=="true");
+      break;
+    case "ANNOUNCE_WINNER":
+      const [wasRight,
+            indexWinner
+            ] = process.argv.slice(5);
+      ctc.apis.Sprig.announceWinner(wasRight=="true", parseInt(indexWinner));
+      break;
+    default:
+      throw new Error("Action not handled.")
+  }
+    
+}
+
 // await firstTest();
 // await secondTest();
 // await thirdTest();
 // await fourthTest();
-await fifthTest();
-console.log('Goodbye, Alice and Bob!');
+// await fifthTest();
