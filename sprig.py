@@ -189,14 +189,14 @@ class AbstractParameters:
         """
         raise NotImplementedError
 
-def jsFrontendReach(parameters):
+def jsFrontendReach(parameters, throwingError=False):
     """To call the frontend for Reach written in Javascript, to interact
     with the blockchain.
     """
-    return subprocess.run(["node", "./reach/index.mjs"] + parameters, text=True)
+    return subprocess.run(["node", "./reach/index.mjs"] + parameters, capture_output=True, check=throwingError)
 
-def hashingChallenge(challenge: Challenge):
-    return hex(hash(challenge.contractParent))
+def hashingChallenge(challenge: Challenge, attempt: ProofAttempt):
+    return hex(hash(attempt.addressContract)) + hex(hash(challenge.indexPartChallenged))[2:]
 
 def hashingAnswer(answer: ProofAttempt):
     return hex(hash(answer.addressContractParent)) + hex(hash(answer.proof))[2:]
@@ -295,6 +295,19 @@ class ParametersBlockchain(AbstractParameters):
         return success
 
     def pay_attempt_accepted(self, attempt: ProofAttempt) -> None:
+        if attempt.height == 0:
+            jsFrontendReach(["ANNOUNCE_VERIFICATION",
+                            "ANSWER",
+                            attempt.addressContract,
+                            "true",
+                            ], throwingError=True)
+        else:
+            jsFrontendReach(["ANNOUNCE_WINNER",
+                            "ANSWER",
+                            attempt.addressContract,
+                            "true",
+                            "0"], throwingError=True)
+        return
         amount = 0
 
         # non-machine: reimburse the downstake
@@ -311,6 +324,20 @@ class ParametersBlockchain(AbstractParameters):
     def pay_attempt_rejected(self, attempt: ProofAttempt, rejecting: Challenge | None,
                              sprig: Sprig) -> None:
 
+        if attempt.height == 0:
+            jsFrontendReach(["ANNOUNCE_VERIFICATION",
+                            "ANSWER",
+                            attempt.addressContract,
+                            "false",
+                            ], throwingError=True)
+        else:
+            jsFrontendReach(["ANNOUNCE_WINNER",
+                            "ANSWER",
+                            attempt.addressContract,
+                            "false",
+                            str(rejecting.positionOnProofContract),
+                            ], throwingError=True)
+        return        
         # non-machine: downstakes goes to closing claim challenger.
         if attempt.height > 0:
             amount = self.downstakes[attempt.height]
@@ -334,21 +361,44 @@ class ParametersBlockchain(AbstractParameters):
 
     def pay_new_challenge(self, skeptic: Address, attempt: ProofAttempt,
                           challenge: Challenge) -> bool:
+        process = jsFrontendReach(["VERIFY",
+                                    "CHALLENGE",
+                                    challenge.contract,
+                                    "NONE",
+                                    str(self.time_for_answers),
+                                    "0",
+                                    str(self.downstakes[challenge.height]),
+                                    hashingChallenge(challenge, attempt),
+                                    "false"])
+        return (process.returncode == 0) and (process.stdout == "true")
         amount = self.question_bounties[challenge.height]
         attempt.money_held += amount
         return transfer_money(skeptic, SPRIG_ADDRESS, amount, f"challenge {challenge.hash}")
 
     def pay_challenge_validated(self, attempt: ProofAttempt, challenge: Challenge) -> None:
         assert challenge.author  # Sanity check
+        jsFrontendReach(["ANNOUNCE_WINNER",
+                        "CHALLENGE",
+                        challenge.contract,
+                        "true",
+                        "0"],
+                        throwingError=True)
+        return
         amount = self.question_bounties[attempt.height]
         attempt.money_held -= amount
         transfer_money(SPRIG_ADDRESS, challenge.author, amount,
                        f"challenge {challenge.hash} unanswered")
 
     def pay_challenge_rejected(self, answer: ProofAttempt, sprig: Sprig) -> None:
+        challenge = sprig.challenges[answer.parent]      
         assert answer.parent is not None  # Sanity check
-
-        challenge = sprig.challenges[answer.parent]
+        jsFrontendReach(["ANNOUNCE_WINNER",
+                        "CHALLENGE",
+                        challenge.contract,
+                        "false",
+                        str(answer.positionOnChallengeContract)],
+                        throwingError=True)
+        return
         amount = self.question_bounties[challenge.height]
         sprig.proofs[challenge.parent].money_held -= amount
         transfer_money(SPRIG_ADDRESS, answer.author, amount, f"challenge {challenge.hash} answered")
@@ -505,6 +555,8 @@ class ProofAttempt:
     # Address of the parent contract on the blockchain
     addressSkeptic: Optional[str]
     # Address of the author of the parent contract on the blockchain
+    positionOnChallengeContract: Optional[int]
+    # The index of the proof on the contract of the challenge that it answers
     author: Address
     proof: str
     height: int
@@ -537,7 +589,10 @@ class Challenge:
     hash: Hash
     parent: Hash
     contract: str
-    contractParent: str
+    indexPartChallenged: int
+    # The index of the part of the proof which is doubted.
+    positionOnProofContract: int
+    # The index of the skeptic on the contract of the proof
     author: Address | None
     created_at: Time
     challenged_at: Time | None
