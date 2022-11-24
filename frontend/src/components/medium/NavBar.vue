@@ -8,8 +8,8 @@
                 <li><router-link :to="{ name: 'user', params: { name: store.user || 'Diego' }}">Contributions</router-link></li>
                 <li><router-link to="/docs">Docs</router-link></li>
                 <li class="flex-grow text-right">
-                    <Button v-if="store.account === null"
-                        @click="connectWallet()"
+                    <Button v-if="!store.account"
+                        @click="ensureWalletConnected()"
                         color="orange" filled
                         class="bg-gradient-to-br from-orange-500 to-pink-500"
                         >Connect Wallet</Button>
@@ -17,13 +17,13 @@
                         <Tooltip>
                             <template #reference>
                                 <span class="text-gray-700 font-mono">
-                                {{ shortAddress }}
+                                {{ store.account.shortAddress }}
                                 </span>
                             </template>
                             <span class="text-gray-700 font-mono">
-                            {{ reach.formatAddress(store.account) }} </span>
+                            {{ store.account.address }} </span>
                         </Tooltip>
-                        <Price :amount="balance"/>
+                        <Price :amount="store.account.balance"/>
                     </div>
                 </li>
             </ul>
@@ -35,42 +35,6 @@
 </template>
 
 <script setup lang="ts">
-import { store } from '../../store';
-
-import { loadStdlib } from '@reach-sh/stdlib';
-import { ALGO_WalletConnect as WalletConnect } from '@reach-sh/stdlib';
-import { computed, ref } from 'vue';
+import { store, ensureWalletConnected } from '../../store';
 import { Tooltip } from '../small';
-
-const reach = loadStdlib('ALGO');
-
-function connectWallet() {
-    delete window.algorand;
-    reach.setWalletFallback(reach.walletFallback({
-        providerEnv: 'TestNet', WalletConnect }));
-    reach.getDefaultAccount().then((acc) => {
-        store.account = acc;
-        console.log("Account:", acc);
-    }).catch((err) => {
-        console.log("Error:", err);
-    });
-}
-
-const balance = ref(0);
-setInterval(() => {
-    if (store.account !== null) {
-        reach.balanceOf(store.account).then((bal) => {
-            balance.value = +reach.formatCurrency(bal, 4);
-        });
-    }
-}, 1000);
-
-const shortAddress = computed(() => {
-    if (store.account === null) {
-        return '';
-    }
-    return reach.formatAddress(store.account).slice(0, 4) + '..'
-        + reach.formatAddress(store.account).slice(-4);
-});
-
 </script>

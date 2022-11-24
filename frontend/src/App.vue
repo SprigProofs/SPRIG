@@ -4,9 +4,6 @@ import { nextTick, watch } from 'vue';
 import NavBar from './components/medium/NavBar.vue';
 import { store } from './store';
 
-import { loadStdlib } from '@reach-sh/stdlib';
-const stdlib = loadStdlib('ALGO');
-
 watch(store, () => nextTick( () => {
   if (store.fail) {
     document.getElementById('tryAgainButton').focus();

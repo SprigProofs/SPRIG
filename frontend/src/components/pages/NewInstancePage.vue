@@ -6,7 +6,7 @@ import { useRouter } from 'vue-router';
 import { linkTo, Parameters, Unit } from '../../sprig';
 import { store } from '../../store';
 import Languages from '../languages';
-import DureePicker from '../small/DurationPicker.vue';
+import DurationPicker from '../small/DurationPicker.vue';
 import Button from '../small/Button.vue';
 import LoadingIndicator from '../small/LoadingIndicator.vue';
 
@@ -50,8 +50,11 @@ const root_question = ref("");
 const proof_attempt = ref("");
 const costToPublish = computed(() => costs[costs.length - 1].downstake);
 const isSubmitting = ref(false);
+const showSignTransaction = ref(true);
 
-const minStake = 0.001;
+// TODO: raise this to 1, or handle floats server side.
+//       currently the server considers only integer parts of the cost.
+const minStake = 0;
 
 function newCostRow(height: number) {
   costs.splice(height, 0, {
@@ -131,6 +134,7 @@ function createInstance() {
   });
 
   store.newInstance(
+    showSignTransaction,
     selectedLanguage.value,
     params,
     root_question.value,
@@ -146,6 +150,22 @@ function createInstance() {
 
 <template>
   <div class="bg-gray-100">
+    <el-dialog
+      v-model="showSignTransaction"
+      title="Sign transaction"
+      width="30%"
+      >
+      <p class="break-normal">
+        Please confirm the transaction in your favorite wallet.</p>
+      <template #footer>
+        <div class="flex justify-end space-x-2">
+          <button class="text-gray-500 text-sm hover:underline"
+            @click="showSignTransaction = false">Cancel</button>
+          <LoadingIndicator>Waiting for confirmation</LoadingIndicator>
+        </div>
+      </template>
+    </el-dialog>
+
     <div class="max-w-4xl lg:mx-auto sm:mx-6 my-8">
       <h1 class="px-4 sm:px-0 text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
         New SPRIG Instance
