@@ -196,7 +196,8 @@ def jsFrontendReach(parameters, throwingError=False):
     return subprocess.run(["node", "./reach/index.mjs"] + parameters, capture_output=True, check=throwingError)
 
 def hashingChallenge(challenge: Challenge, attempt: ProofAttempt):
-    return hex(hash(attempt.addressContract)) + hex(hash(challenge.indexPartChallenged))[2:]
+    part_challenged = attempt.challenges.index(challenge.hash)
+    return hex(hash(attempt.addressContract)) + hex(hash(part_challenged))[2:]
 
 def hashingAnswer(answer: ProofAttempt):
     return hex(hash(answer.addressContractParent)) + hex(hash(answer.proof))[2:]
@@ -587,8 +588,6 @@ class Challenge:
     hash: Hash
     parent: Hash
     contract: str
-    indexPartChallenged: int
-    # The index of the part of the proof which is doubted.
     author: Address | None
     created_at: Time
     challenged_at: Time | None
