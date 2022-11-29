@@ -11,7 +11,7 @@ export const main = Reach.App(() => {
     interaction: Bytes(sizeBinaryInfo),
     wagerUp: UInt, // Non-zero only if a claimer is defending against a skeptic's attack, will go to the skeptic's address if A is wrong
     wagerDown: UInt, // Will go to the person who shows that this claim or this attack is wrong. It is 0 if this claim is at the bottom and should be formally verified.
-    deadline: UInt,
+    deadline: UInt, // Unix timestamp for the deadline
     isBottom: Bool,
   });
 
@@ -91,7 +91,6 @@ export const main = Reach.App(() => {
       check(numberParticipants < maxParticipants, 'Too many participants');
       check(!isBottom, 'Cannot challenge a bottom claim');
       return [ 0, (ret) => {
-        enforce( thisConsensusTime() < deadline, 'too late to add new participants' );
         const newListParticipants = participants.set(numberParticipants, Maybe(Tuple(Address, Contract)).Some([newPart, newInter]));
         E.newParticipant(newPart, newInter);
         ret(null);
@@ -104,7 +103,6 @@ export const main = Reach.App(() => {
       check(wasARight || indexWinner < numberParticipants, 'This participant does not exist.');
       check(!isBottom, 'Can only announce verification.')
       return [ 0, (ret) => {
-        enforce( implies(wasARight, thisConsensusTime() >= deadline ), 'cannot announce A was right before the end' );
         const winner = wasARight ? [ A, getContract() ] : fromSome(participants[indexWinner], [ A, getContract() ]);
         E.announceWinner(wasARight, winner[0], winner[1]);
         transfer(wagerDown).to(winner[0]);

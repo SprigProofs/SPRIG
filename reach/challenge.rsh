@@ -9,7 +9,7 @@ export const main = Reach.App(() => {
     addressSprig: Address,
     interaction: Bytes(sizeBinaryInfo),
     wagerDown: UInt, // Will go to the person who shows that this claim or this attack is wrong.
-    deadline: UInt,
+    deadline: UInt, // UNIX timestamp for the deadline
   });
 
   const Sprig = API('Sprig', {
@@ -73,7 +73,6 @@ export const main = Reach.App(() => {
       check(this == addressSprig, 'You are not Sprig');
       check(numberParticipants < maxParticipants, 'Too many participants');
       return [ 0, (ret) => {
-        enforce( thisConsensusTime() < deadline, 'too late to add new participants' );
         const newListParticipants = participants.set(numberParticipants, Maybe(Tuple(Address, Contract)).Some([newPart, newInter]));
         E.newParticipant(newPart, newInter);
         ret(null);
@@ -85,7 +84,6 @@ export const main = Reach.App(() => {
       check(this == addressSprig, 'You are not Sprig');
       check(wasARight || indexWinner < numberParticipants, 'This participant does not exist.');
       return [ 0, (ret) => {
-        enforce( implies(wasARight, thisConsensusTime() >= deadline ), 'cannot announce A was right before the end' );
         const winner = wasARight ? [ A, getContract() ] : fromSome(participants[indexWinner], [ A, getContract() ]);
         E.announceWinner(wasARight, winner[0], winner[1]);
         transfer(wagerDown).to(winner[0]);

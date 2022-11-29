@@ -10,8 +10,8 @@ const securityConnection = null; // TODO: how do we connect to the account?
 // Acceptable time delay for the server to receive infos on the contract of a new interaction
 const delayAcceptation = 100;
 
-// Function to get the Network time that it will be after some time.
-const deadlineFromTime = async (time) => (await stdlib.getNetworkTime()).add(time);
+// Function to get the UNIX timestamp that it will be after some time. Time should be a number of seconds
+const deadlineFromTime = (time) => time + (Date.now() / 1000);
 
 const answer = async (account,
                    addressSprig,
@@ -27,7 +27,7 @@ const answer = async (account,
     to answer a challenge.
   */
   const ctc = account.contract(backendClaim);
-  const deadline = await deadlineFromTime(durationDebate);
+  const deadline = deadlineFromTime(durationDebate);
   const interact = {
     addressSprig: addressSprig,
     addressSkeptic: (addressSkeptic === null ? ['None', null] : ['Some', addressSkeptic]),
@@ -70,7 +70,7 @@ const challenge = async (account,
 
   */
   const ctc = account.contract(backendChallenge);
-  const deadline = await deadlineFromTime(durationDebate);
+  const deadline = deadlineFromTime(durationDebate);
   const interact = {
     addressSprig: addressSprig,
     interaction: interactionHash,
@@ -99,7 +99,7 @@ const verifyAnswer = async (ctc,
   const correctInteraction = (await ctc.views.interaction())[1].replaceAll('\x00', '') == interactionHash;
   const correctWagerDown = stdlib.eq((await ctc.views.wagerDown())[1], wagerDown);
   const correctWagerUp = stdlib.eq((await ctc.views.wagerUp())[1], wagerUp);
-  const correctDeadline = stdlib.ge((await ctc.views.deadline())[1], (await stdlib.getNetworkTime()).add(durationDebate - delayAcceptation));
+  const correctDeadline = stdlib.ge((await ctc.views.deadline())[1], deadlineFromTime(durationDebate - delayAcceptation));
   const correctBottom = (await ctc.views.isBottom())[1] == isBottom;
   return correctSprig && correctSkeptic && correctInteraction && correctWagerDown && correctWagerUp && correctDeadline && correctBottom;
 };
@@ -113,7 +113,7 @@ const verifyChallenge = async (ctc,
   const correctSprig = (await ctc.views.addressSprig())[1] == addressSprig;
   const correctInteraction = (await ctc.views.interaction())[1].replaceAll('\x00', '') == interactionBytes;
   const correctWagerDown = stdlib.eq((await ctc.views.wagerDown())[1], wagerDown);
-  const correctDeadline = stdlib.ge((await ctc.views.deadline())[1], (await stdlib.getNetworkTime()).add(durationDebate - delayAcceptation));
+  const correctDeadline = stdlib.ge((await ctc.views.deadline())[1], deadlineFromTime(durationDebate - delayAcceptation));
   return correctSprig && correctInteraction && correctWagerDown && correctDeadline;
 };
 
@@ -185,7 +185,7 @@ const firstTest = async () =>
 const secondTest = async () =>
 {
   console.log("test 2");
-  console.log("Expected result: the deadline is too soon")
+  console.log("Expected result: the deadline is too soon") // Shouldn't work now, because of changes on how time works
   const ctcAlice = await newSprig(Alice, addressSprig, bytes, duration, wagerDown);
   const infoCtcAlice = (await ctcAlice.getInfo());
   console.log("Launching Alice's contract");

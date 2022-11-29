@@ -41,7 +41,7 @@ BANK = defaultdict(int, json.loads(BANK_FILE.read_text() or "{}"))
 
 INDENT = " " * 4  # For pretty printing
 
-REAL_TIME = "real"
+REAL_TIME = "real" # UNIX timestamp, in seconds
 DISCRETE_TIME = "discrete"
 TIME_MODE = os.environ.get("TIME_MODE", DISCRETE_TIME)
 
