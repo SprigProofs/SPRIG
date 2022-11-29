@@ -130,6 +130,18 @@ const monitorEventsChallenge = async (ctc) => {
   ctc.events.announceWinner.monitor((event) => {console.log(`The winner is announced: the claim was ${event.what[0] ? "correct" : "incorrect"} and the winner is ${event.what[1]} with contract ${event.what[2]}`)});
 }
 
+const getParticipants = async (ctc) => {
+  resultView = await ctc.views.participants()
+  if (resultView[0] == "None"){
+    return None
+  }
+  else{
+    // resultView[1] is of the form [["Some", address0], ["Some", address1],..., ["Some", addressn], ["None", Null], ["None", Null],..., ["None", Null]]
+    // and each addressk is a tuple (addressAccount, addressContract)
+    return resultView[1].filter(x => x[0] == "Some").map(x => x[1])
+  }
+}
+
 const announceIsCorrect = (ctc) => {
   ctc.apis.Sprig.announceWinner(true, 0);
 }
@@ -265,7 +277,7 @@ if (process.argv.length() > 2){
   const backend = {"CHALLENGE":backendChallenge, "ANSWER":backendAnswer}[typeContract];
   const accountSprig = await stdlib.newAccountFromMnemonic(securityConnection);
   const addressSprig = accountSprig.getAddress();
-  const ctc = accountSprig.contract(backend, JSON.parse(addressContract));
+  const ctc = accountSprig.contract(backend, parseInt(addressContract));
   switch (action) {
     case "VERIFY":
       const [addressSkeptic,
@@ -292,7 +304,7 @@ if (process.argv.length() > 2){
       const [addressNewParticipant,
             addressContractNewParticipant,
             ] = process.argv.slice(5);
-      ctc.apis.Sprig.addParticipant(addressNewParticipant, addressContractNewParticipant);
+      ctc.apis.Sprig.addParticipant(addressNewParticipant, parseInt(addressContractNewParticipant));
       break;
     case "ANNOUNCE_VERIFICATION":
       const verification = process.argv[5];
@@ -300,9 +312,12 @@ if (process.argv.length() > 2){
       break;
     case "ANNOUNCE_WINNER":
       const [wasRight,
-            indexWinner
+            addressContractWinner
             ] = process.argv.slice(5);
-      ctc.apis.Sprig.announceWinner(wasRight=="true", parseInt(indexWinner));
+      participants = getParticipants(ctc)
+      contracts = participants.map(x => stdlib.bigNumberToNumber(x[1][1]))
+      indexWinner = contracts.indexOf(parseInt(addressContractWinner))
+      ctc.apis.Sprig.announceWinner(wasRight=="true", indexWinner);
       break;
     default:
       throw new Error("Action not handled.")

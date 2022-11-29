@@ -555,8 +555,6 @@ class ProofAttempt:
     # Address of the parent contract on the blockchain
     addressSkeptic: Optional[str]
     # Address of the author of the parent contract on the blockchain
-    positionOnChallengeContract: Optional[int]
-    # The index of the proof on the contract of the challenge that it answers
     author: Address
     proof: str
     height: int
@@ -591,8 +589,6 @@ class Challenge:
     contract: str
     indexPartChallenged: int
     # The index of the part of the proof which is doubted.
-    positionOnProofContract: int
-    # The index of the skeptic on the contract of the proof
     author: Address | None
     created_at: Time
     challenged_at: Time | None
