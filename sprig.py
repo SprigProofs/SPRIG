@@ -12,6 +12,7 @@ from enum import Enum
 from pathlib import Path
 from textwrap import indent
 from time import sleep, time_ns
+from hashlib import sha256
 from typing import Generator, Literal, NewType, Optional, Tuple, Iterator, Any, cast
 
 from languages import Lean4, TicTacToe
@@ -197,11 +198,15 @@ def jsFrontendReach(parameters, throwingError=False):
 
 def hashingChallenge(challenge: Challenge, attempt: ProofAttempt):
     part_challenged = attempt.challenges.index(challenge.hash)
-    return hex(hash(attempt.contract)) + hex(hash(part_challenged))[2:]
+    h = sha256()
+    h.update(bytes(attempt.contract + str(part_challenged), 'utf-8'))
+    return "0x" + h.hexdigest()
 
 def hashingAnswer(answer: ProofAttempt, challenge: Challenge | None):
-    contractParent = None if challenge is None else challenge.contract
-    return hex(hash(contractParent)) + hex(hash(answer.proof))[2:]
+    contractParent = "" if challenge is None else challenge.contract
+    h = sha256()
+    h.update(bytes(answer.proof + contractParent, 'utf-8'))
+    return "0x" + h.hexdigest()
 
 @dataclass
 class ParametersBlockchain(AbstractParameters):
