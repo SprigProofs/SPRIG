@@ -314,9 +314,13 @@ if (process.argv.length() > 2){
       const [wasRight,
             addressContractWinner
             ] = process.argv.slice(5);
-      participants = getParticipants(ctc)
-      contracts = participants.map(x => stdlib.bigNumberToNumber(x[1][1]))
-      indexWinner = contracts.indexOf(parseInt(addressContractWinner))
+      if (!wasRight){
+        participants = getParticipants(ctc);
+        contracts = participants.map(x => stdlib.bigNumberToNumber(x[1][1]));
+        indexWinner = contracts.indexOf(parseInt(addressContractWinner));
+      } else {
+        indexWinner = 0;
+      }
       ctc.apis.Sprig.announceWinner(wasRight=="true", indexWinner);
       break;
     default:

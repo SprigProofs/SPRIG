@@ -197,10 +197,11 @@ def jsFrontendReach(parameters, throwingError=False):
 
 def hashingChallenge(challenge: Challenge, attempt: ProofAttempt):
     part_challenged = attempt.challenges.index(challenge.hash)
-    return hex(hash(attempt.addressContract)) + hex(hash(part_challenged))[2:]
+    return hex(hash(attempt.contract)) + hex(hash(part_challenged))[2:]
 
-def hashingAnswer(answer: ProofAttempt):
-    return hex(hash(answer.addressContractParent)) + hex(hash(answer.proof))[2:]
+def hashingAnswer(answer: ProofAttempt, challenge: Challenge | None):
+    contractParent = None if challenge is None else challenge.contract
+    return hex(hash(contractParent)) + hex(hash(answer.proof))[2:]
 
 @dataclass
 class ParametersBlockchain(AbstractParameters):
@@ -248,12 +249,14 @@ class ParametersBlockchain(AbstractParameters):
 
     # Attempts
 
-    def pay_new_proof_attempt(self, attempt: ProofAttempt) -> bool:
+    def pay_new_proof_attempt(self, attempt: ProofAttempt, sprig: Sprig) -> bool:
+        address_skeptic = ("None" if attempt.parent is None 
+                            else sprig.challenges[attempt.parent].author)
         if attempt.height == 0:
             process = jsFrontendReach(["VERIFY",
                                         "ANSWER",
-                                        attempt.addressContract,
-                                        attempt.addressSkeptic,
+                                        attempt.contract,
+                                        address_skeptic,
                                         str(self.time_for_questions),
                                         str(self.upstakes[attempt.height]),
                                         '0',
@@ -264,8 +267,8 @@ class ParametersBlockchain(AbstractParameters):
         else:
             process = jsFrontendReach(["VERIFY",
                                         "ANSWER",
-                                        attempt.addressContract,
-                                        attempt.addressSkeptic,
+                                        attempt.contract,
+                                        address_skeptic,
                                         str(self.time_for_questions),
                                         str(self.upstakes[attempt.height]),
                                         str(self.downstakes[attempt.height]),
@@ -299,13 +302,13 @@ class ParametersBlockchain(AbstractParameters):
         if attempt.height == 0:
             jsFrontendReach(["ANNOUNCE_VERIFICATION",
                             "ANSWER",
-                            attempt.addressContract,
+                            attempt.contract,
                             "true",
                             ], throwingError=True)
         else:
             jsFrontendReach(["ANNOUNCE_WINNER",
                             "ANSWER",
-                            attempt.addressContract,
+                            attempt.contract,
                             "true",
                             "0"], throwingError=True)
         return
@@ -328,15 +331,15 @@ class ParametersBlockchain(AbstractParameters):
         if attempt.height == 0:
             jsFrontendReach(["ANNOUNCE_VERIFICATION",
                             "ANSWER",
-                            attempt.addressContract,
+                            attempt.contract,
                             "false",
                             ], throwingError=True)
         else:
             jsFrontendReach(["ANNOUNCE_WINNER",
                             "ANSWER",
-                            attempt.addressContract,
+                            attempt.contract,
                             "false",
-                            str(rejecting.positionOnProofContract),
+                            rejecting.contract,
                             ], throwingError=True)
         return        
         # non-machine: downstakes goes to closing claim challenger.
@@ -397,7 +400,7 @@ class ParametersBlockchain(AbstractParameters):
                         "CHALLENGE",
                         challenge.contract,
                         "false",
-                        str(answer.positionOnChallengeContract)],
+                        answer.contract],
                         throwingError=True)
         return
         amount = self.question_bounties[challenge.height]
@@ -550,12 +553,8 @@ class ProofAttempt:
     hash: Hash
     # Hash of the parent challenge
     parent: Optional[Hash]
-    addressContract: str
+    contract: str
     # Address of the contract on the blockchain
-    addressContractParent: Optional[str]
-    # Address of the parent contract on the blockchain
-    addressSkeptic: Optional[str]
-    # Address of the author of the parent contract on the blockchain
     author: Address
     proof: str
     height: int
@@ -574,7 +573,8 @@ class ProofAttempt:
     created_at: Time
 
     challenges: list[Hash]
-    # For debugging purposes
+    # The index of a challenge corresponds to the part of the proof that is challenged.
+    # So for example the challenge at index 4 challenges the fifth part of the proof.
     money_held: int
 
     def __str__(self) -> str:
