@@ -127,6 +127,7 @@ class SprigInitData(BaseModel):
     proof: str
     contract: str
 
+
 @api.post("/instances", response_model=SprigData)
 def add_new_instance(new_instance: SprigInitData) -> dict[str, Any]:  # SprigData:
     """
@@ -169,8 +170,8 @@ class ChallengeCreatedData(BaseModel):
 @api.post(
     "/challenge/{instance_hash}/{claim_hash}"
 )  #, response_model=ChallengeCreatedData)  # The response_model is not working and I don't know why.
-def new_challenge(skeptic: sprig.Address, claim_hash: sprig.Hash,
-                  instance_hash: sprig.Hash, contract: str) -> ChallengeCreatedData:
+def new_challenge(skeptic: sprig.Address, claim_hash: sprig.Hash, instance_hash: sprig.Hash,
+                  contract: str) -> ChallengeCreatedData:
     """Challenge a claim that isn't yet challenged and still active."""
 
     instance = load(instance_hash)
@@ -207,7 +208,8 @@ def new_proof_attempt(instance_hash: sprig.Hash, challenge_hash: sprig.Hash,
             attempt = instance.answer_low_level(challenge_hash, attempt_data.author,
                                                 attempt_data.statement, contract)
         else:
-            attempt = instance.answer(challenge_hash, attempt_data.author, attempt_data.statement, contract)
+            attempt = instance.answer(challenge_hash, attempt_data.author, attempt_data.statement,
+                                      contract)
 
     save(instance, instance_hash)
 
