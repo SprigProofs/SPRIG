@@ -2,7 +2,7 @@ import {loadStdlib} from '@reach-sh/stdlib';
 import * as backendClaim from './build/claim.main.mjs';
 import * as backendChallenge from './build/challenge.main.mjs';
 const stdlib = loadStdlib({...process.env, REACH_NO_WARN: 'Y'});
-stdlib.setProviderByName("TestNet");
+// stdlib.setProviderByName("TestNet");
 
 const securityConnection = null; // TODO: how do we connect to the account?
 
@@ -13,11 +13,19 @@ const delayAcceptation = 100;
 // Function to get the UNIX timestamp that it will be after some time. Time should be a number of seconds
 const deadlineFromTime = (time) => time + (Date.now() / 1000);
 
+const sha256 = (text) => stdlib.digest(stdlib.T_Bytes(64), text);
+
+const hashingAnswer = (proof, addressContractParent="") => 
+  sha256(proof + addressContractParent)
+
+const hashingChallenge = (addressContractAnswer, indexPartChallenged) =>
+  sha256(addressContractAnswer + toString(indexPartChallenged))
+
 const answer = async (account,
                    addressSprig,
                    addressSkeptic,
                    interactionHash,
-                   durationDebate,
+                   deadline,
                    wagerUp,
                    wagerDown,
                    isBottom=false,
@@ -27,7 +35,6 @@ const answer = async (account,
     to answer a challenge.
   */
   const ctc = account.contract(backendClaim);
-  const deadline = deadlineFromTime(durationDebate);
   const interact = {
     addressSprig: addressSprig,
     addressSkeptic: (addressSkeptic === null ? ['None', null] : ['Some', addressSkeptic]),
@@ -45,23 +52,22 @@ const answer = async (account,
 const newSprig = async (account,
                         addressSprig,
                         interactionHash,
-                        durationDebate,
+                        deadline,
                         wagerDown,
-                        isBottom,
 ) => await answer(account,
   addressSprig,
   null,
   interactionHash,
-  durationDebate,
+  deadline,
   0,
   wagerDown,
-  isBottom,
+  false,
   );
 
 const challenge = async (account,
                          addressSprig,
                          interactionHash,
-                         durationDebate,
+                         deadline,
                          wagerDown,
 ) => {
   /*
@@ -70,7 +76,7 @@ const challenge = async (account,
 
   */
   const ctc = account.contract(backendChallenge);
-  const deadline = deadlineFromTime(durationDebate);
+  const deadline = deadline;
   const interact = {
     addressSprig: addressSprig,
     interaction: interactionHash,
@@ -161,123 +167,12 @@ const announceWinner = (ctc, index) => {
   ctc.apis.Sprig.announceWinner(false, index);
 }
 
-
-// Test part
-
 const getBalance = async (acc) => {
   // To get the balance of an account
   const bal = await acc.balanceOf();
   return `${stdlib.formatCurrency(bal, 4)} ${stdlib.standardUnit}`;
 };
 
-const startingBalance = stdlib.parseCurrency(100);
-const Alice = await stdlib.newTestAccount(startingBalance);
-const Sprig = await stdlib.newTestAccount(startingBalance);
-const Bob   = await stdlib.newTestAccount(startingBalance);
-const addressSprig = Sprig.getAddress();
-const addressBob = Bob.getAddress();
-
-
-const bytes = "100";
-const duration = 1000;
-const wagerDown = stdlib.parseCurrency(1);
-const wagerUp = stdlib.parseCurrency(0);
-const firstTest = async () =>
-{
-  console.log("test 1")
-  console.log("Expected result: the claim was wrong, there is a winner")
-  const ctcAlice = await newSprig(Alice, addressSprig, bytes, duration, wagerDown, false);
-  const infoCtcAlice = (await ctcAlice.getInfo());
-  console.log("Launching Alice's contract");
-  const ctcSprig = Sprig.contract(backendClaim, infoCtcAlice);
-  console.log("Connecting Sprig");
-
-  monitorEvents(ctcSprig);
-  if (await verifyAnswer(ctcSprig, addressSprig, null, bytes, duration, wagerUp, wagerDown, false)){
-    await ctcSprig.apis.Sprig.addParticipant(addressBob, infoCtcAlice);
-    await ctcSprig.apis.Sprig.announceWinner(false, 0);
-  } else {
-    await ctcSprig.apis.Sprig.incorrectContract();
-  }
-}
-
-const secondTest = async () =>
-{
-  console.log("test 2");
-  console.log("Expected result: the deadline is too soon") // Shouldn't work now, because of changes on how time works
-  const ctcAlice = await newSprig(Alice, addressSprig, bytes, duration, wagerDown);
-  const infoCtcAlice = (await ctcAlice.getInfo());
-  console.log("Launching Alice's contract");
-  const ctcSprig = Sprig.contract(backendClaim, infoCtcAlice);
-  console.log("Connecting Sprig");
-
-  monitorEvents(ctcSprig);
-  await stdlib.wait(100);
-  if (await verifyAnswer(ctcSprig, addressSprig, null, bytes, duration, wagerUp, wagerDown, false)){
-    await ctcSprig.apis.Sprig.addParticipant(addressBob, infoCtcAlice);
-    await ctcSprig.apis.Sprig.announceWinner(false, 0);
-  } else {
-    await ctcSprig.apis.Sprig.incorrectContract();
-  }
-}
-
-const thirdTest = async () =>
-{
-  console.log("test 3");
-  console.log("Expected result: the claim is correct")
-  const ctcAlice = await newSprig(Alice, addressSprig, bytes, duration, wagerDown);
-  const infoCtcAlice = (await ctcAlice.getInfo());
-  console.log("Launching Alice's contract");
-  const ctcSprig = Sprig.contract(backendClaim, infoCtcAlice);
-  console.log("Connecting Sprig");
-  monitorEvents(ctcSprig);
-  if (await verifyAnswer(ctcSprig, addressSprig, null, bytes, duration, wagerUp, wagerDown, false)){
-    await stdlib.wait(duration);
-    await ctcSprig.apis.Sprig.announceWinner(true, 0);
-  } else {
-    await ctcSprig.apis.Sprig.incorrectContract();
-  }
-}
-
-const fourthTest = async () => 
-{
-  const skeptic = addressBob;
-  const wagerDown = stdlib.parseCurrency(0);
-  const wagerUp = stdlib.parseCurrency(1);
-  console.log("test 4");
-  console.log("Expected result: It is a bottom claim, and it is correct")
-  const ctcAlice = await answer(Alice, addressSprig, addressBob, bytes, duration, wagerUp, wagerDown, true);
-  const infoCtcAlice = (await ctcAlice.getInfo());
-  console.log("Launching Alice's contract");
-  const ctcSprig = Sprig.contract(backendClaim, infoCtcAlice);
-  console.log("Connecting Sprig");
-  monitorEvents(ctcSprig);
-  if (await verifyAnswer(ctcSprig, addressSprig, addressBob, bytes, duration, wagerUp, wagerDown, true)){
-    await ctcSprig.apis.Sprig.announceVerification(true);
-  } else {
-    await ctcSprig.apis.Sprig.incorrectContract();
-  } 
-}
-
-const fifthTest = async () =>
-{
-  const wagerDown = stdlib.parseCurrency(1);
-  console.log("test 5");
-  console.log("Expected result: The challenge is correct")
-  const ctcAlice = await challenge(Alice, addressSprig, bytes, duration, wagerDown);
-  const infoCtcAlice = (await ctcAlice.getInfo());
-  console.log("Launching Alice's contract");
-  const ctcSprig = Sprig.contract(backendChallenge, infoCtcAlice);
-  console.log("Connecting Sprig");
-  monitorEventsChallenge(ctcSprig);
-  if (await verifyChallenge(ctcSprig, addressSprig, bytes, duration, wagerDown)){
-    await ctcSprig.apis.Sprig.addParticipant(addressBob, infoCtcAlice);
-    await stdlib.wait(duration);
-    await ctcSprig.apis.Sprig.announceWinner(true, 0);
-  } else {
-    await ctcSprig.apis.Sprig.incorrectContract();
-  } 
-}
 
 if (process.argv.length() > 2){
   const [action, typeContract, addressContract] = process.argv[2].slice(2,5);
@@ -336,9 +231,3 @@ if (process.argv.length() > 2){
   }
     
 }
-
-// await firstTest();
-// await secondTest();
-// await thirdTest();
-// await fourthTest();
-// await fifthTest();
