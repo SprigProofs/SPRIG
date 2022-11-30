@@ -82,6 +82,7 @@ const challenge = async (account,
 }
 
 const verifyAnswer = async (ctc,
+                          author,
                           addressSprig,
                           addressSkeptic,
                           interactionHash,
@@ -94,6 +95,7 @@ const verifyAnswer = async (ctc,
     To verify the answer contract given by the user. Returns a boolean.
     A view is a function that returns a Maybe, because it can be not set for the moment.
   */
+  const correctAuthor = (await ctc.views.author())[1] == author;
   const correctSprig = (await ctc.views.addressSprig())[1] == addressSprig;
   const correctSkeptic = (await ctc.views.addressSkeptic())[1][1] ==  addressSkeptic;
   const correctInteraction = (await ctc.views.interaction())[1].replaceAll('\x00', '') == interactionHash;
@@ -101,20 +103,25 @@ const verifyAnswer = async (ctc,
   const correctWagerUp = stdlib.eq((await ctc.views.wagerUp())[1], wagerUp);
   const correctDeadline = stdlib.ge((await ctc.views.deadline())[1], deadlineFromTime(durationDebate - delayAcceptation));
   const correctBottom = (await ctc.views.isBottom())[1] == isBottom;
-  return correctSprig && correctSkeptic && correctInteraction && correctWagerDown && correctWagerUp && correctDeadline && correctBottom;
+  return correctSprig && correctSkeptic 
+        && correctInteraction && correctWagerDown
+        && correctWagerUp && correctDeadline
+        && correctBottom && correctAuthor;
 };
 
 const verifyChallenge = async (ctc,
+                              author,
                                addressSprig,
                                interactionBytes,
                                durationDebate,
                                wagerDown,
                                ) => {
+  const correctAuthor = (await ctc.views.author())[1] == author;
   const correctSprig = (await ctc.views.addressSprig())[1] == addressSprig;
   const correctInteraction = (await ctc.views.interaction())[1].replaceAll('\x00', '') == interactionBytes;
   const correctWagerDown = stdlib.eq((await ctc.views.wagerDown())[1], wagerDown);
   const correctDeadline = stdlib.ge((await ctc.views.deadline())[1], deadlineFromTime(durationDebate - delayAcceptation));
-  return correctSprig && correctInteraction && correctWagerDown && correctDeadline;
+  return correctAuthor && correctSprig && correctInteraction && correctWagerDown && correctDeadline;
 };
 
 const monitorEvents = async (ctc) => {
@@ -280,7 +287,8 @@ if (process.argv.length() > 2){
   const ctc = accountSprig.contract(backend, parseInt(addressContract));
   switch (action) {
     case "VERIFY":
-      const [addressSkeptic,
+      const [author,
+            addressSkeptic,
             time,
             wagerUp,
             wagerDown,
@@ -290,10 +298,10 @@ if (process.argv.length() > 2){
         let b = none;
         switch (typeContract){
           case "CHALLENGE":
-            b = verifyChallenge(ctc, addressSprig, hashInteraction, parseInt(time), parseInt(wagerDown));
+            b = verifyChallenge(ctc, author, addressSprig, hashInteraction, parseInt(time), parseInt(wagerDown));
             break;
           case "ANSWER":
-            b = verifyAnswer(ctc, addressSprig, addressSkeptic, hashInteraction, parseInt(time), parseInt(wagerUp), parseInt(wagerDown), isBottom=="true");
+            b = verifyAnswer(ctc, author, addressSprig, addressSkeptic, hashInteraction, parseInt(time), parseInt(wagerUp), parseInt(wagerDown), isBottom=="true");
             break;
           default:
             throw new Error("type contract not handled.")

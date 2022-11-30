@@ -194,7 +194,8 @@ def jsFrontendReach(parameters, throwingError=False):
     """To call the frontend for Reach written in Javascript, to interact
     with the blockchain.
     """
-    return subprocess.run(["node", "./reach/index.mjs"] + parameters, capture_output=True, check=throwingError)
+    return subprocess.run(["REACH_CONNECTOR_MODE=ALGO", "node", "./reach/index.mjs"] 
+                                + parameters, capture_output=True, check=throwingError)
 
 def hashingChallenge(challenge: Challenge, attempt: ProofAttempt):
     part_challenged = attempt.challenges.index(challenge.hash)
@@ -261,6 +262,7 @@ class ParametersBlockchain(AbstractParameters):
             process = jsFrontendReach(["VERIFY",
                                         "ANSWER",
                                         attempt.contract,
+                                        attempt.author,
                                         address_skeptic,
                                         str(self.time_for_questions),
                                         str(self.upstakes[attempt.height]),
@@ -273,6 +275,7 @@ class ParametersBlockchain(AbstractParameters):
             process = jsFrontendReach(["VERIFY",
                                         "ANSWER",
                                         attempt.contract,
+                                        attempt.author,
                                         address_skeptic,
                                         str(self.time_for_questions),
                                         str(self.upstakes[attempt.height]),
@@ -373,6 +376,7 @@ class ParametersBlockchain(AbstractParameters):
         process = jsFrontendReach(["VERIFY",
                                     "CHALLENGE",
                                     challenge.contract,
+                                    challenge.author,
                                     "NONE",
                                     str(self.time_for_answers),
                                     "0",

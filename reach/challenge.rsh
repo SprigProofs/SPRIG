@@ -19,6 +19,7 @@ export const main = Reach.App(() => {
   });                                       // and the UInt is the index of the winner in the list of participants if the boolean is false
   
   const V = View({
+    author: Address,
     addressSprig: Address,
     interaction: Bytes(sizeBinaryInfo),
     wagerDown: UInt,
@@ -43,6 +44,7 @@ export const main = Reach.App(() => {
   A.publish(addressSprig, interaction, wagerDown, deadline)
   .pay(wagerDown + fee);
   transfer(fee).to(addressSprig);
+  V.author.set(A);
   V.addressSprig.set(addressSprig);
   V.interaction.set(interaction);
   V.wagerDown.set(wagerDown);
