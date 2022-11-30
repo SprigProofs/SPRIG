@@ -786,7 +786,7 @@ SPRIG instance:
         return attempt
 
     def answer_low_level(self, challenge_hash: Hash, claimer: Address,
-                         machine_proof: str, contract: str) -> ProofAttempt:
+                         proof: str, contract: str) -> ProofAttempt:
         self.distribute_all_bets()
 
         assert challenge_hash in self.challenges, "No such challenge."
@@ -797,7 +797,7 @@ SPRIG instance:
         attempt = ProofAttempt(hash=self.next_hashes()[0],
                                parent=challenge_hash,
                                author=claimer,
-                               proof=machine_proof,
+                               proof=proof,
                                contract=contract,
                                height=0,
                                status=Status.UNCHALLENGED,

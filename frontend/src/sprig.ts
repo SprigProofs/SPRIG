@@ -617,11 +617,12 @@ const api = {
   async challenge(
     instanceHash: string,
     challengeHash: string,
-    skeptic: string
+    skeptic: string,
+    contract: string,
   ): Promise<void> {
     return await this.post(
       ["challenge", instanceHash, challengeHash],
-      { skeptic },
+      { skeptic, contract },
       null
     );
   },
@@ -631,7 +632,8 @@ const api = {
     params: Parameters,
     author: string,
     rootClaim: string,
-    proof: string
+    proof: string,
+    contract: string,
   ): Promise<Sprig> {
     return await this.post(
       ["instances"],
@@ -651,6 +653,7 @@ const api = {
         },
         root_claim: rootClaim,
         proof: proof,
+        contract: contract,
       }
     ).then((data) => new Sprig(data));
   },
@@ -659,11 +662,12 @@ const api = {
     challengeHash: string,
     isMachineLevel: boolean,
     proof: string,
-    author: string
+    author: string,
+    contract: string,
   ): Promise<ProofAttempt> {
     return this.post(
       ["proof", instanceHash, challengeHash],
-      {},
+      { contract },
       { author, statement: proof, machine_level: isMachineLevel }
     ).then((data) => new ProofAttempt({ instanceHash, ...data }));
   },
