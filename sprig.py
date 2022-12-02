@@ -42,7 +42,7 @@ BANK = defaultdict(int, json.loads(BANK_FILE.read_text() or "{}"))
 
 INDENT = " " * 4  # For pretty printing
 
-REAL_TIME = "real" # UNIX timestamp, in seconds
+REAL_TIME = "real" # UNIX timestamp, in milliseconds
 DISCRETE_TIME = "discrete"
 TIME_MODE = os.environ.get("TIME_MODE", DISCRETE_TIME)
 
@@ -194,8 +194,12 @@ def jsFrontendReach(parameters, throwingError=False):
     """To call the frontend for Reach written in Javascript, to interact
     with the blockchain.
     """
-    return subprocess.run(["REACH_CONNECTOR_MODE=ALGO", "node", "./reach/index.mjs"] 
-                                + parameters, capture_output=True, check=throwingError)
+    env = os.environ.copy()
+    env.update({'REACH_CONNECTOR_MODE':'ALGO'})
+    return subprocess.run(["node", "./reach/index.mjs"] + parameters, 
+                            capture_output=True,
+                            check=throwingError,
+                            env=env)
 
 def hashingChallenge(challenge: Challenge, attempt: ProofAttempt):
     part_challenged = attempt.challenges.index(challenge.hash)
@@ -264,28 +268,33 @@ class ParametersBlockchain(AbstractParameters):
                                         attempt.contract,
                                         attempt.author,
                                         address_skeptic,
-                                        str(self.time_for_questions),
+                                        str(attempt.created_at + self.time_for_questions),
                                         str(self.upstakes[attempt.height]),
                                         '0',
                                         hashingAnswer(attempt),
                                         "true",
                                         ])
-            return (process.returncode == 0) and (process.stdout == "true")
         else:
             process = jsFrontendReach(["VERIFY",
                                         "ANSWER",
                                         attempt.contract,
                                         attempt.author,
                                         address_skeptic,
-                                        str(self.time_for_questions),
+                                        str(attempt.created_at + self.time_for_questions),
                                         str(self.upstakes[attempt.height]),
                                         str(self.downstakes[attempt.height]),
                                         hashingAnswer(attempt),
                                         "false",
                                         ])
-            return (process.returncode == 0) and (process.stdout == "true")
-
-        return True
+        successful = process.returncode == 0 and process.stdout == "true\n"
+        if successful and attempt.parent is not None:
+            challenge = sprig.challenges[attempt.parent]
+            jsFrontendReach(["ADD_PARTICIPANT",
+                            "CHALLENGE",
+                            challenge.contract,
+                            attempt.author,
+                            attempt.contract])
+        return successful
 
         if attempt.height == 0:  # machine => upstake + verif cost
             amount = self.verification_cost + self.upstakes[attempt.height]
@@ -378,12 +387,19 @@ class ParametersBlockchain(AbstractParameters):
                                     challenge.contract,
                                     challenge.author,
                                     "NONE",
-                                    str(self.time_for_answers),
+                                    str(challenge.open_until),
                                     "0",
                                     str(self.downstakes[challenge.height]),
                                     hashingChallenge(challenge, attempt),
                                     "false"])
-        return (process.returncode == 0) and (process.stdout == "true")
+        successful = process.returncode == 0 and process.stdout == "true\n"
+        if successful:
+            jsFrontendReach(["ADD_PARTICIPANT",
+                            "ANSWER",
+                            attempt.contract,
+                            challenge.author,
+                            challenge.contract])
+        return successful
         amount = self.question_bounties[challenge.height]
         attempt.money_held += amount
         return transfer_money(skeptic, SPRIG_ADDRESS, amount, f"challenge {challenge.hash}")

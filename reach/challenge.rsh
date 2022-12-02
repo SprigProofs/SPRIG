@@ -2,7 +2,7 @@
 
 const fee = 1000; // Money that goes to Sprig
 const maxParticipants = 10;
-const sizeBinaryInfo = 300;
+const sizeBinaryInfo = 32;
 
 export const main = Reach.App(() => {
   const A = Participant('Alice', {
