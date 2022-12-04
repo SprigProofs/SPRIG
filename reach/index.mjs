@@ -6,10 +6,6 @@ export const stdlib = loadStdlib({...process.env, REACH_NO_WARN: 'Y'});
 
 export const securityConnection = "0x" + "0".repeat(64);
 
-
-// Acceptable time delay for the server to receive infos on the contract of a new interaction
-const delayAcceptation = 100000000;
-
 // Function to get the UNIX timestamp that it will be after some time. Time should be a number of milliseconds
 export const deadlineFromTime = (time) => time + Date.now();
 
@@ -18,7 +14,10 @@ const sha256 = (text) => stdlib.digest(stdlib.T_Bytes(100_000_000), text);
 export const hashingAnswer = (proof, addressContractParent="") => 
   sha256(proof + addressContractParent);
 
-const uIntArrayToHex = (a) => "0x" + Array.from(a).map(x => x.toString(16)).join('');
+const uIntArrayToHex = (a) => "0x" + Array.from(a)
+                                .map(x => x.toString(16))
+                                .map(x => x.length == 1 ? "0" + x : x)
+                                .join('');
 
 export const hashingChallenge = (addressContractAnswer, indexPartChallenged) =>
   sha256(addressContractAnswer + toString(indexPartChallenged));
@@ -110,7 +109,7 @@ const verifyAnswer = async (ctc,
   const correctWagerUp = stdlib.eq((await ctc.views.wagerUp())[1], wagerUp);
   const correctDeadline = stdlib.eq((await ctc.views.deadline())[1], deadline);
   const correctBottom = (await ctc.views.isBottom())[1] == isBottom;
-  return correctSprig && correctSkeptic 
+  return correctSprig && correctSkeptic
         && correctInteraction && correctWagerDown
         && correctWagerUp && correctDeadline
         && correctBottom && correctAuthor;
@@ -190,8 +189,8 @@ export const getBalance = async (acc) => {
 
 
 if (process.argv.length > 2){
-  const [action, typeContract, addressContract] = process.argv[2].slice(2,5);
-  const backend = {"CHALLENGE":backendChallenge, "ANSWER":backendAnswer}[typeContract];
+  const [action, typeContract, addressContract] = process.argv.slice(2,5);
+  const backend = {"CHALLENGE":backendChallenge, "ANSWER":backendClaim}[typeContract];
   const accountSprig = await stdlib.newAccountFromSecret(securityConnection);
   const addressSprig = accountSprig.getAddress();
   const ctc = accountSprig.contract(backend, parseInt(addressContract));
@@ -205,13 +204,13 @@ if (process.argv.length > 2){
             hashInteraction,
             isBottom
             ] = process.argv.slice(5);
-        let b = none;
+        let b = null;
         switch (typeContract){
           case "CHALLENGE":
-            b = verifyChallenge(ctc, author, addressSprig, hashInteraction, parseInt(deadline), parseInt(wagerDown));
+            b = await verifyChallenge(ctc, author, addressSprig, hashInteraction, parseInt(deadline), stdlib.parseCurrency(wagerDown));
             break;
           case "ANSWER":
-            b = verifyAnswer(ctc, author, addressSprig, addressSkeptic, hashInteraction, parseInt(deadline), parseInt(wagerUp), parseInt(wagerDown), isBottom=="true");
+            b = await verifyAnswer(ctc, author, addressSprig, addressSkeptic == "None" ? null : addressSkeptic, hashInteraction, parseInt(deadline), stdlib.parseCurrency(wagerUp), stdlib.parseCurrency(wagerDown), isBottom=="true");
             break;
           default:
             throw new Error("type contract not handled.")
