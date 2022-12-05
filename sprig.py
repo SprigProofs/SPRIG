@@ -4,7 +4,7 @@ import dataclasses
 import json
 import os
 import sys
-import subprocess as subprocess
+import subprocess
 from collections import defaultdict
 from contextlib import contextmanager
 from dataclasses import dataclass
