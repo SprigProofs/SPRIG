@@ -47,7 +47,7 @@ export const store: Store = reactive<Store>({
         // Blockchain
         const ctc = await createContract(69, togglePopup);
         // Server
-        await api.challenge(instance, challenge, store.user)
+        await api.challenge(instance, challenge, store.user, await ctc.getContractAddress())
         await store.reload();
     },
     async newInstance(togglePopup: Ref<boolean>, language: string, params: Parameters, rootClaim: string, proof: string) {
@@ -55,7 +55,7 @@ export const store: Store = reactive<Store>({
         // Blockchain
         const ctc = await createContract(1234, togglePopup);
         // Server
-        const instance = await api.newInstance(language, params, this.user, rootClaim, proof);
+        const instance = await api.newInstance(language, params, this.user, rootClaim, proof, await ctc.getContractAddress());
         await store.reload();
         return instance;
     },
@@ -64,7 +64,7 @@ export const store: Store = reactive<Store>({
         // Blockchain
         const ctc = await createContract(42, togglePopup);
         // Server
-        const proofAttempt = await api.newProofAttempt(instance, challenge, isMachineLevel, proof, this.user)
+        const proofAttempt = await api.newProofAttempt(instance, challenge, isMachineLevel, proof, this.user, await ctc.getContractAddress());
         await store.reload();
         return proofAttempt;
     },
