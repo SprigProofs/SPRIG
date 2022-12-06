@@ -105,6 +105,7 @@ class ProofAttempt {
   hash: string;
   parent?: string; // hash of the parent challenge, if any
   author: string;
+  contract: string;
   proof: string;
   height: number;
   status: Status;
@@ -116,6 +117,7 @@ class ProofAttempt {
     this.hash = attempt.hash;
     this.parent = attempt.parent;
     this.author = attempt.author;
+    this.contract = attempt.contract;
     this.proof = attempt.proof;
     this.height = attempt.height;
     this.status = attempt.status;
@@ -172,6 +174,7 @@ class Challenge {
   hash: string;
   parent: string; // hash of the parent proot attempt, if any
   author?: string;
+  contract?: string;
   createdAt: dayjs.Dayjs;
   challengedAt: dayjs.Dayjs;
   openUntil: dayjs.Dayjs;
@@ -184,6 +187,7 @@ class Challenge {
     this.hash = challenge.hash;
     this.parent = challenge.parent;
     this.author = challenge.author;
+    this.contract = challenge.contract;
     this.createdAt = dayjs(challenge.created_at || challenge.createdAt);
     this.challengedAt = dayjs(
       challenge.challenged_at || challenge.challengedAt

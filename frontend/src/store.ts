@@ -1,4 +1,4 @@
-import { api, Parameters, ProofAttempt, Sprig, User } from "./sprig";
+import { api, dayjs, Parameters, ProofAttempt, Sprig, User } from "./sprig";
 import { reactive, type Ref } from "vue";
 import type { Account as AccountReach, Contract } from '@reach-sh/stdlib/ALGO';
 
@@ -45,7 +45,16 @@ export const store: Store = reactive<Store>({
     async challenge(togglePopup: Ref<boolean>, instance: string, challenge: string) {
         console.log("Challenge", instance, challenge, this.user);
         // Blockchain
-        const ctc = await createContract(69, togglePopup);
+        const inst = store.instances[instance];
+        const chall = inst.challenges[challenge];
+        const parent = inst.proofs[chall.parent];
+        const ctc = await blockchain.challenge(
+            ensureWalletConnected(),
+            SPRIG_ADDRESS,
+            blockchain.hashingChallenge(parent.contract, parent.challenges.indexOf(challenge)),
+            dayjs().add(inst.params.timeForAnswers).unix(),
+            inst.params.downstakes[chall.height],
+            );
         // Server
         await api.challenge(instance, challenge, store.user, await ctc.getContractAddress())
         await store.reload();
@@ -53,7 +62,14 @@ export const store: Store = reactive<Store>({
     async newInstance(togglePopup: Ref<boolean>, language: string, params: Parameters, rootClaim: string, proof: string) {
         console.log("New instance", language, params, rootClaim, proof);
         // Blockchain
-        const ctc = await createContract(1234, togglePopup);
+        const now = dayjs();
+        const ctc = await blockchain.newSprig(
+            ensureWalletConnected(),
+            SPRIG_ADDRESS,
+            blockchain.hashingAnswer(proof),
+            now.add(params.timeForQuestions).unix(),
+            params.downstakes[params.rootHeight],
+        )
         // Server
         const instance = await api.newInstance(language, params, this.user, rootClaim, proof, await ctc.getContractAddress());
         await store.reload();
@@ -62,7 +78,19 @@ export const store: Store = reactive<Store>({
     async newProofAttempt(togglePopup: Ref<boolean>, instance: string, challenge: string, isMachineLevel: boolean, proof: string) {
         console.log("New proof attempt", instance, challenge, proof);
         // Blockchain
-        const ctc = await createContract(42, togglePopup);
+        const inst = store.instances[instance];
+        const chall = inst.challenges[challenge];
+        const height = isMachineLevel ? 0 : chall.height - 1;
+        const ctc = await blockchain.answer(
+            ensureWalletConnected(),
+            SPRIG_ADDRESS,
+            chall.author,
+            blockchain.hashingAnswer(proof, chall.contract),
+            dayjs().add(inst.params.timeForQuestions).unix(),
+            inst.params.upstakes[height],
+            inst.params.downstakes[height],
+            isMachineLevel,
+            );
         // Server
         const proofAttempt = await api.newProofAttempt(instance, challenge, isMachineLevel, proof, this.user, await ctc.getContractAddress());
         await store.reload();
@@ -78,12 +106,13 @@ store.reload();
 
 // Blockchain
 
-import * as backend from './reach/build/index.main.mjs';
+import * as blockchain from '../../reach/index.mjs'
 import { loadStdlib } from '@reach-sh/stdlib';
 import { ALGO_WalletConnect as WalletConnect } from '@reach-sh/stdlib';
-import type { BigNumber } from "ethers";
 
 const reach = loadStdlib('ALGO');
+
+const SPRIG_ADDRESS = 'secret';
 
 export async function ensureWalletConnected() {
     if (!store.account) {
@@ -113,13 +142,13 @@ export async function ensureWalletConnected() {
 // }
 
 
-async function createContract(secret: number, togglePopup: Ref<boolean>): Promise<Contract> {
+async function createContract(backend, initialData, togglePopup: Ref<boolean>): Promise<Contract> {
     const account = await ensureWalletConnected();
     const ctc = account.contract(backend);
 
     // It is not clean to do this here, but I can't think of a better place.
     togglePopup.value = true;
-    const ret = await ctc.p.Admin({ secret })
+    const ret = await ctc.p.Admin(initialData)
     togglePopup.value = false;
 
     const contractInfo = await ctc.getInfo();
