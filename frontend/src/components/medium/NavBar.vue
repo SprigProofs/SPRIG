@@ -1,17 +1,30 @@
 <template>
     <div>
         <header class="fixed h-12 z-10 shadow w-screen border-b border-black bg-white">
-            <ul class="flex space-x-6 py-3 max-w-3xl w-fill mx-auto px-4 sm:px-6 lg:px-8 ">
+            <ul class="flex space-x-6 items-center h-full max-w-3xl w-fill mx-auto px-4 sm:px-6 lg:px-8 ">
                 <li><router-link to="/">Home</router-link></li>
                 <li><router-link to="/search">Explore</router-link></li>
                 <li><router-link to="/new">New</router-link></li>
                 <li><router-link :to="{ name: 'user', params: { name: store.user || 'Diego' }}">Contributions</router-link></li>
                 <li><router-link to="/docs">Docs</router-link></li>
                 <li class="flex-grow text-right">
-                    <input class="text-right mr-4 px-1 py-0.5 -my-0.5 border-gray-400 border w-24"
-                        type="text"
-                        v-model="store.user">
-                    <Price :amount="store.bank[store.user] || 0" />
+                    <Button v-if="!store.account"
+                        @click="ensureWalletConnected()"
+                        color="orange" filled
+                        class="bg-gradient-to-br from-orange-500 to-pink-500"
+                        >Connect Wallet</Button>
+                    <div v-else class="space-x-2">
+                        <Tooltip>
+                            <template #reference>
+                                <span class="text-gray-700 font-mono">
+                                {{ store.account.shortAddress }}
+                                </span>
+                            </template>
+                            <span class="text-gray-700 font-mono">
+                            {{ store.account.address }} </span>
+                        </Tooltip>
+                        <Price :amount="store.account.balance"/>
+                    </div>
                 </li>
             </ul>
         </header>
@@ -22,7 +35,6 @@
 </template>
 
 <script setup lang="ts">
-import { store } from '../../store';
-
-
+import { store, ensureWalletConnected } from '../../store';
+import { Tooltip } from '../small';
 </script>

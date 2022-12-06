@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ProofAttempt, Sprig, Action, ActionData, Challenge } from '../../sprig';
+import { ProofAttempt, Sprig, Action, type ActionData, Challenge } from '../../sprig';
 import User from './User.vue';
-import { Time, Duration } from '../small';
+import { Time, Duree } from '../small';
 import UidTag from '../small/UidTag.vue';
 import { nextTick, ref, watch } from 'vue';
 import Algo from '../small/Algo.vue';
@@ -11,7 +11,7 @@ const props = withDefaults(defineProps<{
   action: ActionData,
   instance: Sprig,
   startOpen?: boolean,
-  last?: boolean
+  last?: boolean;
 }>(), { startOpen: false, last: false });
 
 const collapsed = ref(!props.startOpen);
@@ -29,7 +29,7 @@ if (props.action.target instanceof Challenge) {
 } else if (props.action.target instanceof ProofAttempt) {
   attempt = props.action.target;
   if (attempt.parent !== null) {
-    challenge = instance.challenges[attempt.parent]
+    challenge = instance.challenges[attempt.parent];
   }
 } else if (props.action.target instanceof Sprig) {
   attempt = instance.rootAttempt();
@@ -43,7 +43,7 @@ const buttonTexts = {
   [Action.CHALLENGE_ACTIVATED]: !challenge?.decided() ? 'Submit proof' : undefined,
   // [Action.CHALLENGE_ANSWERED]: 'See the proof',
 };
-const buttonText = buttonTexts[props.action.type] ;
+const buttonText = buttonTexts[props.action.type];
 const title = {
   // [Action.PARENT_CHALLENGED]: "",
   [Action.ROOT_CREATED]: "Doubtful? Challenge a claim.",
@@ -66,16 +66,16 @@ const validatedIcon = { name: 'md-check-round', class: 'bg-green-200' };
 const rejectedIcon = { name: 'md-close-round', class: 'bg-red-200' };
 const lockIcon = { name: 'md-lockoutline', class: 'bg-gray-200' };
 const icon = {
-    [Action.ROOT_CREATED]: addIcon,
-    [Action.ATTEMPT_CREATED]: addIcon,
-    [Action.CHALLENGE_ACTIVATED]: challengeIcon,
-    [Action.AUTO_VALIDATION]: lockIcon,
-    [Action.CHALLENGE_REJECTED]: rejectedIcon,
-    [Action.CHALLENGE_VALIDATED]: validatedIcon,
-    [Action.ATTEMPT_VALIDATED]: validatedIcon,
-    [Action.ATTEMPT_REJECTED]: rejectedIcon,
-    [Action.MACHINE_VALIDATED]: validatedIcon,
-    [Action.MACHINE_REJECTED]: rejectedIcon,
+  [Action.ROOT_CREATED]: addIcon,
+  [Action.ATTEMPT_CREATED]: addIcon,
+  [Action.CHALLENGE_ACTIVATED]: challengeIcon,
+  [Action.AUTO_VALIDATION]: lockIcon,
+  [Action.CHALLENGE_REJECTED]: rejectedIcon,
+  [Action.CHALLENGE_VALIDATED]: validatedIcon,
+  [Action.ATTEMPT_VALIDATED]: validatedIcon,
+  [Action.ATTEMPT_REJECTED]: rejectedIcon,
+  [Action.MACHINE_VALIDATED]: validatedIcon,
+  [Action.MACHINE_REJECTED]: rejectedIcon,
 }[props.action.type];
 
 // I don't this that this is the best way to do this.
@@ -95,164 +95,188 @@ function toggle() {
 </script>
 
 <template>
-  <div class="flex group w-full" @click="toggle()" :class="{ 'cursor-pointer': collapsable }" >
+  <div class="flex group w-full" @click="toggle()" :class="{ 'cursor-pointer': collapsable }">
 
-  <div class="w-6 mr-2 flex-shrink-0 relative
+    <div class="w-6 mr-2 flex-shrink-0 relative
     flex flex-col items-center">
-    <div v-if="!last" class="h-full absolute border-l-2 border-slate-200 mt-1
+      <div v-if="!last" class="h-full absolute border-l-2 border-slate-200 mt-1
       group-hover:border-slate-400"></div>
-    <v-icon :name="icon.name" :class="icon.class" class="absolute border shadow border-gray-500 w-6 h-6 p-1 rounded-full bg-blue-200 mt-0.5" />
-  </div>
+      <v-icon :name="icon.name" :class="icon.class"
+        class="absolute border shadow border-gray-500 w-6 h-6 p-1 rounded-full bg-blue-200 mt-0.5" />
+    </div>
 
-  <div class="w-full">
+    <div class="w-full">
 
-    <div class="flex group w-full justify-between">
-      <p>
+      <div class="flex group w-full justify-between">
+        <p>
 
-        <v-icon v-if="collapsable" name="md-expandmore-round"
-          class="mr-1 transform transition duration-500 text-gray-600 group-hover:scale-125 group-hover:text-gray-900"
-          :class="{ '-rotate-90': collapsed }" />
+          <v-icon v-if="collapsable" name="md-expandmore-round"
+            class="mr-1 transform transition duration-500 text-gray-600 group-hover:scale-125 group-hover:text-gray-900"
+            :class="{ '-rotate-90': collapsed }" />
 
-        <span v-if="action.type === Action.ROOT_CREATED">
-          <User :name="instance.author()" /> created the instance
-          <UidTag :instance="instance" />
-          and locked a bounty of
-          <Price :amount="params.downstakes[params.rootHeight-1]" />.
-        <!-- </span><span v-else-if="action.type === Action.PARENT_CHALLENGED">
+          <span v-if="action.type === Action.ROOT_CREATED">
+            <User :name="instance.author()" /> created the instance
+            <UidTag :instance="instance" />
+            and locked a bounty of
+            <Price :amount="params.downstakes[params.rootHeight - 1]" />.
+            <!-- </span><span v-else-if="action.type === Action.PARENT_CHALLENGED">
           <User :name="action.author" /> challenged the parent claim
           <UidTag :object="parentChallenge" :instance="instance" />
           with a bounty of
           <Price :amount="action.cost" /> -->
-        </span><span v-else-if="action.type === Action.ATTEMPT_CREATED">
-          <User :name="attempt.author" /> answered
-          <!-- Note: challenge is always defined here, because ATTEMPT_CREATED does not happen on the root -->
-          <UidTag :object="challenge" :instance="instance"/>
-          with the <template v-if="attempt.height == 0">machine</template>
-          proof attempt <UidTag :object="attempt" :instance="instance" />,
-          <template v-if="attempt.height > 0">
-            locking a bounty of <Price :amount="params.downstakes[attempt.height]" />
-            and an upstake of <Price :amount="params.upstakes[attempt.height]" />
-          </template>
-          <template v-else>
-            paying <Price :amount="params.verificationCost" />
-            for verfication and
-            locking an upstake of <Price :amount="params.upstakes[attempt.height]" />
-          </template>.
-        </span><span v-else-if="action.type === Action.CHALLENGE_ACTIVATED">
-          <User :name="challenge.author" /> opened challenge
-          <UidTag :object="challenge" :instance="instance"/> on <UidTag :object="attempt" :instance="instance"/>
-          with a bounty of
-          <Price :amount="params.questionBounties[challenge.height]" />.
-        <!-- </span><span v-else-if="action.type === Action.CHALLENGE_ANSWERED">
+          </span><span v-else-if="action.type === Action.ATTEMPT_CREATED">
+            <User :name="attempt.author" /> answered
+            <!-- Note: challenge is always defined here, because ATTEMPT_CREATED does not happen on the root -->
+            <UidTag :object="challenge" :instance="instance" />
+            with the <template v-if="attempt.height == 0">machine</template>
+            proof attempt
+            <UidTag :object="attempt" :instance="instance" />,
+            <template v-if="attempt.height > 0">
+              locking a bounty of
+              <Price :amount="params.downstakes[attempt.height]" />
+              and an upstake of
+              <Price :amount="params.upstakes[attempt.height]" />
+            </template>
+            <template v-else>
+              paying
+              <Price :amount="params.verificationCost" />
+              for verfication and
+              locking an upstake of
+              <Price :amount="params.upstakes[attempt.height]" />
+            </template>.
+          </span><span v-else-if="action.type === Action.CHALLENGE_ACTIVATED">
+            <User :name="challenge.author" /> opened challenge
+            <UidTag :object="challenge" :instance="instance" /> on
+            <UidTag :object="attempt" :instance="instance" />
+            with a bounty of
+            <Price :amount="params.questionBounties[challenge.height]" />.
+            <!-- </span><span v-else-if="action.type === Action.CHALLENGE_ANSWERED">
           Challenge
           <UidTag :object="action.challenge" :instance="instance" /> was answered by
           <User :name="action.author" />
           with
           <UidTag :object="action.attempt" :instance="instance" :tooltip="true" /> -->
-        </span><span v-else-if="action.type === Action.AUTO_VALIDATION">
-          Time for questions has elapsed for <UidTag :object="instance.proofs[action.target[0].parent]" :instance="instance"/>,
-          so <span v-for="(claim, i) in action.target" class="mr-1">
-            <UidTag :object="claim" :instance="instance" />
-            <span v-if="i < action.target.length - 2">, </span>
-            <span v-else-if="i == action.target.length - 2"> and </span>
+          </span><span v-else-if="action.type === Action.AUTO_VALIDATION">
+            Time for questions has elapsed for
+            <UidTag :object="instance.proofs[action.target[0].parent]" :instance="instance" />,
+            so <span v-for="(claim, i) in action.target" class="mr-1">
+              <UidTag :object="claim" :instance="instance" />
+              <span v-if="i < action.target.length - 2">, </span>
+              <span v-else-if="i == action.target.length - 2"> and </span>
+            </span>
+            <template v-if="action.target.length == 1">has</template>
+            <template v-else>have</template>
+            been automatically validated
+            and no new challenges can be added.
+          </span><span v-else-if="action.type === Action.MACHINE_REJECTED">
+            The machine proof
+            <UidTag :object="attempt" :instance="instance" /> was rejected
+            and
+            <User :name="challenge.author" /> won
+            the upstake of
+            <Price :amount="params.upstakes[attempt.height]" />.
+
+          </span><span v-else-if="action.type === Action.MACHINE_VALIDATED">
+            The machine proof
+            <UidTag :object="attempt" :instance="instance" /> was accepted
+            and
+            <User :name="attempt.author" /> was refunded their stake
+            of
+            <Price :amount="params.upstakes[attempt.height]" />.
+          </span><span v-else-if="action.type === Action.ATTEMPT_REJECTED">
+            <UidTag :object="attempt" :instance="instance" /> was rejected by challenge
+            <UidTag :object="challenge" :instance="instance" />.
+            <User :name="challenge.author" /> won
+            <User :name="attempt.author" />'s bounty of
+            <Price :amount="params.downstakes[attempt.height]" />.
+            <template v-if="!attempt.isRoot()">
+              The upstake of
+              <Price :amount="params.upstakes[attempt.height]" /> goes to
+              <User :name="instance.challenges[attempt.parent].author" />.
+            </template>
+          </span><span v-else-if="action.type === Action.ATTEMPT_VALIDATED">
+            <UidTag :object="attempt" :instance="instance" /> was validated
+            and
+            <User :name="attempt.author" /> was refunded their bounty
+            of
+            <Price :amount="params.downstakes[attempt.height]" />.
+          </span><span v-else-if="action.type === Action.CHALLENGE_REJECTED">
+            Challenge
+            <UidTag :object="challenge" :instance="instance" /> was not proven.
+          </span><span v-else-if="action.type === Action.CHALLENGE_VALIDATED">
+            Challenge
+            <UidTag :object="challenge" :instance="instance" /> was proven
+            by
+            <User :name="action.target.author" />
+            in
+            <UidTag :object="action.target" :instance="instance" />.
+            They win
+            <User :name="challenge.author" />'s bounty of
+            <Price :amount="params.questionBounties[challenge.height]" />.
+
+          </span><span v-else>
+            {{ action.type }} needs more work...
           </span>
-          <template v-if="action.target.length == 1">has</template>
-          <template v-else>have</template>
-          been automatically validated
-          and no new challenges can be added.
-        </span><span v-else-if="action.type === Action.MACHINE_REJECTED">
-          The machine proof <UidTag :object="attempt" :instance="instance"/> was rejected
-          and <User :name="challenge.author" /> won
-          the upstake of <Price :amount="params.upstakes[attempt.height]" />.
 
-        </span><span v-else-if="action.type === Action.MACHINE_VALIDATED">
-          The machine proof <UidTag :object="attempt" :instance="instance"/> was accepted
-          and <User :name="attempt.author" /> was refunded their stake
-          of <Price :amount="params.upstakes[attempt.height]" />.
-        </span><span v-else-if="action.type === Action.ATTEMPT_REJECTED">
-          <UidTag :object="attempt" :instance="instance"/> was rejected by challenge <UidTag :object="challenge" :instance="instance"/>.
-          <User :name="challenge.author" /> won
-          <User :name="attempt.author" />'s bounty of
-          <Price :amount="params.downstakes[attempt.height]" />.
-          <template v-if="!attempt.isRoot()">
-            The upstake of <Price :amount="params.upstakes[attempt.height]" /> goes to <User :name="instance.challenges[attempt.parent].author" />.
-          </template>
-        </span><span v-else-if="action.type === Action.ATTEMPT_VALIDATED">
-          <UidTag :object="attempt" :instance="instance"/> was validated
-          and <User :name="attempt.author" /> was refunded their bounty
-          of <Price :amount="params.downstakes[attempt.height]" />.
-        </span><span v-else-if="action.type === Action.CHALLENGE_REJECTED">
-          Challenge <UidTag :object="challenge" :instance="instance"/> was not proven.
-        </span><span v-else-if="action.type === Action.CHALLENGE_VALIDATED">
-          Challenge <UidTag :object="challenge" :instance="instance"/> was proven
-          by <User :name="action.target.author" />
-          in <UidTag :object="action.target" :instance="instance"/>.
-          They win <User :name="challenge.author" />'s bounty of
-          <Price :amount="params.questionBounties[challenge.height]" />.
+        </p>
 
-        </span><span v-else>
-          {{ action.type }} needs more work...
-        </span>
-
-      </p>
-
-      <!-- <Button v-if="buttonText" @click.stop="takeAction()"
+        <!-- <Button v-if="buttonText" @click.stop="takeAction()"
         class="min-w-fit mr-4 -my-1 self-start transition-opacity duration-500 "
         :class="{ 'opacity-0': !collapsed && title }">{{ buttonText }}</Button> -->
 
-    </div>
+      </div>
 
-    <Transition>
-      <div v-if="collapsable" v-show="!collapsed" @click.stop>
-        <div class="bg-slate-100 p-4 my-2 rounded-md flex flex-col shadow-sm cursor-auto">
-          <h3 class="font-semibold ">{{ title }}</h3>
-          <ul v-if="action.type === Action.ROOT_CREATED || action.type === Action.ATTEMPT_CREATED">
-            <li>Lock a bounty of
-              <Price :amount="params.costToChallenge(attempt)" />
-            </li>
-            <li>For
-              <Duration :duration="params.timeForQuestions" />, proof attempts can be submitted for
-              <price :amount="params.upstakes[attempt.height - 1] + params.downstakes[attempt.height - 1]" />
-            </li>
-            <li>The first accepted proof attempt is rewarded with your bounty of
-              <Price :amount="params.costToChallenge(attempt)" />
-            </li>
-            <li>If all proof attempts are rejected, you get your locked bounty back,
-              If your challenge is the first to invalidate
-              <User :name="attempt.author" />'s proof, you get their
-              <Price :amount="params.downstakes[attempt.height]" /> bounty.
-            </li>
-          </ul>
-          <ul v-else-if="action.type === Action.CHALLENGE_ACTIVATED">
-            <li>Before <Time :time="challenge.openUntil" />, submit a proof for
-              <Price :amount="challenge.costAddAttempt(params)" />.
-            </li>
-            <li>For
-              <Duration :duration="params.timeForQuestions" /> challenges can be submitted.
-            </li>
-            <li>If the proof passes all challenges, you get your
-              <Price :amount="challenge.costAddAttempt(params)" /> back, and also
-              <User :name="challenge.author" />'s bounty of
-              <Price :amount="params.costToChallenge(attempt)" />
-            </li>
-            <li>If some challenge invalidates the proof, they get
-              <Price :amount="params.downstakes[attempt.height - 1]" /> and
-              <User :name="challenge.author" /> gets
-              <Price :amount="params.upstakes[attempt.height - 1]" /> for their good question.
-            </li>
-          </ul>
-          <pre v-else>{{ action }}</pre>
-          <!-- <button v-if="buttonText !== null" @click.stop="takeAction()"
+      <Transition>
+        <div v-if="collapsable" v-show="!collapsed" @click.stop>
+          <div class="bg-slate-100 p-4 my-2 rounded-md flex flex-col shadow-sm cursor-auto">
+            <h3 class="font-semibold ">{{ title }}</h3>
+            <ul v-if="action.type === Action.ROOT_CREATED || action.type === Action.ATTEMPT_CREATED">
+              <li>Lock a bounty of
+                <Price :amount="params.costToChallenge(attempt)" />
+              </li>
+              <li>For
+                <Duree :duration="params.timeForQuestions" />, proof attempts can be submitted for
+                <price :amount="params.upstakes[attempt.height - 1] + params.downstakes[attempt.height - 1]" />
+              </li>
+              <li>The first accepted proof attempt is rewarded with your bounty of
+                <Price :amount="params.costToChallenge(attempt)" />
+              </li>
+              <li>If all proof attempts are rejected, you get your locked bounty back,
+                If your challenge is the first to invalidate
+                <User :name="attempt.author" />'s proof, you get their
+                <Price :amount="params.downstakes[attempt.height]" /> bounty.
+              </li>
+            </ul>
+            <ul v-else-if="action.type === Action.CHALLENGE_ACTIVATED">
+              <li>Before <Time :time="challenge.openUntil" />, submit a proof for
+                <Price :amount="challenge.costAddAttempt(params)" />.
+              </li>
+              <li>For
+                <Duree :duration="params.timeForQuestions" /> challenges can be submitted.
+              </li>
+              <li>If the proof passes all challenges, you get your
+                <Price :amount="challenge.costAddAttempt(params)" /> back, and also
+                <User :name="challenge.author" />'s bounty of
+                <Price :amount="params.costToChallenge(attempt)" />
+              </li>
+              <li>If some challenge invalidates the proof, they get
+                <Price :amount="params.downstakes[attempt.height - 1]" /> and
+                <User :name="challenge.author" /> gets
+                <Price :amount="params.upstakes[attempt.height - 1]" /> for their good question.
+              </li>
+            </ul>
+            <pre v-else>{{ action }}</pre>
+            <!-- <button v-if="buttonText !== null" @click.stop="takeAction()"
             class="bg-white border border-slate-300 rounded-md px-2 py-1 self-end shadow-sm">
             {{ buttonText }}
           </button> -->
+          </div>
         </div>
-      </div>
-    </Transition>
+      </Transition>
 
-    <Time :time="action.time" suffix class="block mb-2 w-fit text-xs text-gray-400" />
+      <Time :time="action.time" suffix class="block mb-2 w-fit text-xs text-gray-400" />
 
-  </div>
+    </div>
 
   </div>
 

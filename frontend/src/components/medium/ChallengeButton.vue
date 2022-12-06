@@ -1,34 +1,45 @@
 <template>
   <div>
-  <Button class="w-full" color="blue" icon="md-bolt" @click.prevent="openDialog()">Challenge</Button>
-  <SlideOver v-model="slideOpen" panel-title="New challenge">
-    <div class="space-y-4 flex flex-col">
-      <p class="prose -mb-4">You are about to challenge a claim made by <User :name="attempt.author" /> </p>
-      <div class="mx-4">
-        <ChallengePart :challenge="challenge" :instance="instance">
-          <lang.StatementDisplay :instance="instance" :challengeHash="challenge.hash" />
-        </ChallengePart>
-      </div>
+    <Button class="w-full" color="blue" icon="md-bolt" @click.prevent="openDialog()">Challenge</Button>
+    <SlideOver v-model="slideOpen" panel-title="New challenge">
+      <div class="space-y-4 flex flex-col">
+        <p class="prose -mb-4">You are about to challenge a claim made by
+          <User :name="attempt.author" />
+        </p>
+        <div class="mx-4">
+          <ChallengePart :challenge="challenge" :instance="instance">
+            <lang.StatementDisplay :instance="instance" :challengeHash="challenge.hash" />
+          </ChallengePart>
+        </div>
 
-      <p class="prose">Once you have locked a bounty of <Price :amount="costToChallenge" />:
-      <ul>
-        <li>a period of <Duration :duration="timeForAttempts" /> to submit proof attempts starts;</li>
-        <li>if some proof is valid, its author is rewarded with your bounty;</li>
-        <li>for every proof attempt rejected, you win <Price :amount="upstakeWinnable" />;</li>
-        <li>if all proof attempts were rejected, your bounty is refunded;</li>
-        <li>
-          if furthermore your challenge is the first to invalidate the proof attempt,
-          you win <User :name="attempt.author" />'s bounty of <Price :amount="downStakeAvailable" />;
-        </li>
-        <li v-if="siblingChallenges > 0">However, there are already {{ siblingChallenges }} open sibling challenge{{siblingChallenges > 1 ? 's' : '' }}.</li>
-      </ul>
-      </p>
-      <Button @click="startChallenge()" color="indigo" filled
-        class="self-end">
-          <span>Challenge and lock <Price :amount="costToChallenge"/></span>
+        <p class="prose">Once you have locked a bounty of
+          <Price :amount="costToChallenge" />:
+        <ul>
+          <li>a period of
+            <Duree :duration="timeForAttempts" /> to submit proof attempts starts;
+          </li>
+          <li>if some proof is valid, its author is rewarded with your bounty;</li>
+          <li>for every proof attempt rejected, you win
+            <Price :amount="upstakeWinnable" />;
+          </li>
+          <li>if all proof attempts were rejected, your bounty is refunded;</li>
+          <li>
+            if furthermore your challenge is the first to invalidate the proof attempt,
+            you win
+            <User :name="attempt.author" />'s bounty of
+            <Price :amount="downStakeAvailable" />;
+          </li>
+          <li v-if="siblingChallenges > 0">However, there are already {{ siblingChallenges }} open sibling
+            challenge{{ siblingChallenges > 1 ? 's' : '' }}.</li>
+        </ul>
+        </p>
+        <Button @click="startChallenge()" color="indigo" filled class="self-end">
+          <span>Challenge and lock
+            <Price :amount="costToChallenge" />
+          </span>
         </Button>
-    </div>
-  </SlideOver>
+      </div>
+    </SlideOver>
   </div>
 </template>
 
@@ -42,7 +53,7 @@ import LANGS from '../languages';
 import dayjs from 'dayjs';
 import ChallengePart from './ChallengePart.vue';
 import Price from '../small/Price.vue';
-import Duration from '../small/Duration.vue';
+import Duree from '../small/Duree.vue';
 import UidTag from '../small/UidTag.vue';
 import User from './User.vue';
 
@@ -69,7 +80,7 @@ const lang = LANGS[props.instance.language];
 const costToChallenge = props.instance.params.costToChallenge(attempt);
 const timeForAttempts = props.instance.params.timeForAnswers;
 const downStakeAvailable = attempt.possibleReward(props.instance.params);
-const siblingChallenges =  attempt.challenges.filter(c => props.instance.challenges[c].status == Status.CHALLENGED).length;
+const siblingChallenges = attempt.challenges.filter(c => props.instance.challenges[c].status == Status.CHALLENGED).length;
 const upstakeWinnable = props.instance.params.upstakes[props.challenge.height - 1];
 
 // So that the preview is readOnly.

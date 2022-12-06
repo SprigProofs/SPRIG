@@ -40,6 +40,8 @@ const styles = {
     'orange-filled': 'text-white bg-orange-600 hover:bg-orange-700 border-transparent ',
     'amber-filled': 'text-white bg-amber-600 hover:bg-amber-700 border-transparent ',
     'red-filled': 'text-white bg-red-600 hover:bg-red-700 border-transparent ',
+
+    'gradient-filled': 'text-white gradient-r from-orange-400 to-pink-500',
 }
 
 const style = computed(() => {

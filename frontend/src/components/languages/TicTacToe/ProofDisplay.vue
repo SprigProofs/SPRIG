@@ -28,7 +28,7 @@
 
 <script setup lang="ts">
 
-import { Sprig } from '../../../sprig';
+import type { Sprig } from '../../../sprig';
 import { getMove, getState } from './TicTacToe';
 import TicTacToe from './TicTacToe.vue';
 import ChallengePart from '../../medium/ChallengePart.vue';

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 
-import { Sprig, ProofAttempt, Challenge, dedent } from '../../../sprig';
+import { type Sprig, dedent } from '../../../sprig';
 import { getChallenges } from './Lean4';
 
 const props = defineProps<{

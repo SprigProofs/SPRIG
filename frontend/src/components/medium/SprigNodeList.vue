@@ -1,6 +1,6 @@
 <script setup lang="ts">
 
-import {Sprig, ProofAttempt, Challenge, linkTo, SprigObject} from '../../sprig';
+import {linkTo, type SprigObject} from '../../sprig';
 import NodeEmbed from '../medium/NodeEmbed.vue';
 import InstanceEmbed from '../medium/InstanceEmbed.vue';
 import UserEmbed from '../medium/UserEmbed.vue';

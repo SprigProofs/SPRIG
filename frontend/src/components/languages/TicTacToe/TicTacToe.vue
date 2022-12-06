@@ -4,7 +4,7 @@
 
 <script setup lang="ts">
 
-import { nextTick, PropType, ref, watch, watchEffect } from 'vue';
+import { nextTick, type PropType, ref, watch, watchEffect } from 'vue';
 
 const canvas = ref(null);
 

@@ -57,14 +57,12 @@
 </template>
 
 <script setup lang="ts">
-import { Status, Sprig, ProofAttempt } from '../../sprig';
-import { store } from '../../store';
-import { Price, StatusIcon, StatusTag, Time, LanguageTag } from '../small';
+import type { Sprig, ProofAttempt } from '../../sprig';
+import { Price, StatusIcon, StatusTag } from '../small';
 import User from '../medium/User.vue';
 import LabeledData from '../small/LabeledData.vue';
 import UidTag from '../small/UidTag.vue';
 import Languages from '../languages';
-import dayjs from 'dayjs/esm';
 
 
 const props = defineProps<{

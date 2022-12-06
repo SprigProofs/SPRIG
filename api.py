@@ -125,6 +125,7 @@ class SprigInitData(BaseModel):
     author: sprig.Address
     root_claim: str
     proof: str
+    contract: str
 
 
 @api.post("/instances", response_model=SprigData)
@@ -143,6 +144,7 @@ def add_new_instance(new_instance: SprigInitData) -> dict[str, Any]:  # SprigDat
             new_instance.author,
             new_instance.root_claim,
             new_instance.proof,
+            new_instance.contract,
         )
 
         h = new_hash()
@@ -168,14 +170,14 @@ class ChallengeCreatedData(BaseModel):
 @api.post(
     "/challenge/{instance_hash}/{claim_hash}"
 )  #, response_model=ChallengeCreatedData)  # The response_model is not working and I don't know why.
-def new_challenge(skeptic: sprig.Address, claim_hash: sprig.Hash,
-                  instance_hash: sprig.Hash) -> ChallengeCreatedData:
+def new_challenge(skeptic: sprig.Address, claim_hash: sprig.Hash, instance_hash: sprig.Hash,
+                  contract: str) -> ChallengeCreatedData:
     """Challenge a claim that isn't yet challenged and still active."""
 
     instance = load(instance_hash)
 
     with sprig.time_mode('real'):
-        challenge = instance.challenge(skeptic, claim_hash)
+        challenge = instance.challenge(skeptic, claim_hash, contract)
 
     save(instance, instance_hash)
 
@@ -188,6 +190,7 @@ def new_challenge(skeptic: sprig.Address, claim_hash: sprig.Hash,
 
 
 class NewProofAttemptData(BaseModel):
+    contract: str
     statement: str
     author: sprig.Address
     machine_level: bool
@@ -202,10 +205,10 @@ def new_proof_attempt(instance_hash: sprig.Hash, challenge_hash: sprig.Hash,
 
     with sprig.time_mode('real'):
         if attempt_data.machine_level:
-            attempt = instance.answer_low_level(challenge_hash, attempt_data.author,
-                                                attempt_data.statement)
+            method = instance.answer_low_level
         else:
-            attempt = instance.answer(challenge_hash, attempt_data.author, attempt_data.statement)
+            method = instance.answer
+        attempt = method(challenge_hash, attempt_data.author, attempt_data.statement, attempt_data.contract)
 
     save(instance, instance_hash)
 

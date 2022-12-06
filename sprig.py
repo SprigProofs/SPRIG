@@ -260,7 +260,7 @@ class ParametersBlockchain(AbstractParameters):
     # Attempts
 
     def pay_new_proof_attempt(self, attempt: ProofAttempt, sprig: Sprig) -> bool:
-        address_skeptic = ("None" if attempt.parent is None 
+        address_skeptic = ("None" if attempt.parent is None
                             else sprig.challenges[attempt.parent].author)
         if attempt.height == 0:
             process = jsFrontendReach(["VERIFY",
@@ -358,7 +358,7 @@ class ParametersBlockchain(AbstractParameters):
                             "false",
                             rejecting.contract,
                             ], throwingError=True)
-        return        
+        return
         # non-machine: downstakes goes to closing claim challenger.
         if attempt.height > 0:
             amount = self.downstakes[attempt.height]
@@ -419,7 +419,7 @@ class ParametersBlockchain(AbstractParameters):
                        f"challenge {challenge.hash} unanswered")
 
     def pay_challenge_rejected(self, answer: ProofAttempt, sprig: Sprig) -> None:
-        challenge = sprig.challenges[answer.parent]      
+        challenge = sprig.challenges[answer.parent]
         assert answer.parent is not None  # Sanity check
         jsFrontendReach(["ANNOUNCE_WINNER",
                         "CHALLENGE",
@@ -578,7 +578,7 @@ class ProofAttempt:
     hash: Hash
     # Hash of the parent challenge
     parent: Optional[Hash]
-    contract: str
+    contract: Optional[str]
     # Address of the contract on the blockchain
     author: Address
     proof: str
@@ -612,7 +612,7 @@ class ProofAttempt:
 class Challenge:
     hash: Hash
     parent: Hash
-    contract: str
+    contract: Optional[str]
     author: Address | None
     created_at: Time
     challenged_at: Time | None
@@ -656,6 +656,7 @@ class Sprig:
         claimer: Address,
         claim: str,
         proof_attempt: str,
+        contract: str,
     ) -> Sprig:
         """Start a new instance of the SPRIG protocol, originating from a claim."""
 
@@ -665,7 +666,7 @@ class Sprig:
 
         assert self.language.validate_top_level(claim), "Invalid top level statement"
 
-        self.answer(ROOT_HASH, claimer, proof_attempt)
+        self.answer(ROOT_HASH, claimer, proof_attempt, contract)
 
         return self
 
@@ -712,7 +713,7 @@ SPRIG instance:
 
     # Public interface to add claims/challenges
 
-    def challenge(self, skeptic: Address, challenge_hash: Hash) -> Challenge:
+    def challenge(self, skeptic: Address, challenge_hash: Hash, contract: str) -> Challenge:
         self.distribute_all_bets()
 
         assert challenge_hash in self.challenges, f"The claim hash ({challenge_hash}) is not valid. Valid hashes are {list(self.challenges.keys())}"
@@ -720,9 +721,13 @@ SPRIG instance:
         # assert challenge.height > 0, "A machine level claim cannot be challenged."
         assert challenge.status is Status.UNCHALLENGED, f"This challenge cannot be activated anymore. {challenge}"
         assert skeptic
+        assert contract
 
         attempt = self.proofs[challenge.parent]
-        assert self.params.pay_new_challenge(skeptic, attempt, challenge)
+        challenge.contract = contract
+        if not self.params.pay_new_challenge(skeptic, attempt, challenge):
+            challenge.contract = None
+            assert False, "Payment failed"
 
         challenge.status = Status.CHALLENGED
         challenge.author = skeptic
@@ -732,7 +737,7 @@ SPRIG instance:
 
         return challenge
 
-    def answer(self, challenge_hash: Hash, claimer: Address, proof: str) -> ProofAttempt:
+    def answer(self, challenge_hash: Hash, claimer: Address, proof: str, contract: str) -> ProofAttempt:
         """Answer a challenge with a (non-machine) proof."""
 
         if challenge_hash is ROOT_HASH:
@@ -763,6 +768,7 @@ SPRIG instance:
                                parent=challenge_hash if challenge_hash is not ROOT_HASH else None,
                                author=claimer,
                                proof=proof,
+                               contract=contract,
                                height=height,
                                status=Status.UNCHALLENGED,
                                created_at=current_time,
@@ -778,6 +784,7 @@ SPRIG instance:
                 hash=h,
                 parent=attempt.hash,
                 author=None,
+                contract=None,
                 created_at=current_time,
                 open_until=Time(-1),  # placeholder
                 challenged_at=None,
@@ -795,17 +802,19 @@ SPRIG instance:
         return attempt
 
     def answer_low_level(self, challenge_hash: Hash, claimer: Address,
-                         machine_proof: str) -> ProofAttempt:
+                         proof: str, contract: str) -> ProofAttempt:
         self.distribute_all_bets()
 
         assert challenge_hash in self.challenges, "No such challenge."
         challenge = self.challenges[challenge_hash]
         assert challenge.status is Status.CHALLENGED, "The challenge is not open."
+        assert contract
 
         attempt = ProofAttempt(hash=self.next_hashes()[0],
                                parent=challenge_hash,
                                author=claimer,
-                               proof=machine_proof,
+                               proof=proof,
+                               contract=contract,
                                height=0,
                                status=Status.UNCHALLENGED,
                                created_at=now(),
@@ -993,13 +1002,13 @@ def play_tictactoe(params: Parameters) -> Sprig:
         7 -> 6
         8 -> 6
         9 -> 6
-        """)
+        """, "no-contract")
 
     time_passes(sprig)
 
     root = sprig.proofs[ROOT_HASH]
-    c1 = sprig.challenge(MICHAEL, root.challenges[1])
-    c2 = sprig.challenge(MICHAEL, root.challenges[3])
+    c1 = sprig.challenge(MICHAEL, root.challenges[1], "ctc2")
+    c2 = sprig.challenge(MICHAEL, root.challenges[3], "ctc3")
 
     time_passes(sprig)
     a1 = sprig.answer(
@@ -1010,10 +1019,10 @@ def play_tictactoe(params: Parameters) -> Sprig:
         7 -> 9
         8 -> 7
         9 -> 7
-        """)
+        """, "ctc4")
 
     time_passes(sprig)
-    sprig.answer_low_level(c2.hash, DIEGO, "-2")
+    sprig.answer_low_level(c2.hash, DIEGO, "-2", "ctc5")
 
     print(sprig.dumps())
     quit()
@@ -1063,15 +1072,15 @@ theorem this_succ_add (n m : Nat) : succ n + m = succ (n + m) := sorry
 --! SPRIG Claim
 theorem this_add_comm (m n : Nat) : m + n = n + m := sorry
 --! Claim end
-""")
+""", "ctc1")
 
     time_passes(sprig)
 
     succ_add = sprig.proofs[ROOT_HASH].challenges[0]
-    c1 = sprig.challenge(MICHAEL, succ_add)
+    c1 = sprig.challenge(MICHAEL, succ_add, "ctc2")
 
     add_comm = sprig.proofs[ROOT_HASH].challenges[1]
-    c2 = sprig.challenge(MICHAEL, add_comm)
+    c2 = sprig.challenge(MICHAEL, add_comm, "ctc3")
 
     time_passes(sprig)
 
@@ -1080,7 +1089,7 @@ theorem this_add_comm (m n : Nat) : m + n = n + m := sorry
         --! SPRIG Claim
         theorem this_succ_add (n m : Nat) : succ n + m = succ (n + m) := sorry
         --! Claim end
-        """)
+        """, "ctc4")
 
     a2 = sprig.answer_low_level(
         c2.hash, DIEGO, """
@@ -1088,11 +1097,11 @@ theorem this_add_comm (m n : Nat) : m + n = n + m := sorry
             Nat.recOn (motive := fun x => m + x = x + m) n
                 (by simp)
                 (fun m ih => by simp only [add_succ, this_succ_add, ih])
-        """)
+        """, "ctc5")
 
     time_passes(sprig)
 
-    c3 = sprig.challenge(MICHAEL, a1.challenges[0])
+    c3 = sprig.challenge(MICHAEL, a1.challenges[0], "ctc6")
 
     time_passes(sprig)
 
@@ -1101,11 +1110,11 @@ theorem this_add_comm (m n : Nat) : m + n = n + m := sorry
         --! SPRIG Claim
         theorem this_succ_add (n m : Nat) : succ n + m = succ (n + m) := sorry
         --! Claim end
-        """)
+        """, "ctc7")
 
     time_passes(sprig)
 
-    c4 = sprig.challenge(MICHAEL, a3.challenges[0])
+    c4 = sprig.challenge(MICHAEL, a3.challenges[0], "ctc8")
 
     time_passes(sprig)
 
@@ -1114,18 +1123,18 @@ theorem this_add_comm (m n : Nat) : m + n = n + m := sorry
         --! SPRIG Claim
         theorem this_succ_add (n m : Nat) : succ n + m = succ (n + m) := sorry
         --! Claim end
-        """)
+        """, "ctc9")
 
     time_passes(sprig)
 
-    c5 = sprig.challenge(MICHAEL, a4.challenges[0])
+    c5 = sprig.challenge(MICHAEL, a4.challenges[0], "ctc10")
 
     time_passes(sprig)
 
     a5 = sprig.answer_low_level(
         c5.hash, DIEGO, """
         theorem this_succ_add (n m : Nat) : succ n + m = succ (n + m) := 2
-        """)
+        """, "ctc11")
 
     time_passes(sprig)
 
@@ -1135,7 +1144,7 @@ theorem this_add_comm (m n : Nat) : m + n = n + m := sorry
         Nat.recOn (motive := fun x => succ n + x = succ (n + x)) m
             rfl
             (fun m ih => by simp only [add_succ, ih])
-    """)
+    """, "ctc12")
 
     time_passes(sprig, 4 * 1000 * 3600 * 24 + 1)
 
