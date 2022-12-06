@@ -20,7 +20,7 @@ const uIntArrayToHex = (a) => "0x" + Array.from(a)
                                 .join('');
 
 export const hashingChallenge = (addressContractAnswer, indexPartChallenged) =>
-  sha256(addressContractAnswer + toString(indexPartChallenged));
+  sha256(addressContractAnswer + indexPartChallenged.toString());
 
 export const answer = async (account,
                    addressSprig,
@@ -118,13 +118,13 @@ const verifyAnswer = async (ctc,
 const verifyChallenge = async (ctc,
                               author,
                                addressSprig,
-                               interactionBytes,
+                               interactionHash,
                                deadline,
                                wagerDown,
                                ) => {
   const correctAuthor = (await ctc.views.author())[1] == author;
   const correctSprig = (await ctc.views.addressSprig())[1] == addressSprig;
-  const correctInteraction = (await ctc.views.interaction())[1].replaceAll('\x00', '') == interactionBytes;
+  const correctInteraction = uIntArrayToHex((await ctc.views.interaction())[1]) == interactionHash;
   const correctWagerDown = stdlib.eq((await ctc.views.wagerDown())[1], wagerDown);
   const correctDeadline = stdlib.ge((await ctc.views.deadline())[1], deadline);
   return correctAuthor && correctSprig && correctInteraction && correctWagerDown && correctDeadline;
@@ -158,14 +158,14 @@ const getParticipants = async (ctc) => {
     If there is no participants, it returns None.
 
   */
-  resultView = await ctc.views.participants()
+  const resultView = await ctc.views.participants()
   if (resultView[0] == "None"){
     return None
   }
   else{
     // resultView[1] is of the form [["Some", address0], ["Some", address1],..., ["Some", addressn], ["None", Null], ["None", Null],..., ["None", Null]]
     // and each addressk is a tuple (addressAccount, addressContract)
-    return resultView[1].filter(x => x[0] == "Some").map(x => x[1])
+    return resultView[1].filter(x => x[0] == "Some").map(x => x[1]);
   }
 }
 
@@ -186,7 +186,6 @@ export const getBalance = async (acc) => {
   const bal = await acc.balanceOf();
   return `${stdlib.formatCurrency(bal, 4)} ${stdlib.standardUnit}`;
 };
-
 
 if (process.argv.length > 2){
   const [action, typeContract, addressContract] = process.argv.slice(2,5);
@@ -210,7 +209,7 @@ if (process.argv.length > 2){
             b = await verifyChallenge(ctc, author, addressSprig, hashInteraction, parseInt(deadline), stdlib.parseCurrency(wagerDown));
             break;
           case "ANSWER":
-            b = await verifyAnswer(ctc, author, addressSprig, addressSkeptic == "None" ? null : addressSkeptic, hashInteraction, parseInt(deadline), stdlib.parseCurrency(wagerUp), stdlib.parseCurrency(wagerDown), isBottom=="true");
+            b = await verifyAnswer(ctc, author, addressSprig, ["None","none","null"].includes(addressSkeptic) ? null : addressSkeptic, hashInteraction, parseInt(deadline), stdlib.parseCurrency(wagerUp), stdlib.parseCurrency(wagerDown), isBottom=="true");
             break;
           default:
             throw new Error("type contract not handled.")
@@ -225,60 +224,21 @@ if (process.argv.length > 2){
       break;
     case "ANNOUNCE_VERIFICATION":
       const verification = process.argv[5];
-      ctc.apis.Sprig.announceVerification(verification=="true");
+      ctc.apis.Sprig.announceVerification(verification=="true" || verification=="True");
       break;
     case "ANNOUNCE_WINNER":
       const [wasRight,
             addressContractWinner
             ] = process.argv.slice(5);
-      let indexWinner = 0
-      if (!wasRight){
-        participants = getParticipants(ctc);
-        contracts = participants.map(x => stdlib.bigNumberToNumber(x[1][1]));
+      let indexWinner = 0;
+      if (wasRight == "false" || wasRight == "False"){
+        const participants = await getParticipants(ctc);
+        const contracts = participants.map(x => stdlib.bigNumberToNumber(x[1]));
         indexWinner = contracts.indexOf(parseInt(addressContractWinner));
       }
-      ctc.apis.Sprig.announceWinner(wasRight=="true", indexWinner);
+      ctc.apis.Sprig.announceWinner(wasRight=="true" || wasRight=="True", indexWinner);
       break;
     default:
       throw new Error("Action not handled.")
-  }
-    
-}
-
-const secretAlice = "0x" + "1".repeat(64);
-const startingBalance = stdlib.parseCurrency(100);
-const Alice = await stdlib.newAccountFromSecret(secretAlice);
-const Sprig = await stdlib.newAccountFromSecret(securityConnection);
-const Bob   = await stdlib.newTestAccount(startingBalance);
-const addressSprig = Sprig.getAddress();
-const addressBob = Bob.getAddress();
-const addressAlice = Alice.getAddress();
-await stdlib.fundFromFaucet(addressAlice, startingBalance);
-await stdlib.fundFromFaucet(addressSprig, startingBalance);
-
-
-const bytes = "0x92f7d2a7f4f9ed7b8282d3413fc3579236553290504d671227e3b58a34fb4d50";
-const duration = 100000;
-const deadline = deadlineFromTime(duration);
-const wagerDown = stdlib.parseCurrency(1);
-const wagerUp = stdlib.parseCurrency(0);
-const firstTest = async () =>
-{
-  console.log("test 1")
-  console.log("Expected result: the claim was wrong, there is a winner")
-  console.log(`Money on Bob's account: ${await getBalance(Bob)}`)
-  const ctcAlice = await newSprig(Alice, addressSprig, bytes, deadline, wagerDown);
-  const infoCtcAlice = (await ctcAlice.getInfo());
-  console.log("Launching Alice's contract");
-  const ctcSprig = Sprig.contract(backendClaim, infoCtcAlice);
-  console.log("Connecting Sprig");
-
-  monitorEventsAnswer(ctcSprig);
-  if (await verifyAnswer(ctcSprig, addressAlice, addressSprig, null, bytes, duration, wagerUp, wagerDown, false)){
-    await ctcSprig.apis.Sprig.addParticipant(addressBob, infoCtcAlice);
-    await ctcSprig.apis.Sprig.announceWinner(false, 0);
-    console.log(`Money on Bob's account: ${await getBalance(Bob)}`)
-  } else {
-    await ctcSprig.apis.Sprig.incorrectContract();
   }
 }
