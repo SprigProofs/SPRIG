@@ -49,7 +49,7 @@ export const answer = async (account,
     deadline: deadline,
     isBottom: isBottom,
   };
-  ctc.p.Alice(interact);
+  await ctc.p.Alice(interact);
   return ctc;
 };
 
@@ -87,7 +87,7 @@ export const challenge = async (account,
     wagerDown: wagerDown,
     deadline: deadline,
   };
-  ctc.p.Alice(interact);
+  await ctc.p.Alice(interact);
   return ctc;
 }
 

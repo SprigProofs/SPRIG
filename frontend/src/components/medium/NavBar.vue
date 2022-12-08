@@ -21,6 +21,7 @@
                                 </span>
                             </template>
                             <span class="text-gray-700 font-mono">
+                                {{ info }}
                             {{ store.account.address }} </span>
                         </Tooltip>
                         <Price :amount="store.account.balance"/>
@@ -35,6 +36,7 @@
 </template>
 
 <script setup lang="ts">
-import { store, ensureWalletConnected } from '../../store';
+import { store, ensureWalletConnected, reach } from '../../store';
 import { Tooltip } from '../small';
+
 </script>

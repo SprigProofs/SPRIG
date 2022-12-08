@@ -1,3 +1,4 @@
+import { ElNotification } from 'element-plus';
 import { api, dayjs, Parameters, ProofAttempt, Sprig, User } from "./sprig";
 import { reactive, type Ref } from "vue";
 import type { Account as AccountReach, Contract } from '@reach-sh/stdlib/ALGO';
@@ -49,7 +50,7 @@ export const store: Store = reactive<Store>({
         const chall = inst.challenges[challenge];
         const parent = inst.proofs[chall.parent];
         const ctc = await blockchain.challenge(
-            ensureWalletConnected(),
+            await ensureWalletConnected(),
             SPRIG_ADDRESS,
             blockchain.hashingChallenge(parent.contract, parent.challenges.indexOf(challenge)),
             dayjs().add(inst.params.timeForAnswers).unix(),
@@ -62,20 +63,24 @@ export const store: Store = reactive<Store>({
     async newInstance(togglePopup: Ref<boolean>, language: string, params: Parameters, rootClaim: string, proof: string) {
         console.log("New instance", language, params, rootClaim, proof);
         // Blockchain
+        const acc = await ensureWalletConnected();
         const now = dayjs();
+        // const amount = (params.downstakes[params.rootHeight-1]);
+        const amount = reach.parseCurrency(params.downstakes[params.rootHeight-1]);
+        console.log("Amount", amount);
         togglePopup.value = true;
-        const amount = (params.downstakes[params.rootHeight]);
-        // const amount = reach.parseCurrency(params.downstakes[params.rootHeight]);
         const ctc = await blockchain.newSprig(
-            await ensureWalletConnected(),
+            acc,
             SPRIG_ADDRESS,
             blockchain.hashingAnswer(proof),
-            now.add(params.timeForQuestions).unix(),
+            blockchain.deadlineFromTime(params.timeForQuestions.asMilliseconds()),
             amount,
         )
+        ElNotification({ title: "Contract created", message: await ctc.getContractAddress() });
         togglePopup.value = false;
         // Server
         const instance = await api.newInstance(language, params, this.user, rootClaim, proof, await ctc.getContractAddress());
+        ElNotification({ title: "Proof submitted!" })
         await store.reload();
         return instance;
     },
@@ -86,7 +91,7 @@ export const store: Store = reactive<Store>({
         const chall = inst.challenges[challenge];
         const height = isMachineLevel ? 0 : chall.height - 1;
         const ctc = await blockchain.answer(
-            ensureWalletConnected(),
+            await ensureWalletConnected(),
             SPRIG_ADDRESS,
             chall.author,
             blockchain.hashingAnswer(proof, chall.contract),
@@ -112,18 +117,28 @@ store.reload();
 
 import * as blockchain from '../reach/lib.mjs';
 import { ALGO_WalletConnect as WalletConnect } from '@reach-sh/stdlib';
+import { ALGO_MyAlgoConnect as MyAlgoConnect } from '@reach-sh/stdlib';
 
-const reach = blockchain.stdlib
+export const reach = blockchain.stdlib
 const SPRIG_ADDRESS = 'GQPTXRWAHCQCML7G6DNPMGJ5BE7AUXYLEPPMVJPP67KPASTF2MKIVWFSKQ';
 
 export async function ensureWalletConnected() {
+    console.log("Wallet connecting...", store.account)
     if (!store.account) {
         // @ts-ignore
         delete window.algorand;
+        reach.setCustomHttpEventHandler(async (e) => {
+            console.log("HTTP Event", e);
+            ElNotification.info({ title: e.eventName, message: JSON.stringify(e) });
+        });
+        console.log("Set wallet fallback...", store.account)
         reach.setWalletFallback(reach.walletFallback({
-            providerEnv: 'TestNet', WalletConnect }));
+            providerEnv: 'TestNet', MyAlgoConnect }));
+        // reach.setWalletFallback(reach.walletFallback({
+        //     providerEnv: 'TestNet', WalletConnect }));
         store.account = await reach.getDefaultAccount();
-        console.log("Connected account:", store.account);
+        console.log("Account:", store.account)
+        ElNotification.info({ title: "Wallet connected", message: store.account.address });
 
         // Adding more properties for convenience
         const address = reach.formatAddress(store.account)
