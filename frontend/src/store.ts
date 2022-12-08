@@ -106,7 +106,7 @@ store.reload();
 
 // Blockchain
 
-import * as blockchain from '../../reach/lib.mjs';
+import * as blockchain from '../reach/lib.mjs';
 import { ALGO_WalletConnect as WalletConnect } from '@reach-sh/stdlib';
 
 const reach = blockchain.stdlib

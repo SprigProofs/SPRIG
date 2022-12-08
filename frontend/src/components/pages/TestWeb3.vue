@@ -45,7 +45,7 @@ import { reactive, ref, computed } from 'vue';
 
 // This doesn't correspond to the simple contract that was
 // designed to work with the frontend. It's just to make it compile without removing all the code.
-import * as backend from '../../../../reach/build/challenge.main.mjs';
+import * as backend from '../../../reach/build/challenge.main.mjs';
 
 import { loadStdlib } from '@reach-sh/stdlib';
 import { ALGO_WalletConnect as WalletConnect } from '@reach-sh/stdlib';

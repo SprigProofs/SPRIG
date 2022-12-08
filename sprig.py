@@ -196,7 +196,7 @@ def jsFrontendReach(parameters, throwingError=False):
     """
     env = os.environ.copy()
     env.update({'REACH_CONNECTOR_MODE':'ALGO'})
-    return subprocess.run(["node", "./reach/index.mjs"]+ parameters,
+    return subprocess.run(["node", "./frontend/reach/index.mjs"]+ parameters,
                             capture_output=True,
                             check=throwingError,
                             env=env)
