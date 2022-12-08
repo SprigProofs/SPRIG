@@ -1,6 +1,6 @@
 <script setup lang="ts">
 
-import { type Sprig } from '../../../sprig';
+import type { Sprig } from '../../../sprig';
 import TicTacToe from './TicTacToe.vue';
 import { getState, getMove } from './TicTacToe';
 

@@ -106,16 +106,15 @@ store.reload();
 
 // Blockchain
 
-import * as blockchain from '../../reach/index.mjs'
-import { loadStdlib } from '@reach-sh/stdlib';
+import * as blockchain from '../../reach/lib.mjs';
 import { ALGO_WalletConnect as WalletConnect } from '@reach-sh/stdlib';
 
-const reach = loadStdlib('ALGO');
-
+const reach = blockchain.stdlib
 const SPRIG_ADDRESS = 'secret';
 
 export async function ensureWalletConnected() {
     if (!store.account) {
+        // @ts-ignore
         delete window.algorand;
         reach.setWalletFallback(reach.walletFallback({
             providerEnv: 'TestNet', WalletConnect }));

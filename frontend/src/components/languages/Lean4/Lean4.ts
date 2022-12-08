@@ -37,7 +37,6 @@ function getBlocks(proof: string): Block[] {
             if (end === -1) end = proof.length;
 
             const content = dedent(proof.substring(i, end));
-            console.log(content, proof)
             if (content.length > 0) {
                 blocks.push({
                     start: i,

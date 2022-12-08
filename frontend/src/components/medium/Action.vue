@@ -159,12 +159,12 @@ function toggle() {
           </span><span v-else-if="action.type === Action.AUTO_VALIDATION">
             Time for questions has elapsed for
             <UidTag :object="instance.proofs[action.target[0].parent]" :instance="instance" />,
-            so <span v-for="(claim, i) in action.target" class="mr-1">
+            so <span v-for="(claim, i) in (action.target as Challenge[])" class="mr-1">
               <UidTag :object="claim" :instance="instance" />
-              <span v-if="i < action.target.length - 2">, </span>
-              <span v-else-if="i == action.target.length - 2"> and </span>
+              <span v-if="i < (action.target as Challenge[]).length - 2">, </span>
+              <span v-else-if="i == (action.target as Challenge[]).length - 2"> and </span>
             </span>
-            <template v-if="action.target.length == 1">has</template>
+            <template v-if="(action.target as Challenge[]).length == 1">has</template>
             <template v-else>have</template>
             been automatically validated
             and no new challenges can be added.
@@ -207,9 +207,9 @@ function toggle() {
             Challenge
             <UidTag :object="challenge" :instance="instance" /> was proven
             by
-            <User :name="action.target.author" />
+            <User :name="(action.target as ProofAttempt).author" />
             in
-            <UidTag :object="action.target" :instance="instance" />.
+            <UidTag :object="(action.target as ProofAttempt)" :instance="instance" />.
             They win
             <User :name="challenge.author" />'s bounty of
             <Price :amount="params.questionBounties[challenge.height]" />.

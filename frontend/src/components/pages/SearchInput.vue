@@ -216,7 +216,7 @@ const results = computed<SprigObject[]>(() => {
     combineWeights(getWeights(getItem(a), getType(a)))
     - combineWeights(getWeights(getItem(b), getType(b)))
   ));
-  console.log(all.map(o => weightDebug(getItem(o), getType(o))));
+  // console.log(all.map(o => weightDebug(getItem(o), getType(o))));
 
   return all;
 });

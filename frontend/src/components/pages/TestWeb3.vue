@@ -43,7 +43,10 @@ import { Button, Price } from '../small';
 import _ from 'lodash';
 import { reactive, ref, computed } from 'vue';
 
-import * as backend from '../../reach/build/index.main.mjs';
+// This doesn't correspond to the simple contract that was
+// designed to work with the frontend. It's just to make it compile without removing all the code.
+import * as backend from '../../../../reach/build/challenge.main.mjs';
+
 import { loadStdlib } from '@reach-sh/stdlib';
 import { ALGO_WalletConnect as WalletConnect } from '@reach-sh/stdlib';
 

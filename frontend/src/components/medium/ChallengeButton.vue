@@ -1,5 +1,7 @@
 <template>
   <div>
+    <WaitWallectConnect v-model="showSignTransaction" />
+
     <Button class="w-full" color="blue" icon="md-bolt" @click.prevent="openDialog()">Challenge</Button>
     <SlideOver v-model="slideOpen" panel-title="New challenge">
       <div class="space-y-4 flex flex-col">
@@ -56,8 +58,10 @@ import Price from '../small/Price.vue';
 import Duree from '../small/Duree.vue';
 import UidTag from '../small/UidTag.vue';
 import User from './User.vue';
+import WaitWallectConnect from './WaitWallectConnect.vue';
 
 const slideOpen = ref(false);
+const showSignTransaction = ref(false);
 
 const props = defineProps<{
   challenge: Challenge,
@@ -69,7 +73,7 @@ function openDialog() {
 }
 
 function startChallenge() {
-  store.challenge(props.instance.hash, props.challenge.hash)
+  store.challenge(showSignTransaction, props.instance.hash, props.challenge.hash)
     .then(() => slideOpen.value = false);
 }
 

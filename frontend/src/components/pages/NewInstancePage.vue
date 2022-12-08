@@ -9,6 +9,7 @@ import Languages from '../languages';
 import DurationPicker from '../small/DurationPicker.vue';
 import Button from '../small/Button.vue';
 import LoadingIndicator from '../small/LoadingIndicator.vue';
+import WaitWallectConnect from '../medium/WaitWallectConnect.vue';
 
 const router = useRouter();
 
@@ -150,21 +151,7 @@ function createInstance() {
 
 <template>
   <div class="bg-gray-100">
-    <el-dialog
-      v-model="showSignTransaction"
-      title="Sign transaction"
-      width="30%"
-      >
-      <p class="break-normal">
-        Please confirm the transaction in your favorite wallet.</p>
-      <template #footer>
-        <div class="flex justify-end space-x-2">
-          <button class="text-gray-500 text-sm hover:underline"
-            @click="showSignTransaction = false">Cancel</button>
-          <LoadingIndicator>Waiting for confirmation</LoadingIndicator>
-        </div>
-      </template>
-    </el-dialog>
+    <WaitWallectConnect v-model="showSignTransaction" />
 
     <div class="max-w-4xl lg:mx-auto sm:mx-6 my-8">
       <h1 class="px-4 sm:px-0 text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
