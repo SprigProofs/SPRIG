@@ -1,198 +1,127 @@
-import os
-from subprocess import run as command_run
-from hashlib import sha256
+from ..sprig import *
 
-def jsFrontendReach(parameters, throwingError=False):
-    """To call the frontend for Reach written in Javascript, to interact
-    with the blockchain.
-    """
-    env = os.environ.copy()
-    env.update({'REACH_CONNECTOR_MODE':'ALGO'})
-    return command_run(["node", "./reach/index.mjs"] + parameters, 
-                            capture_output=True,
-                            check=throwingError,
-                            env=env,
-                            text=True)
+"""See testComPyJs.mjs for infos"""
 
-def hashing(text):
-    h = sha256()
-    h.update(bytes(text, 'utf-8'))
-    return "0x" + h.hexdigest()
-
-
+root_height = 2
+duration = 10_000_000
+wagerUp = 5
+wagerDown = 10
 addressAlice = "0xd04ab232742bb4ab3a1368bd4615e4e6d0224ab71a016baf8520a332c9778737"
 addressBob = "0xa09aa5f47a6759802ff955f8dc2d2a14a5c99d23be97f864127ff9383455a4f0"
-contractSprig = 401
+
 proofRoot = "-!:=cE\n+."
-hashSprig = hashing(proofRoot)
-deadlineRoot = 1670300878981
-wagerDown = 10
-wagerUp = 5
-
-rootVerification = jsFrontendReach(["VERIFY",
-                "ANSWER",
-                str(contractSprig),
-                addressAlice,
-                "None",
-                str(deadlineRoot),
-                "0",
-                str(wagerDown),
-                hashSprig,
-                "false"],
-                throwingError=True)
-
-assert(rootVerification.stdout == "true\n")
-
-partAttacked = 1
-deadlineChallenge1 = 1670300879049
-contractChallenge1 = 402
-hashChallenge1 = hashing(str(contractSprig) + str(partAttacked))
-
-challenge1Verification = jsFrontendReach(["VERIFY",
-                        "CHALLENGE",
-                        str(contractChallenge1),
-                        addressBob,
-                        "None",
-                        str(deadlineChallenge1),
-                        "0",
-                        str(wagerDown),
-                        hashChallenge1,
-                        "false"],
-                        throwingError=True)
-
-assert(challenge1Verification.stdout == "true\n")
-
-
-jsFrontendReach(["ADD_PARTICIPANT",
-                "ANSWER",
-                str(contractSprig),
-                addressBob,
-                str(contractChallenge1)],
-                throwingError=True)
-
-input()
-
+partAttackedChallenge1 = 1
 proof1 = "Trivial by theorem 2"
-hashAnswer1 = hashing(proof1 + str(contractChallenge1))
-deadlineAnswer1 = 1670300879130
-contractAnswer1 = 407
-
-answer1Verification = jsFrontendReach(["VERIFY",
-                "ANSWER",
-                str(contractAnswer1),
-                addressAlice,
-                addressBob,
-                str(deadlineAnswer1),
-                str(wagerUp),
-                "0",
-                hashAnswer1,
-                "true"],
-                throwingError=True)
-
-assert(answer1Verification.stdout == "true\n")
-
-jsFrontendReach(["ADD_PARTICIPANT",
-                "CHALLENGE",
-                str(contractChallenge1),
-                addressAlice,
-                str(contractAnswer1)],
-                throwingError=True)
-
-input()
-
-jsFrontendReach(["ANNOUNCE_VERIFICATION",
-                "ANSWER",
-                str(contractAnswer1),
-                "true"])
-
-input()
-
-jsFrontendReach(["ANNOUNCE_WINNER",
-                "CHALLENGE",
-                str(contractChallenge1),
-                "false",
-                str(contractAnswer1)],
-                throwingError=True)
-
-input()
-
-contractChallenge2 = 412
-partAttacked2 = 3
-hashChallenge2 = hashing(str(contractSprig) + str(partAttacked2))
-deadlineChallenge2 = 1670300879209
-
-challenge2Verification = jsFrontendReach(["VERIFY",
-                    "CHALLENGE",
-                    str(contractChallenge2),
-                    addressBob,
-                    "None",
-                    str(deadlineChallenge2),
-                    "0",
-                    str(wagerDown),
-                    hashChallenge2,
-                    "false"],
-                    throwingError=True)
-
-assert(challenge2Verification.stdout == "true\n")
-
-jsFrontendReach(["ADD_PARTICIPANT",
-                "ANSWER",
-                str(contractSprig),
-                addressBob,
-                str(contractChallenge2)],
-                throwingError=True)
-
-input()
-
-contractAnswer2 = 417
+partAttackedChallenge2 = 3
 proof2 = "Seems true to me"
-hashAnswer2 = hashing(proof2 + str(contractChallenge2))
-deadlineAnswer2 = 1670300879288
 
-answer2Verification = jsFrontendReach(["VERIFY",
-                    "ANSWER",
-                    str(contractAnswer2),
-                    addressAlice,
-                    addressBob,
-                    str(deadlineAnswer2),
-                    str(wagerUp),
-                    "0",
-                    hashAnswer2,
-                    "true"],
-                    throwingError=True)
+# Paste here informations given by the console, replacing the current infos
+ctcRoot =  53
+deadlineRoot =  1670508559745
+ctcChallenge1 =  54
+deadlineChallenge1 =  1670508559809
+ctcAnswer1 =  59
+deadlineAnswer1 =  1670508559889
+ctcChallenge2 =  64
+deadlineChallenge2 =  1670508559957
+ctcAnswer2 =  69
+deadlineAnswer2 =  1670508560043
 
-assert(answer2Verification.stdout == "true\n")
+param = ParametersBlockchain(root_height=root_height,
+                            max_length=100,
+                            time_for_questions=duration,
+                            time_for_answers=duration,
+                            upstakes=[wagerUp]* (root_height - 1) + [0],
+                            downstakes=[0] + [wagerDown] * (root_height - 1),
+                            question_bounties=[0] + [wagerDown] * (root_height -1),
+                            verification_cost=1)
 
-jsFrontendReach(["ADD_PARTICIPANT",
-                "CHALLENGE",
-                str(contractChallenge2),
-                addressAlice,
-                str(contractAnswer2)],
-                throwingError=True)
+s = Sprig(language="hihi",
+              params=param,
+              proofs={},
+              challenges={},
+              root_question="")
 
-input()
+rootAttempt = ProofAttempt(hash=1,
+                          parent=None,
+                          contract=str(ctcRoot),
+                          author=addressAlice,
+                          proof=proofRoot,
+                          height=root_height-1,
+                          status="UNCHALLENGED",
+                          created_at=deadlineRoot-duration,
+                          challenges=[None] * 10,
+                          money_held=0)
 
-jsFrontendReach(["ANNOUNCE_VERIFICATION",
-                "ANSWER",
-                str(contractAnswer2),
-                "false"])
+s.proofs.update({rootAttempt.hash : rootAttempt})
 
-input()
+assert(param.pay_new_proof_attempt(rootAttempt, s))
 
-jsFrontendReach(["ANNOUNCE_WINNER",
-                "CHALLENGE",
-                str(contractChallenge2),
-                "true",
-                str(0)],
-                throwingError=True)
+challenge1 = Challenge(hash=rootAttempt.hash+1,
+                      parent=rootAttempt.hash,
+                      contract=str(ctcChallenge1),
+                      author=addressBob,
+                      created_at=deadlineChallenge1-duration,
+                      challenged_at=deadlineChallenge1-duration,
+                      open_until=deadlineChallenge1,
+                      attempts=[],
+                      status="CHALLENGED",
+                      height=root_height-1)
 
-input()
+rootAttempt.challenges[partAttackedChallenge1] = challenge1.hash
+s.challenges.update({challenge1.hash : challenge1})
 
-announcing_winner = jsFrontendReach(["ANNOUNCE_WINNER",
-                "ANSWER",
-                str(contractSprig),
-                "false",
-                str(contractChallenge2)],
-                throwingError=True)
+assert(param.pay_new_challenge(challenge1.author, rootAttempt, challenge1))
 
-print(announcing_winner.stdout)
+answer1 = ProofAttempt(hash=challenge1.hash+1,
+                      parent=challenge1.hash,
+                      contract=str(ctcAnswer1),
+                      author=addressAlice,
+                      proof=proof1,
+                      height=root_height-2,
+                      status="UNCHALLENGED",
+                      created_at=deadlineAnswer1-duration,
+                      challenges=[],
+                      money_held=0)
+
+challenge1.attempts.append(answer1.hash)
+s.proofs.update({answer1.hash : answer1})
+
+assert(param.pay_new_proof_attempt(answer1, s))
+param.pay_attempt_accepted(answer1)
+param.pay_challenge_rejected(answer1, s)
+
+challenge2 = Challenge(hash=answer1.hash+1,
+                      parent=rootAttempt.hash,
+                      contract=str(ctcChallenge2),
+                      author=addressBob,
+                      created_at=deadlineChallenge2-duration,
+                      challenged_at=deadlineChallenge2-duration,
+                      open_until=deadlineChallenge2,
+                      attempts=[],
+                      status="CHALLENGED",
+                      height=root_height-1)
+
+rootAttempt.challenges[partAttackedChallenge2] = challenge2.hash
+s.challenges.update({challenge2.hash : challenge2})
+
+assert(param.pay_new_challenge(challenge2.author, rootAttempt, challenge2))
+
+answer2 = ProofAttempt(hash=challenge2.hash+1,
+                      parent=challenge2.hash,
+                      contract=str(ctcAnswer2),
+                      author=addressAlice,
+                      proof=proof2,
+                      height=root_height-2,
+                      status="UNCHALLENGED",
+                      created_at=deadlineAnswer2-duration,
+                      challenges=[],
+                      money_held=0)
+
+challenge2.attempts.append(answer2.hash)
+s.proofs.update({answer2.hash : answer2})
+
+assert(param.pay_new_proof_attempt(answer2, s))
+param.pay_attempt_rejected(answer2, None, s)
+param.pay_challenge_validated(rootAttempt, challenge2)
+param.pay_attempt_rejected(rootAttempt, challenge2, s)
