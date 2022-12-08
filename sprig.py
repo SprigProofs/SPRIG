@@ -192,7 +192,9 @@ class AbstractParameters:
 
 def jsFrontendReach(parameters, throwingError=False):
     """To call the frontend for Reach written in Javascript, to interact
-    with the blockchain.
+    with the blockchain. It throws an error when the Javascript returns
+    an error if throwingError=True, and parameters must be a list of
+    strings.
     """
     env = os.environ.copy()
     env.update({'REACH_CONNECTOR_MODE':'ALGO'})
@@ -202,12 +204,18 @@ def jsFrontendReach(parameters, throwingError=False):
                             env=env)
 
 def hashingChallenge(challenge: Challenge, attempt: ProofAttempt):
+    """Create the hash corresponding to a challenge. It returns
+    an hexadecimal number.
+    """
     part_challenged = attempt.challenges.index(challenge.hash)
     h = sha256()
     h.update(bytes(attempt.contract + str(part_challenged), 'utf-8'))
     return "0x" + h.hexdigest()
 
 def hashingAnswer(answer: ProofAttempt, challenge: Challenge | None):
+    """Create the hash corresponding to an answer or a claim. It
+    returns an hexadecimal number.
+    """
     contractParent = "" if challenge is None else challenge.contract
     h = sha256()
     h.update(bytes(answer.proof + contractParent, 'utf-8'))
@@ -246,7 +254,6 @@ class ParametersBlockchain(AbstractParameters):
     def attempt_deadline(self, created: Time, height: int) -> Time:
         return Time(created + self.time_for_questions)
 
-
     def challenge_deadline(self, challenge: Challenge) -> Time:
         if challenge.status == Status.UNCHALLENGED:
             return Time(challenge.created_at + self.time_for_questions)
@@ -262,10 +269,11 @@ class ParametersBlockchain(AbstractParameters):
     def pay_new_proof_attempt(self, attempt: ProofAttempt, sprig: Sprig) -> bool:
         address_skeptic = ("None" if attempt.parent is None
                             else sprig.challenges[attempt.parent].author)
+        challenge = 
         if attempt.height == 0:
             process = jsFrontendReach(["VERIFY",
                                         "ANSWER",
-                                        attempt.contract,
+                                        str(attempt.contract),
                                         attempt.author,
                                         address_skeptic,
                                         str(attempt.created_at + self.time_for_questions),
@@ -277,7 +285,7 @@ class ParametersBlockchain(AbstractParameters):
         else:
             process = jsFrontendReach(["VERIFY",
                                         "ANSWER",
-                                        attempt.contract,
+                                        str(attempt.contract),
                                         attempt.author,
                                         address_skeptic,
                                         str(attempt.created_at + self.time_for_questions),
@@ -291,7 +299,7 @@ class ParametersBlockchain(AbstractParameters):
             challenge = sprig.challenges[attempt.parent]
             jsFrontendReach(["ADD_PARTICIPANT",
                             "CHALLENGE",
-                            challenge.contract,
+                            str(challenge.contract),
                             attempt.author,
                             attempt.contract])
         return successful
@@ -319,13 +327,13 @@ class ParametersBlockchain(AbstractParameters):
         if attempt.height == 0:
             jsFrontendReach(["ANNOUNCE_VERIFICATION",
                             "ANSWER",
-                            attempt.contract,
+                            str(attempt.contract),
                             "true",
                             ], throwingError=True)
         else:
             jsFrontendReach(["ANNOUNCE_WINNER",
                             "ANSWER",
-                            attempt.contract,
+                            str(attempt.contract),
                             "true",
                             "0"], throwingError=True)
         return
@@ -348,15 +356,15 @@ class ParametersBlockchain(AbstractParameters):
         if attempt.height == 0:
             jsFrontendReach(["ANNOUNCE_VERIFICATION",
                             "ANSWER",
-                            attempt.contract,
+                            str(attempt.contract),
                             "false",
                             ], throwingError=True)
         else:
             jsFrontendReach(["ANNOUNCE_WINNER",
                             "ANSWER",
-                            attempt.contract,
+                            str(attempt.contract),
                             "false",
-                            rejecting.contract,
+                            str(rejecting.contract),
                             ], throwingError=True)
         return
         # non-machine: downstakes goes to closing claim challenger.
@@ -384,7 +392,7 @@ class ParametersBlockchain(AbstractParameters):
                           challenge: Challenge) -> bool:
         process = jsFrontendReach(["VERIFY",
                                     "CHALLENGE",
-                                    challenge.contract,
+                                    str(challenge.contract),
                                     challenge.author,
                                     "NONE",
                                     str(challenge.open_until),
@@ -396,7 +404,7 @@ class ParametersBlockchain(AbstractParameters):
         if successful:
             jsFrontendReach(["ADD_PARTICIPANT",
                             "ANSWER",
-                            attempt.contract,
+                            str(attempt.contract),
                             challenge.author,
                             challenge.contract])
         return successful
@@ -408,7 +416,7 @@ class ParametersBlockchain(AbstractParameters):
         assert challenge.author  # Sanity check
         jsFrontendReach(["ANNOUNCE_WINNER",
                         "CHALLENGE",
-                        challenge.contract,
+                        str(challenge.contract),
                         "true",
                         "0"],
                         throwingError=True)
@@ -423,7 +431,7 @@ class ParametersBlockchain(AbstractParameters):
         assert answer.parent is not None  # Sanity check
         jsFrontendReach(["ANNOUNCE_WINNER",
                         "CHALLENGE",
-                        challenge.contract,
+                        str(challenge.contract),
                         "false",
                         answer.contract],
                         throwingError=True)
@@ -578,8 +586,9 @@ class ProofAttempt:
     hash: Hash
     # Hash of the parent challenge
     parent: Optional[Hash]
-    contract: Optional[str]
     # Address of the contract on the blockchain
+    contract: Optional[str]
+    # Address of the author of the contract
     author: Address
     proof: str
     height: int
@@ -597,9 +606,10 @@ class ProofAttempt:
     status: Status
     created_at: Time
 
-    challenges: list[Hash]
     # The index of a challenge corresponds to the part of the proof that is challenged.
     # So for example the challenge at index 4 challenges the fifth part of the proof.
+    challenges: list[Hash]
+
     money_held: int
 
     def __str__(self) -> str:
@@ -1115,6 +1125,7 @@ theorem this_add_comm (m n : Nat) : m + n = n + m := sorry
     time_passes(sprig)
 
     c4 = sprig.challenge(MICHAEL, a3.challenges[0], "ctc8")
+
 
     time_passes(sprig)
 
