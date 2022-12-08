@@ -201,7 +201,8 @@ def jsFrontendReach(parameters, throwingError=False):
     return subprocess.run(["node", "./reach/index.mjs"] + parameters, 
                             capture_output=True,
                             check=throwingError,
-                            env=env)
+                            env=env,
+                            text=True)
 
 def hashingChallenge(challenge: Challenge, attempt: ProofAttempt):
     """Create the hash corresponding to a challenge. It returns
@@ -267,9 +268,9 @@ class ParametersBlockchain(AbstractParameters):
     # Attempts
 
     def pay_new_proof_attempt(self, attempt: ProofAttempt, sprig: Sprig) -> bool:
-        address_skeptic = ("None" if attempt.parent is None
-                            else sprig.challenges[attempt.parent].author)
-        challenge = 
+        challenge = (None if attempt.parent is None
+                    else sprig.challenges[attempt.parent])
+        address_skeptic = ("None" if challenge is None else challenge.author)
         if attempt.height == 0:
             process = jsFrontendReach(["VERIFY",
                                         "ANSWER",
@@ -279,7 +280,7 @@ class ParametersBlockchain(AbstractParameters):
                                         str(attempt.created_at + self.time_for_questions),
                                         str(self.upstakes[attempt.height]),
                                         '0',
-                                        hashingAnswer(attempt),
+                                        hashingAnswer(attempt, challenge),
                                         "true",
                                         ])
         else:
@@ -291,12 +292,11 @@ class ParametersBlockchain(AbstractParameters):
                                         str(attempt.created_at + self.time_for_questions),
                                         str(self.upstakes[attempt.height]),
                                         str(self.downstakes[attempt.height]),
-                                        hashingAnswer(attempt),
+                                        hashingAnswer(attempt, challenge),
                                         "false",
                                         ])
         successful = process.returncode == 0 and process.stdout == "true\n"
-        if successful and attempt.parent is not None:
-            challenge = sprig.challenges[attempt.parent]
+        if successful and challenge is not None:
             jsFrontendReach(["ADD_PARTICIPANT",
                             "CHALLENGE",
                             str(challenge.contract),

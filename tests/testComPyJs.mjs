@@ -3,8 +3,8 @@ import {stdlib} from '../reach/index.mjs'
 /*
   Testing the Reach frontend in Javascript,
   and the interactions between Python and Javascript. First run
-  this, and then run testComPyJs.py after replacing the number of
-  the contract and the deadline in the code.
+  this, and then run testComPyJs.py after pasting the infos given
+  in the console at the place indicated in the code.
 
 */
 
@@ -23,6 +23,8 @@ await stdlib.fundFromFaucet(addressSprig, startingBalance);
 await stdlib.fundFromFaucet(addressBob, startingBalance)
 console.log("Alice's balance: ", await rchfd.getBalance(accAlice));
 console.log("Bob's balance: ", await rchfd.getBalance(accBob));
+
+console.log("\nInfos to paste in testComPyJs.py:")
 
 const test = async () => {
 
@@ -55,7 +57,7 @@ const test = async () => {
                                             );
   rchfd.monitorEventsChallenge(ctcChallenge1);
   const infoCtcChallenge1 = stdlib.bigNumberToNumber(await ctcChallenge1.getInfo());
-  console.log("ctcChalleng1 = ", infoCtcChallenge1);
+  console.log("ctcChallenge1 = ", infoCtcChallenge1);
   console.log("deadlineChallenge1 = ", deadlineChallenge1);
 
   // Answer to first challenge
