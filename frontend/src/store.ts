@@ -63,13 +63,17 @@ export const store: Store = reactive<Store>({
         console.log("New instance", language, params, rootClaim, proof);
         // Blockchain
         const now = dayjs();
+        togglePopup.value = true;
+        const amount = (params.downstakes[params.rootHeight]);
+        // const amount = reach.parseCurrency(params.downstakes[params.rootHeight]);
         const ctc = await blockchain.newSprig(
-            ensureWalletConnected(),
+            await ensureWalletConnected(),
             SPRIG_ADDRESS,
             blockchain.hashingAnswer(proof),
             now.add(params.timeForQuestions).unix(),
-            params.downstakes[params.rootHeight],
+            amount,
         )
+        togglePopup.value = false;
         // Server
         const instance = await api.newInstance(language, params, this.user, rootClaim, proof, await ctc.getContractAddress());
         await store.reload();
@@ -110,7 +114,7 @@ import * as blockchain from '../reach/lib.mjs';
 import { ALGO_WalletConnect as WalletConnect } from '@reach-sh/stdlib';
 
 const reach = blockchain.stdlib
-const SPRIG_ADDRESS = 'secret';
+const SPRIG_ADDRESS = 'GQPTXRWAHCQCML7G6DNPMGJ5BE7AUXYLEPPMVJPP67KPASTF2MKIVWFSKQ';
 
 export async function ensureWalletConnected() {
     if (!store.account) {

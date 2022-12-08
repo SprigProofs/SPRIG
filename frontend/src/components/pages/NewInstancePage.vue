@@ -8,8 +8,8 @@ import { store } from '../../store';
 import Languages from '../languages';
 import DurationPicker from '../small/DurationPicker.vue';
 import Button from '../small/Button.vue';
-import LoadingIndicator from '../small/LoadingIndicator.vue';
 import WaitWallectConnect from '../medium/WaitWallectConnect.vue';
+import LoadingIndicator from '../small/LoadingIndicator.vue';
 
 const router = useRouter();
 
@@ -45,13 +45,20 @@ const costs = reactive([
 ]);
 const timeForQuestions = ref(dayjs.duration(1, 'day'));
 const timeForAnswers = ref(dayjs.duration(1, 'day'));
-const selectedLanguage = ref("Lean4");
+const selectedLanguage = ref("TicTacToe");
+// const selectedLanguage = ref("Lean4");
 const maxProofSize = ref(10000);
-const root_question = ref("");
-const proof_attempt = ref("");
+const root_question = ref("...|XX.|... O plays X wins");
+const proof_attempt = ref(`        1 -> 6
+        2 -> 6
+        3 -> 6
+        6 -> 1
+        7 -> 6
+        8 -> 6
+        9 -> 6`);
 const costToPublish = computed(() => costs[costs.length - 1].downstake);
 const isSubmitting = ref(false);
-const showSignTransaction = ref(true);
+const showSignTransaction = ref(false);
 
 // TODO: raise this to 1, or handle floats server side.
 //       currently the server considers only integer parts of the cost.
@@ -143,6 +150,7 @@ function createInstance() {
   ).then(instance => {
     nextTick(() => router.push(linkTo(instance)));
   }).catch(error => {
+    console.error("While submitting new instance:", error);
     isSubmitting.value = false;
   });
 }

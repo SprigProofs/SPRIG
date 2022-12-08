@@ -1,6 +1,6 @@
 <template>
     <el-dialog
-      v-bind="modelValue"
+      :modelValue="modelValue"
       @update:modelValue="$emit('update:modelValue', $event)"
       title="Sign transaction"
       width="29%"
@@ -18,6 +18,8 @@
 </template>
 
 <script setup lang="ts">
+import { LoadingIndicator } from '../small';
+
 
 defineProps<{
   modelValue: boolean;
