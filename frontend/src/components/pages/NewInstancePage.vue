@@ -13,32 +13,33 @@ import LoadingIndicator from '../small/LoadingIndicator.vue';
 
 const router = useRouter();
 
+const unit = 0.001;
 const costs = reactive([
   {  // machine level
-    upstake: 5,
+    upstake: 5 * unit,
     downstake: 0,  // not used
     questionBounty: 0,  // not used
     key: "My",
     height: 0,
   },
   {
-    upstake: 5,
-    downstake: 50,
-    questionBounty: 20,
+    upstake: 5 * unit,
+    downstake: 50 * unit,
+    questionBounty: 20 * unit,
     key: "name",
     height: 1,
   },
   {
-    upstake: 10,
-    downstake: 100,
-    questionBounty: 25,
+    upstake: 10 * unit,
+    downstake: 100 * unit,
+    questionBounty: 25 * unit,
     key: "is",
     height: 2,
   },
   {  // root
     upstake: 0,  // not used
-    downstake: 200,
-    questionBounty: 50,
+    downstake: 200 * unit,
+    questionBounty: 50 * unit,
     key: "Bob",
     height: 3,
   },

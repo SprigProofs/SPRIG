@@ -6,7 +6,7 @@
       width="29%"
       >
       <p class="break-normal">
-        Please confirm the transaction in your favorite wallet.</p>
+        Please confirm the <b>two</b> the transactions in your favorite wallet.</p>
       <template #footer>
         <div class="flex justify-end space-x-3">
           <button class="text-gray-501 text-sm hover:underline"

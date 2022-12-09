@@ -132,12 +132,19 @@ export async function ensureWalletConnected() {
             ElNotification.info({ title: e.eventName, message: JSON.stringify(e) });
         });
         console.log("Set wallet fallback...", store.account)
-        reach.setWalletFallback(reach.walletFallback({
-            providerEnv: 'TestNet', MyAlgoConnect }));
-        // reach.setWalletFallback(reach.walletFallback({
-        //     providerEnv: 'TestNet', WalletConnect }));
-        store.account = await reach.getDefaultAccount();
-        console.log("Account:", store.account)
+        if (!"TestNet") {
+            reach.setWalletFallback(reach.walletFallback({
+                providerEnv: 'TestNet', MyAlgoConnect }));
+            // reach.setWalletFallback(reach.walletFallback({
+            //     providerEnv: 'TestNet', WalletConnect }));
+            store.account = await reach.getDefaultAccount();
+            console.log("Account:", store.account)
+        } else {
+            // Private devnet
+            store.account = await reach.newTestAccount(reach.parseCurrency(5))
+            // We make sure there is some money on the sprig address, otherwise it fails
+            await reach.fundFromFaucet(SPRIG_ADDRESS, reach.parseCurrency(2))
+        }
         ElNotification.info({ title: "Wallet connected", message: store.account.address });
 
         // Adding more properties for convenience

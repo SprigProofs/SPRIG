@@ -21,7 +21,6 @@
                                 </span>
                             </template>
                             <span class="text-gray-700 font-mono">
-                                {{ info }}
                             {{ store.account.address }} </span>
                         </Tooltip>
                         <Price :amount="store.account.balance"/>
