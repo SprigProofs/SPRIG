@@ -48,6 +48,7 @@ rootAttempt = ProofAttempt(hash=1,
                           author=addressAlice,
                           proof=proofRoot,
                           height=root_height-1,
+                          
                           status="UNCHALLENGED",
                           created_at=deadlineRoot-duration,
                           challenges=[None] * 10,

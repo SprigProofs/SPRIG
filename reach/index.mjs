@@ -64,6 +64,7 @@ export const answer = async (account,
     isBottom: isBottom,
   };
   ctc.p.Alice(interact);
+  ctc.
   return ctc;
 };
 
