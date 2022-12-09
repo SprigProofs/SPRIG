@@ -38,6 +38,10 @@
                     <v-icon name="md-lockclock" class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" aria-hidden="true" />
                     Closing&nbsp;<Time :time="attempt.expires(instance)" suffix />
                 </div>
+                <div class="mt-2 flex items-center text-sm text-gray-500">
+                    <v-icon name="md-lockclock" class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" aria-hidden="true" />
+                    Contract&nbsp;{{ attempt.contract }}
+                </div>
                 </div>
 
             </header>

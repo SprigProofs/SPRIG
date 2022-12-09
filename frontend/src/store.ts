@@ -101,7 +101,8 @@ export const store: Store = reactive<Store>({
             isMachineLevel,
             );
         // Server
-        const proofAttempt = await api.newProofAttempt(instance, challenge, isMachineLevel, proof, this.user, await ctc.getContractAddress());
+        const ctcAddress = reach.bigNumberToNumber(await ctc.getInfo()).toString();
+        const proofAttempt = await api.newProofAttempt(instance, challenge, isMachineLevel, proof, this.user, ctcAddress);
         await store.reload();
         return proofAttempt;
     },
