@@ -49,8 +49,7 @@ export const answer = async (account,
     deadline: deadline,
     isBottom: isBottom,
   };
-  await ctc.p.Alice(interact);
-  return ctc;
+  return [ctc, ctc.p.Alice(interact)];
 };
 
 // To create and return the contract for a new Sprig
@@ -87,8 +86,7 @@ export const challenge = async (account,
     wagerDown: wagerDown,
     deadline: deadline,
   };
-  await ctc.p.Alice(interact);
-  return ctc;
+  return [ctc, ctc.p.Alice(interact)];
 }
 
 const verifyAnswer = async (ctc,
