@@ -14,7 +14,6 @@ interface Store {
     bank: Record<string, number>;
     loaded: boolean;
     fail: boolean;
-    user: string;
     account?: Account;
     reload: () => Promise<void>;
     challenge: (togglePopup: Ref<boolean>, instance: string, challenge: string) => Promise<void>;
@@ -28,7 +27,6 @@ export const store: Store = reactive<Store>({
     bank: {},
     loaded: false,
     fail: false,
-    user: 'Diego',
     async reload() {
         console.log('reload');
         store.fail = false;
@@ -44,103 +42,69 @@ export const store: Store = reactive<Store>({
         })
     },
     async challenge(togglePopup: Ref<boolean>, instance: string, challenge: string) {
-        console.log("Challenge", instance, challenge, this.user);
-        // Blockchain
-        const inst = store.instances[instance];
-        const chall = inst.challenges[challenge];
-        const parent = inst.proofs[chall.parent];
-        const ctc = await blockchain.challenge(
-            await ensureWalletConnected(),
-            SPRIG_ADDRESS,
-            blockchain.hashingChallenge(parent.contract, parent.challenges.indexOf(challenge)),
-            dayjs().add(inst.params.timeForAnswers).unix(),
-            inst.params.downstakes[chall.height],
-            );
-        // Server
-        await api.challenge(instance, challenge, store.user, await ctc.getContractAddress())
-        await store.reload();
+        console.log("Challenge", instance, challenge);
+
+        return await createContract(
+            "Challenge",
+            togglePopup,
+            // @ts-ignore
+            (acc) => {
+                const inst = store.instances[instance];
+                const chall = inst.challenges[challenge];
+                const parent = inst.proofs[chall.parent];
+                return blockchain.challenge(
+                    acc,
+                    SPRIG_ADDRESS,
+                    blockchain.hashingChallenge(parent.contract, parent.challenges.indexOf(challenge)),
+                    blockchain.deadlineFromTime(inst.params.timeForAnswers.asMilliseconds()),
+                    reach.parseCurrency(inst.params.downstakes[chall.height]),
+                    );
+            },
+            (ctcAddress) => api.challenge(instance, challenge, store.account.address, ctcAddress),
+        )
     },
     async newInstance(togglePopup: Ref<boolean>, language: string, params: Parameters, rootClaim: string, proof: string) {
         console.log("New instance", language, params, rootClaim, proof);
 
         // Blockchain
-        const acc = await ensureWalletConnected();
-
-        togglePopup.value = true;
-        const amount = reach.parseCurrency(params.downstakes[params.rootHeight-1]);
-        const [ctc, p] = blockchain.newSprig(
-            acc,
-            SPRIG_ADDRESS,
-            blockchain.hashingAnswer(proof),
-            blockchain.deadlineFromTime(params.timeForQuestions.asMilliseconds()),
-            amount,
+        return await createContract(
+            "Instance",
+            togglePopup,
+            // @ts-ignore
+            (acc) => blockchain.newSprig(
+                acc,
+                SPRIG_ADDRESS,
+                blockchain.hashingAnswer(proof),
+                blockchain.deadlineFromTime(params.timeForQuestions.asMilliseconds()),
+                reach.parseCurrency(params.downstakes[params.rootHeight-1]),
+            ),
+            (ctcAddress) => api.newInstance(language, params, store.account.address, rootClaim, proof, ctcAddress),
         )
-        // Catch errors from the promis p
-        let hasFailed = null;
-        p.catch((e: { message: any; }) => {
-            hasFailed = e;
-            console.log("Error", e);
-            ElNotification.error({ title: "Error", message: e.message });
-            togglePopup.value = false;
-        });
-        // Wait for the contract to be created, then submit to the server
-        while (hasFailed === null) {
-            await wait(500)
-            if (await ctc.views.author()[0] == "Some") {
-                togglePopup.value = false;
-                ElNotification({ title: "Contract created", message: await ctcInfo(ctc) });
-
-                // Server
-                const instance = await api.newInstance(language, params, acc.address, rootClaim, proof, await ctcInfo(ctc));
-                ElNotification({ title: "Instance created!" })
-                await store.reload();
-                return instance;
-            }
-        }
-
-        throw hasFailed;
     },
     async newProofAttempt(togglePopup: Ref<boolean>, instance: string, challenge: string, isMachineLevel: boolean, proof: string) {
         console.log("New proof attempt", instance, challenge, proof);
-        // Blockchain
-        const acc = await ensureWalletConnected();
-        const inst = store.instances[instance];
-        const chall = inst.challenges[challenge];
-        const height = isMachineLevel ? 0 : chall.height - 1;
-        const [ctc, p] = blockchain.answer(
-            acc,
-            SPRIG_ADDRESS,
-            chall.author,
-            blockchain.hashingAnswer(proof, chall.contract),
-            blockchain.deadlineFromTime(inst.params.timeForQuestions),
-            reach.parseCurrency(inst.params.upstakes[height]),
-            reach.parseCurrency(inst.params.downstakes[height]),
-            isMachineLevel,
-            );
-        // Catch errors from the promis p
-        let hasFailed = null;
-        p.catch((e: { message: any; }) => {
-            hasFailed = e;
-            console.log("Error", e);
-            ElNotification.error({ title: "Error", message: e.message });
-            togglePopup.value = false;
-        });
-        // Wait for the contract to be created
-        while (hasFailed === null) {
-            await wait(500)
-            if (await ctc.views.author()[0] == "Some") {
-                ElNotification({ title: "Contract created", message: await ctc.getContractAddress() });
-                togglePopup.value = false;
 
-                // Server
-                const proofAttempt = await api.newProofAttempt(instance, challenge, isMachineLevel, proof, this.user, await ctcInfo(ctc));
-                ElNotification({ title: "Proof attempt created!" })
-                await store.reload();
-                return proofAttempt;
-            }
-        }
-
-        throw hasFailed;
+        return await createContract(
+            "Proof attempt",
+            togglePopup,
+            // @ts-ignore
+            (acc) => {
+                const inst = store.instances[instance];
+                const chall = inst.challenges[challenge];
+                const height = isMachineLevel ? 0 : chall.height - 1;
+                return blockchain.answer(
+                    acc,
+                    SPRIG_ADDRESS,
+                    chall.author,
+                    blockchain.hashingAnswer(proof, chall.contract),
+                    blockchain.deadlineFromTime(inst.params.timeForQuestions),
+                    reach.parseCurrency(inst.params.upstakes[height]),
+                    reach.parseCurrency(inst.params.downstakes[height]),
+                    isMachineLevel,
+                    );
+            },
+            (ctcAddress) => api.newProofAttempt(instance, challenge, isMachineLevel, proof, store.account.address, ctcAddress),
+        )
     },
     getUser(name: string) {
         return new User(name, store.bank[name] || 0, store.instances);
@@ -155,6 +119,8 @@ async function createContract(what: string,
     serverInteract: (ctcAddress: string) => any) {
         // Blockchain
         const acc = await ensureWalletConnected();
+
+        togglePopup.value = true;
         const [ctc, p] = blockchainInteract(acc);
 
         // Catch errors from the promise p
@@ -168,7 +134,9 @@ async function createContract(what: string,
         // Wait for the contract to be created
         while (hasFailed === null) {
             await wait(500)
-            if (await ctc.views.author()[0] == "Some") {
+            // @ts-ignore // author is not defined on the type, but always is in practice
+            const a = await ctc.views.author();
+            if (a[0] == "Some") {
                 ElNotification({ title: "Contract created", message: await ctc.getContractAddress() });
                 togglePopup.value = false;
 
