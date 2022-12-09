@@ -26,7 +26,7 @@ const uIntArrayToHex = (a) => "0x" + Array.from(a)
 export const hashingChallenge = (addressContractAnswer, indexPartChallenged) =>
   sha256(addressContractAnswer + indexPartChallenged.toString());
 
-export const answer = async (account,
+export const answer = (account,
                    addressSprig,
                    addressSkeptic,
                    interactionHash,
@@ -53,12 +53,12 @@ export const answer = async (account,
 };
 
 // To create and return the contract for a new Sprig
-export const newSprig = async (account,
+export const newSprig = (account,
                         addressSprig,
                         interactionHash,
                         deadline,
                         wagerDown,
-) => await answer(account,
+) => answer(account,
   addressSprig,
   null,
   interactionHash,
@@ -68,7 +68,7 @@ export const newSprig = async (account,
   false,
   );
 
-export const challenge = async (account,
+export const challenge = (account,
                          addressSprig,
                          interactionHash,
                          deadline,
