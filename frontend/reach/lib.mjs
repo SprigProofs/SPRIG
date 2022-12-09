@@ -8,8 +8,6 @@ export const stdlib = typeof process === 'object'
 
 // stdlib.setProviderByName("TestNet");
 
-export const securityConnection = "0x" + "0".repeat(64);
-
 // Function to get the UNIX timestamp that it will be after some time. Time should be a number of milliseconds
 export const deadlineFromTime = (time) => time + Date.now();
 
@@ -89,7 +87,7 @@ export const challenge = (account,
   return [ctc, ctc.p.Alice(interact)];
 }
 
-const verifyAnswer = async (ctc,
+export const verifyAnswer = async (ctc,
                           author,
                           addressSprig,
                           addressSkeptic,
@@ -117,7 +115,7 @@ const verifyAnswer = async (ctc,
         && correctBottom && correctAuthor;
 };
 
-const verifyChallenge = async (ctc,
+export const verifyChallenge = async (ctc,
                               author,
                                addressSprig,
                                interactionHash,
@@ -152,37 +150,6 @@ export const monitorEventsChallenge = async (ctc) => {
   ctc.events.newParticipant.monitor((event) => {console.log(`A new participant has been added, with address ${event.what[0]}, with contract ${event.what[1]}`)});
   ctc.events.announceWinner.monitor((event) => {console.log(`The winner is announced: the claim was ${event.what[0] ? "correct" : "incorrect"} and the winner is ${event.what[1]} with contract ${event.what[2]}`)});
 }
-
-const getParticipants = async (ctc) => {
-  /*
-    Return the list of participants. More precisely, it
-    returns the list of pairs (addressAccount, addressContract).
-    If there is no participants, it returns None.
-
-  */
-  const resultView = await ctc.views.participants()
-  if (resultView[0] == "None"){
-    return None
-  }
-  else{
-    // resultView[1] is of the form [["Some", address0], ["Some", address1],..., ["Some", addressn], ["None", Null], ["None", Null],..., ["None", Null]]
-    // and each addressk is a tuple (addressAccount, addressContract)
-    return resultView[1].filter(x => x[0] == "Some").map(x => x[1]);
-  }
-}
-
-const announceIsCorrect = (ctc) => {
-  ctc.apis.Sprig.announceWinner(true, 0);
-}
-
-const announceVerification = (ctc, verification) => {
-  ctc.apis.Sprig.announceVerification(verification);
-}
-
-const announceWinner = (ctc, index) => {
-  ctc.apis.Sprig.announceWinner(false, index);
-}
-
 export const getBalance = async (acc) => {
   // To get the balance of an account
   const bal = await acc.balanceOf();

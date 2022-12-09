@@ -158,7 +158,8 @@ import { ALGO_WalletConnect as WalletConnect } from '@reach-sh/stdlib';
 import { ALGO_MyAlgoConnect as MyAlgoConnect } from '@reach-sh/stdlib';
 
 export const reach = blockchain.stdlib
-const SPRIG_ADDRESS = 'GQPTXRWAHCQCML7G6DNPMGJ5BE7AUXYLEPPMVJPP67KPASTF2MKIVWFSKQ';
+// const SPRIG_ADDRESS = 'GQPTXRWAHCQCML7G6DNPMGJ5BE7AUXYLEPPMVJPP67KPASTF2MKIVWFSKQ';
+const SPRIG_ADDRESS = 'HNVCPPGOW2SC2YVDVDICU3YNONSTEFLXDXREHJR2YBEKDC2Z3IUZSC6YGI';
 
 export async function ensureWalletConnected() {
     console.log("Wallet connecting...", store.account)

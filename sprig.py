@@ -229,7 +229,132 @@ def hashingAnswer(answer: ProofAttempt, challenge: Challenge | None) -> str:
 
 
 @dataclass
-class ParametersBlockchain(AbstractParameters):
+class Parameters(AbstractParameters):
+    """Parameters of a Sprig instance."""
+
+    root_height: int
+    max_length: int
+    time_for_questions: int
+    time_for_answers: int
+    upstakes: list[int]
+    downstakes: list[int]
+    question_bounties: list[int]
+    verification_cost: int
+
+    def __post_init__(self) -> None:
+        assert self.root_height > 1
+        assert len(self.upstakes) == self.root_height
+        assert len(self.downstakes) == self.root_height
+        assert len(self.question_bounties) == self.root_height
+
+        assert self.downstakes[0] == 0
+        assert self.question_bounties[0] == 0
+
+        assert self.verification_cost > 0
+        assert self.max_length > 0
+        assert self.time_for_questions > 0
+        assert self.time_for_answers > 0
+
+    def protocol_height(self) -> int:
+        return self.root_height
+
+    def attempt_deadline(self, created: Time, height: int) -> Time:
+        return Time(created + self.time_for_questions)
+
+    def challenge_deadline(self, challenge: Challenge) -> Time:
+        if challenge.status == Status.UNCHALLENGED:
+            return Time(challenge.created_at + self.time_for_questions)
+        else:
+            assert challenge.challenged_at is not None  # Sanity check
+            return Time(challenge.challenged_at + self.time_for_answers)
+
+    def attempt_passes_constraints(self, attempt: ProofAttempt) -> bool:
+        return len(attempt.proof) < self.max_length
+
+    # Attempts
+
+    def pay_new_proof_attempt(self, attempt: ProofAttempt, sprig: Sprig) -> bool:
+        if attempt.height == 0:  # machine => upstake + verif cost
+            amount = self.verification_cost + self.upstakes[attempt.height]
+            msg = f"machine verification {attempt}"
+        else:
+            amount = self.downstakes[attempt.height]
+            if attempt.height < self.root_height - 1:  # non-root
+                amount += self.upstakes[attempt.height]
+            msg = f"new proof attempt - ⛰️{attempt.height}"
+
+        attempt.money_held += amount
+        success = transfer_money(attempt.author, SPRIG_ADDRESS, amount, msg)
+
+        # transfer machine verification cost, which never fails
+        if success and attempt.height == 0:
+            attempt.money_held -= self.verification_cost
+            transfer_money(SPRIG_ADDRESS, MACHINE_VERIF, self.verification_cost, msg)
+
+        return success
+
+    def pay_attempt_accepted(self, attempt: ProofAttempt) -> None:
+        amount = 0
+
+        # non-machine: reimburse the downstake
+        if attempt.height > 0:
+            amount = self.downstakes[attempt.height]
+
+        # non-root: reimburse the upstake
+        if attempt.height < self.root_height - 1:
+            amount += self.upstakes[attempt.height]
+
+        attempt.money_held -= amount
+        transfer_money(SPRIG_ADDRESS, attempt.author, amount, f"attempt validated")
+
+    def pay_attempt_rejected(self, attempt: ProofAttempt, rejecting: Challenge | None,
+                             sprig: Sprig) -> None:
+
+        # non-machine: downstakes goes to closing claim challenger.
+        if attempt.height > 0:
+            amount = self.downstakes[attempt.height]
+            attempt.money_held -= amount
+            assert rejecting and rejecting.author  # Sanity check (also for mypy)
+            transfer_money(SPRIG_ADDRESS, rejecting.author, amount,
+                           f"downstakes to {rejecting.hash}")
+        else:
+            assert rejecting is None
+
+        # non-root: upstake goes to challenge that was failed to answer
+        if attempt.parent is not None:
+            amount = self.upstakes[attempt.height]
+            parent_challenge = sprig.challenges[attempt.parent]
+            attempt.money_held -= amount
+            assert parent_challenge.author  # Sanity check (also for mypy)
+            transfer_money(SPRIG_ADDRESS, parent_challenge.author, amount,
+                           f"upstakes to {parent_challenge.hash}")
+
+    # Challenges
+
+    def pay_new_challenge(self, skeptic: Address, attempt: ProofAttempt,
+                          challenge: Challenge) -> bool:
+        amount = self.question_bounties[challenge.height]
+        attempt.money_held += amount
+        return transfer_money(skeptic, SPRIG_ADDRESS, amount, f"challenge {challenge.hash}")
+
+    def pay_challenge_validated(self, attempt: ProofAttempt, challenge: Challenge) -> None:
+        assert challenge.author  # Sanity check
+        amount = self.question_bounties[attempt.height]
+        attempt.money_held -= amount
+        transfer_money(SPRIG_ADDRESS, challenge.author, amount,
+                       f"challenge {challenge.hash} unanswered")
+
+    def pay_challenge_rejected(self, answer: ProofAttempt, sprig: Sprig) -> None:
+        assert answer.parent is not None  # Sanity check
+
+        challenge = sprig.challenges[answer.parent]
+        amount = self.question_bounties[challenge.height]
+        sprig.proofs[challenge.parent].money_held -= amount
+        transfer_money(SPRIG_ADDRESS, answer.author, amount, f"challenge {challenge.hash} answered")
+
+
+@dataclass
+class ParametersBlockchain(Parameters):
     """Parameters of a Sprig instance on the blockchain"""
 
     root_height: int
@@ -308,6 +433,9 @@ class ParametersBlockchain(AbstractParameters):
                 "ADD_PARTICIPANT", "CHALLENGE",
                 str(challenge.contract), attempt.author, attempt.contract
             ])
+        elif not successful:
+            print("Error: ", process.stderr)
+            print("Output: ", process.stdout)
         return successful
 
         if attempt.height == 0:  # machine => upstake + verif cost
@@ -437,131 +565,6 @@ class ParametersBlockchain(AbstractParameters):
              str(challenge.contract), "false", answer.contract],
             throwingError=True)
         return
-        amount = self.question_bounties[challenge.height]
-        sprig.proofs[challenge.parent].money_held -= amount
-        transfer_money(SPRIG_ADDRESS, answer.author, amount, f"challenge {challenge.hash} answered")
-
-
-@dataclass
-class Parameters(AbstractParameters):
-    """Parameters of a Sprig instance."""
-
-    root_height: int
-    max_length: int
-    time_for_questions: int
-    time_for_answers: int
-    upstakes: list[int]
-    downstakes: list[int]
-    question_bounties: list[int]
-    verification_cost: int
-
-    def __post_init__(self) -> None:
-        assert self.root_height > 1
-        assert len(self.upstakes) == self.root_height
-        assert len(self.downstakes) == self.root_height
-        assert len(self.question_bounties) == self.root_height
-
-        assert self.downstakes[0] == 0
-        assert self.question_bounties[0] == 0
-
-        assert self.verification_cost > 0
-        assert self.max_length > 0
-        assert self.time_for_questions > 0
-        assert self.time_for_answers > 0
-
-    def protocol_height(self) -> int:
-        return self.root_height
-
-    def attempt_deadline(self, created: Time, height: int) -> Time:
-        return Time(created + self.time_for_questions)
-
-    def challenge_deadline(self, challenge: Challenge) -> Time:
-        if challenge.status == Status.UNCHALLENGED:
-            return Time(challenge.created_at + self.time_for_questions)
-        else:
-            assert challenge.challenged_at is not None  # Sanity check
-            return Time(challenge.challenged_at + self.time_for_answers)
-
-    def attempt_passes_constraints(self, attempt: ProofAttempt) -> bool:
-        return len(attempt.proof) < self.max_length
-
-    # Attempts
-
-    def pay_new_proof_attempt(self, attempt: ProofAttempt, sprig: Sprig) -> bool:
-        if attempt.height == 0:  # machine => upstake + verif cost
-            amount = self.verification_cost + self.upstakes[attempt.height]
-            msg = f"machine verification {attempt}"
-        else:
-            amount = self.downstakes[attempt.height]
-            if attempt.height < self.root_height - 1:  # non-root
-                amount += self.upstakes[attempt.height]
-            msg = f"new proof attempt - ⛰️{attempt.height}"
-
-        attempt.money_held += amount
-        success = transfer_money(attempt.author, SPRIG_ADDRESS, amount, msg)
-
-        # transfer machine verification cost, which never fails
-        if success and attempt.height == 0:
-            attempt.money_held -= self.verification_cost
-            transfer_money(SPRIG_ADDRESS, MACHINE_VERIF, self.verification_cost, msg)
-
-        return success
-
-    def pay_attempt_accepted(self, attempt: ProofAttempt) -> None:
-        amount = 0
-
-        # non-machine: reimburse the downstake
-        if attempt.height > 0:
-            amount = self.downstakes[attempt.height]
-
-        # non-root: reimburse the upstake
-        if attempt.height < self.root_height - 1:
-            amount += self.upstakes[attempt.height]
-
-        attempt.money_held -= amount
-        transfer_money(SPRIG_ADDRESS, attempt.author, amount, f"attempt validated")
-
-    def pay_attempt_rejected(self, attempt: ProofAttempt, rejecting: Challenge | None,
-                             sprig: Sprig) -> None:
-
-        # non-machine: downstakes goes to closing claim challenger.
-        if attempt.height > 0:
-            amount = self.downstakes[attempt.height]
-            attempt.money_held -= amount
-            assert rejecting and rejecting.author  # Sanity check (also for mypy)
-            transfer_money(SPRIG_ADDRESS, rejecting.author, amount,
-                           f"downstakes to {rejecting.hash}")
-        else:
-            assert rejecting is None
-
-        # non-root: upstake goes to challenge that was failed to answer
-        if attempt.parent is not None:
-            amount = self.upstakes[attempt.height]
-            parent_challenge = sprig.challenges[attempt.parent]
-            attempt.money_held -= amount
-            assert parent_challenge.author  # Sanity check (also for mypy)
-            transfer_money(SPRIG_ADDRESS, parent_challenge.author, amount,
-                           f"upstakes to {parent_challenge.hash}")
-
-    # Challenges
-
-    def pay_new_challenge(self, skeptic: Address, attempt: ProofAttempt,
-                          challenge: Challenge) -> bool:
-        amount = self.question_bounties[challenge.height]
-        attempt.money_held += amount
-        return transfer_money(skeptic, SPRIG_ADDRESS, amount, f"challenge {challenge.hash}")
-
-    def pay_challenge_validated(self, attempt: ProofAttempt, challenge: Challenge) -> None:
-        assert challenge.author  # Sanity check
-        amount = self.question_bounties[attempt.height]
-        attempt.money_held -= amount
-        transfer_money(SPRIG_ADDRESS, challenge.author, amount,
-                       f"challenge {challenge.hash} unanswered")
-
-    def pay_challenge_rejected(self, answer: ProofAttempt, sprig: Sprig) -> None:
-        assert answer.parent is not None  # Sanity check
-
-        challenge = sprig.challenges[answer.parent]
         amount = self.question_bounties[challenge.height]
         sprig.proofs[challenge.parent].money_held -= amount
         transfer_money(SPRIG_ADDRESS, answer.author, amount, f"challenge {challenge.hash} answered")
@@ -950,7 +953,7 @@ SPRIG instance:
         return json.dumps(base)
 
     @classmethod
-    def loads(cls, s: str) -> Sprig:
+    def loads(cls, s: str, blockchain: bool=False) -> Sprig:
         data = json.loads(s)
 
         def mkStatus(d: dict[str, Any]) -> None:
@@ -963,7 +966,11 @@ SPRIG instance:
 
         mkStatus(data)
 
-        params = Parameters(**data["params"])
+        if not blockchain:
+            params = Parameters(**data["params"])
+        else:
+            params = ParametersBlockchain(**data["params"])
+
         proofs = {h: ProofAttempt(**attempt) for h, attempt in data["proofs"].items()}
         challenges = {h: Challenge(**challenge) for h, challenge in data["challenges"].items()}
         language = Language.load(data['language'])

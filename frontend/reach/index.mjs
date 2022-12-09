@@ -1,10 +1,46 @@
-import { stdlib, verifyAnswer, verifyChallenge } from './lib.js';
+import { stdlib, verifyAnswer, verifyChallenge } from './lib.mjs';
+import * as backendClaim from './build/claim.main.mjs';
+import * as backendChallenge from './build/challenge.main.mjs';
+
+
+const getParticipants = async (ctc) => {
+  /*
+    Return the list of participants. More precisely, it
+    returns the list of pairs (addressAccount, addressContract).
+    If there is no participants, it returns None.
+
+  */
+  const resultView = await ctc.views.participants()
+  if (resultView[0] == "None"){
+    return None
+  }
+  else{
+    // resultView[1] is of the form [["Some", address0], ["Some", address1],..., ["Some", addressn], ["None", Null], ["None", Null],..., ["None", Null]]
+    // and each addressk is a tuple (addressAccount, addressContract)
+    return resultView[1].filter(x => x[0] == "Some").map(x => x[1]);
+  }
+}
+
+const announceIsCorrect = (ctc) => {
+  ctc.apis.Sprig.announceWinner(true, 0);
+}
+
+const announceVerification = (ctc, verification) => {
+  ctc.apis.Sprig.announceVerification(verification);
+}
+
+const announceWinner = (ctc, index) => {
+  ctc.apis.Sprig.announceWinner(false, index);
+}
 
 if (process.argv.length > 2){
+  const securityConnection = "0x" + "0".repeat(64);
+
   const [action, typeContract, addressContract] = process.argv.slice(2,5);
   const backend = {"CHALLENGE":backendChallenge, "ANSWER":backendClaim}[typeContract];
   const accountSprig = await stdlib.newAccountFromSecret(securityConnection);
   const addressSprig = accountSprig.getAddress();
+  console.log(stdlib.formatAddress(addressSprig))
   const ctc = accountSprig.contract(backend, parseInt(addressContract));
   switch (action) {
     case "VERIFY":
