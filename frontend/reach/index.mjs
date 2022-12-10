@@ -39,8 +39,8 @@ if (process.argv.length > 2){
   const [action, typeContract, addressContract] = process.argv.slice(2,5);
   const backend = {"CHALLENGE":backendChallenge, "ANSWER":backendClaim}[typeContract];
   const accountSprig = await stdlib.newAccountFromSecret(securityConnection);
-  const addressSprig = accountSprig.getAddress();
-  console.log(stdlib.formatAddress(addressSprig))
+  const addressSprig = stdlib.formatAddress(accountSprig.getAddress());
+  
   const ctc = accountSprig.contract(backend, parseInt(addressContract));
   switch (action) {
     case "VERIFY":

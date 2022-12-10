@@ -201,7 +201,9 @@ def jsFrontendReach(parameters: list[str],
     """
     env = os.environ.copy()
     env.update({'REACH_CONNECTOR_MODE': 'ALGO'})
-    return subprocess.run(["node", "./frontend/reach/index.mjs"] + parameters,
+    parameters = ["node", "./frontend/reach/index.mjs"] + parameters
+    print("Running", parameters)
+    return subprocess.run(parameters,
                           capture_output=True,
                           check=throwingError,
                           env=env,
@@ -427,7 +429,8 @@ class ParametersBlockchain(Parameters):
                 hashingAnswer(attempt, challenge),
                 "false",
             ])
-        successful = process.returncode == 0 and process.stdout == "true\n"
+        print(process.stdout)
+        successful = process.returncode == 0 and process.stdout.endswith("true\n")
         if successful and challenge is not None:
             jsFrontendReach([
                 "ADD_PARTICIPANT", "CHALLENGE",
@@ -535,7 +538,8 @@ class ParametersBlockchain(Parameters):
             str(self.downstakes[challenge.height]),
             hashingChallenge(challenge, attempt), "false"
         ])
-        successful = process.returncode == 0 and process.stdout == "true\n"
+        print(process.stdout)
+        successful = process.returncode == 0 and process.stdout.endswith("true\n")
         if successful:
             jsFrontendReach([
                 "ADD_PARTICIPANT", "ANSWER",

@@ -101,14 +101,24 @@ export const verifyAnswer = async (ctc,
     To verify the answer contract given by the user. Returns a boolean.
     A view is a function that returns a Maybe, because it can be not set for the moment.
   */
-  const correctAuthor = (await ctc.views.author())[1] == author;
-  const correctSprig = (await ctc.views.addressSprig())[1] == addressSprig;
+  const correctAuthor = stdlib.formatAddress((await ctc.views.author())[1]) == author;
+  const correctSprig = stdlib.formatAddress((await ctc.views.addressSprig())[1]) == addressSprig;
   const correctSkeptic = (await ctc.views.addressSkeptic())[1][1] ==  addressSkeptic;
   const correctInteraction = uIntArrayToHex((await ctc.views.interaction())[1]) == interactionHash;
   const correctWagerDown = stdlib.eq((await ctc.views.wagerDown())[1], wagerDown);
   const correctWagerUp = stdlib.eq((await ctc.views.wagerUp())[1], wagerUp);
   const correctDeadline = stdlib.eq((await ctc.views.deadline())[1], deadline);
   const correctBottom = (await ctc.views.isBottom())[1] == isBottom;
+  console.log(
+    "correctSprig", correctSprig,
+    "correctSkeptic", correctSkeptic,
+    "correctInteraction", correctInteraction,
+    "correctWagerDown", correctWagerDown,
+    "correctWagerUp", correctWagerUp,
+    "correctDeadline", correctDeadline,
+    "correctBottom", correctBottom,
+    "correctAuthor", correctAuthor, (await ctc.views.author())[1]
+  );
   return correctSprig && correctSkeptic
         && correctInteraction && correctWagerDown
         && correctWagerUp && correctDeadline
@@ -122,11 +132,16 @@ export const verifyChallenge = async (ctc,
                                deadline,
                                wagerDown,
                                ) => {
-  const correctAuthor = (await ctc.views.author())[1] == author;
-  const correctSprig = (await ctc.views.addressSprig())[1] == addressSprig;
+  const correctAuthor = stdlib.formatAddress((await ctc.views.author())[1]) == author;
+  const correctSprig = stdlib.formatAddress((await ctc.views.addressSprig())[1]) == addressSprig;
   const correctInteraction = uIntArrayToHex((await ctc.views.interaction())[1]) == interactionHash;
   const correctWagerDown = stdlib.eq((await ctc.views.wagerDown())[1], wagerDown);
   const correctDeadline = stdlib.ge((await ctc.views.deadline())[1], deadline);
+  console.log("correctAuthor", correctAuthor,
+    "correctSprig", correctSprig,
+    "correctInteraction", correctInteraction,
+    "correctWagerDown", correctWagerDown,
+    "correctDeadline", correctDeadline);
   return correctAuthor && correctSprig && correctInteraction && correctWagerDown && correctDeadline;
 };
 
