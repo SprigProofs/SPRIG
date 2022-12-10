@@ -120,7 +120,6 @@ const verifyAnswer = async (ctc,
   const correctBottom = views[7] == isBottom;
   console.log(views);
   console.log([correctSprig, correctSkeptic, correctInteraction, correctWagerDown, correctWagerUp, correctDeadline, correctBottom, correctAuthor]);
-};])
   return correctSprig && correctSkeptic
         && correctInteraction && correctWagerDown
         && correctWagerUp && correctDeadline
