@@ -1,7 +1,7 @@
 import { ElNotification } from 'element-plus';
 import { api, dayjs, Parameters, ProofAttempt, Sprig, User } from "./sprig";
 import { reactive, type Ref } from "vue";
-import type { Account as AccountReach, Contract } from '@reach-sh/stdlib/ALGO';
+import type { Account as AccountReach, Backend, Contract } from '@reach-sh/stdlib/ALGO';
 
 interface Account extends AccountReach {
     balance: number;
@@ -14,7 +14,6 @@ interface Store {
     bank: Record<string, number>;
     loaded: boolean;
     fail: boolean;
-    user: string;
     account?: Account;
     reload: () => Promise<void>;
     challenge: (togglePopup: Ref<boolean>, instance: string, challenge: string) => Promise<void>;
@@ -28,7 +27,6 @@ export const store: Store = reactive<Store>({
     bank: {},
     loaded: false,
     fail: false,
-    user: 'Diego',
     async reload() {
         console.log('reload');
         store.fail = false;
@@ -44,67 +42,69 @@ export const store: Store = reactive<Store>({
         })
     },
     async challenge(togglePopup: Ref<boolean>, instance: string, challenge: string) {
-        console.log("Challenge", instance, challenge, this.user);
-        // Blockchain
-        const inst = store.instances[instance];
-        const chall = inst.challenges[challenge];
-        const parent = inst.proofs[chall.parent];
-        const ctc = await blockchain.challenge(
-            await ensureWalletConnected(),
-            SPRIG_ADDRESS,
-            blockchain.hashingChallenge(parent.contract, parent.challenges.indexOf(challenge)),
-            dayjs().add(inst.params.timeForAnswers).unix(),
-            inst.params.downstakes[chall.height],
-            );
-        // Server
-        await api.challenge(instance, challenge, store.user, await ctc.getContractAddress())
-        await store.reload();
+        console.log("Challenge", instance, challenge);
+
+        return await createContract(
+            "Challenge",
+            togglePopup,
+            // @ts-ignore
+            (acc) => {
+                const inst = store.instances[instance];
+                const chall = inst.challenges[challenge];
+                const parent = inst.proofs[chall.parent];
+                return blockchain.challenge(
+                    acc,
+                    SPRIG_ADDRESS,
+                    blockchain.hashingChallenge(parent.contract, parent.challenges.indexOf(challenge)),
+                    blockchain.deadlineFromTime(inst.params.timeForAnswers.asMilliseconds()),
+                    reach.parseCurrency(inst.params.downstakes[chall.height]),
+                    );
+            },
+            (ctcAddress) => api.challenge(instance, challenge, store.account.address, ctcAddress),
+        )
     },
     async newInstance(togglePopup: Ref<boolean>, language: string, params: Parameters, rootClaim: string, proof: string) {
         console.log("New instance", language, params, rootClaim, proof);
+
         // Blockchain
-        const acc = await ensureWalletConnected();
-        const now = dayjs();
-        // const amount = (params.downstakes[params.rootHeight-1]);
-        const amount = reach.parseCurrency(params.downstakes[params.rootHeight-1]);
-        console.log("Amount", amount);
-        togglePopup.value = true;
-        const ctc = await blockchain.newSprig(
-            acc,
-            SPRIG_ADDRESS,
-            blockchain.hashingAnswer(proof),
-            blockchain.deadlineFromTime(params.timeForQuestions.asMilliseconds()),
-            amount,
+        return await createContract(
+            "Instance",
+            togglePopup,
+            // @ts-ignore
+            (acc) => blockchain.newSprig(
+                acc,
+                SPRIG_ADDRESS,
+                blockchain.hashingAnswer(proof),
+                blockchain.deadlineFromTime(params.timeForQuestions.asMilliseconds()),
+                reach.parseCurrency(params.downstakes[params.rootHeight-1]),
+            ),
+            (ctcAddress) => api.newInstance(language, params, store.account.address, rootClaim, proof, ctcAddress),
         )
-        ElNotification({ title: "Contract created", message: await ctc.getContractAddress() });
-        togglePopup.value = false;
-        // Server
-        const instance = await api.newInstance(language, params, this.user, rootClaim, proof, await ctc.getContractAddress());
-        ElNotification({ title: "Proof submitted!" })
-        await store.reload();
-        return instance;
     },
     async newProofAttempt(togglePopup: Ref<boolean>, instance: string, challenge: string, isMachineLevel: boolean, proof: string) {
         console.log("New proof attempt", instance, challenge, proof);
-        // Blockchain
-        const inst = store.instances[instance];
-        const chall = inst.challenges[challenge];
-        const height = isMachineLevel ? 0 : chall.height - 1;
-        const ctc = await blockchain.answer(
-            await ensureWalletConnected(),
-            SPRIG_ADDRESS,
-            chall.author,
-            blockchain.hashingAnswer(proof, chall.contract),
-            dayjs().add(inst.params.timeForQuestions).unix(),
-            inst.params.upstakes[height],
-            inst.params.downstakes[height],
-            isMachineLevel,
-            );
-        // Server
-        const ctcAddress = reach.bigNumberToNumber(await ctc.getInfo()).toString();
-        const proofAttempt = await api.newProofAttempt(instance, challenge, isMachineLevel, proof, this.user, ctcAddress);
-        await store.reload();
-        return proofAttempt;
+
+        return await createContract(
+            "Proof attempt",
+            togglePopup,
+            // @ts-ignore
+            (acc) => {
+                const inst = store.instances[instance];
+                const chall = inst.challenges[challenge];
+                const height = isMachineLevel ? 0 : chall.height - 1;
+                return blockchain.answer(
+                    acc,
+                    SPRIG_ADDRESS,
+                    chall.author,
+                    blockchain.hashingAnswer(proof, chall.contract),
+                    blockchain.deadlineFromTime(inst.params.timeForQuestions),
+                    reach.parseCurrency(inst.params.upstakes[height]),
+                    reach.parseCurrency(inst.params.downstakes[height]),
+                    isMachineLevel,
+                    );
+            },
+            (ctcAddress) => api.newProofAttempt(instance, challenge, isMachineLevel, proof, store.account.address, ctcAddress),
+        )
     },
     getUser(name: string) {
         return new User(name, store.bank[name] || 0, store.instances);
@@ -113,6 +113,43 @@ export const store: Store = reactive<Store>({
 
 store.reload();
 
+async function createContract(what: string,
+    togglePopup: Ref<boolean>,
+    blockchainInteract: (acc: Account) => [Contract, Promise<void>],
+    serverInteract: (ctcAddress: string) => any) {
+        // Blockchain
+        const acc = await ensureWalletConnected();
+
+        togglePopup.value = true;
+        const [ctc, p] = blockchainInteract(acc);
+
+        // Catch errors from the promise p
+        let hasFailed = null;
+        p.catch((e: { message: any; }) => {
+            hasFailed = e;
+            console.log("Error", e);
+            ElNotification.error({ title: "Error", message: e.message });
+            togglePopup.value = false;
+        });
+        // Wait for the contract to be created
+        while (hasFailed === null) {
+            await wait(500)
+            // @ts-ignore // author is not defined on the type, but always is in practice
+            const a = await ctc.views.author();
+            if (a[0] == "Some") {
+                ElNotification({ title: "Contract created", message: await ctc.getContractAddress() });
+                togglePopup.value = false;
+
+                // Server
+                const obj = await serverInteract(await ctcInfo(ctc));
+                ElNotification({ title: `${what} created!` })
+                await store.reload();
+                return obj;
+            }
+        }
+
+        throw hasFailed;
+}
 
 // Blockchain
 
@@ -121,7 +158,8 @@ import { ALGO_WalletConnect as WalletConnect } from '@reach-sh/stdlib';
 import { ALGO_MyAlgoConnect as MyAlgoConnect } from '@reach-sh/stdlib';
 
 export const reach = blockchain.stdlib
-const SPRIG_ADDRESS = 'GQPTXRWAHCQCML7G6DNPMGJ5BE7AUXYLEPPMVJPP67KPASTF2MKIVWFSKQ';
+// const SPRIG_ADDRESS = 'GQPTXRWAHCQCML7G6DNPMGJ5BE7AUXYLEPPMVJPP67KPASTF2MKIVWFSKQ';
+const SPRIG_ADDRESS = 'HNVCPPGOW2SC2YVDVDICU3YNONSTEFLXDXREHJR2YBEKDC2Z3IUZSC6YGI';
 
 export async function ensureWalletConnected() {
     console.log("Wallet connecting...", store.account)
@@ -130,7 +168,7 @@ export async function ensureWalletConnected() {
         delete window.algorand;
         reach.setCustomHttpEventHandler(async (e) => {
             console.log("HTTP Event", e);
-            ElNotification.info({ title: e.eventName, message: JSON.stringify(e) });
+            // ElNotification.info({ title: e.eventName, message: JSON.stringify(e) });
         });
         console.log("Set wallet fallback...", store.account)
         if (!"TestNet") {
@@ -167,21 +205,29 @@ export async function ensureWalletConnected() {
 //     store.account = account;
 // }
 
-
-async function createContract(backend, initialData, togglePopup: Ref<boolean>): Promise<Contract> {
-    const account = await ensureWalletConnected();
-    const ctc = account.contract(backend);
-
-    // It is not clean to do this here, but I can't think of a better place.
-    togglePopup.value = true;
-    const ret = await ctc.p.Admin(initialData)
-    togglePopup.value = false;
-
-    const contractInfo = await ctc.getInfo();
-    console.log("Created contract:", ret, contractInfo);
-    account.updateBalance();  // Add await?
-    return ctc;
+async function wait(ms: number) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
 }
+async function ctcInfo(ctc: Contract): Promise<string> {
+    const info = await ctc.getInfo();
+    return reach.bigNumberToNumber(info).toString();
+}
+
+
+// async function createContract(backend: Backend, initialData: any, togglePopup: Ref<boolean>): Promise<Contract> {
+//     const account = await ensureWalletConnected();
+//     const ctc = account.contract(backend);
+
+//     // It is not clean to do this here, but I can't think of a better place.
+//     togglePopup.value = true;
+//     const ret = await ctc.p.Admin(initialData)
+//     togglePopup.value = false;
+
+//     const contractInfo = await ctc.getInfo();
+//     console.log("Created contract:", ret, contractInfo);
+//     account.updateBalance();  // Add await?
+//     return ctc;
+// }
 
 // async function joinContract(ctcInfo) {
 //     const account = await ensureWalletConnected();

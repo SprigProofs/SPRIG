@@ -42,7 +42,7 @@ BANK = defaultdict(int, json.loads(BANK_FILE.read_text() or "{}"))
 
 INDENT = " " * 4  # For pretty printing
 
-REAL_TIME = "real" # UNIX timestamp, in milliseconds
+REAL_TIME = "real"  # UNIX timestamp, in milliseconds
 DISCRETE_TIME = "discrete"
 TIME_MODE = os.environ.get("TIME_MODE", DISCRETE_TIME)
 
@@ -64,6 +64,7 @@ def now(increment: int = 0) -> Time:
         TIME_FILE.write_text(str(time))
 
         return Time(time)
+
 
 @contextmanager
 def time_mode(mode: Literal["real", "discrete"]) -> Generator[None, None, None]:
@@ -145,7 +146,7 @@ class AbstractParameters:
 
     # Transfers related to proof attempts.
 
-    def pay_new_proof_attempt(self, attempt: ProofAttempt) -> bool:
+    def pay_new_proof_attempt(self, attempt: ProofAttempt, sprig: Sprig) -> bool:
         """Make the transactions for a new proof attempt. Return whether it succeeded."""
         raise NotImplementedError
 
@@ -190,21 +191,26 @@ class AbstractParameters:
         """
         raise NotImplementedError
 
-def jsFrontendReach(parameters, throwingError=False):
+
+def jsFrontendReach(parameters: list[str],
+                    throwingError: bool = False) -> subprocess.CompletedProcess[str]:
     """To call the frontend for Reach written in Javascript, to interact
     with the blockchain. It throws an error when the Javascript returns
     an error if throwingError=True, and parameters must be a list of
     strings.
     """
     env = os.environ.copy()
-    env.update({'REACH_CONNECTOR_MODE':'ALGO'})
-    return subprocess.run(["node", "./frontend/reach/index.mjs"]+ parameters,
-                            capture_output=True,
-                            check=throwingError,
-                            env=env,
-                            text=True)
+    env.update({'REACH_CONNECTOR_MODE': 'ALGO'})
+    parameters = ["node", "./frontend/reach/index.mjs"] + parameters
+    print("Running", parameters)
+    return subprocess.run(parameters,
+                          capture_output=True,
+                          check=throwingError,
+                          env=env,
+                          text=True)
 
-def hashingChallenge(challenge: Challenge, attempt: ProofAttempt):
+
+def hashingChallenge(challenge: Challenge, attempt: ProofAttempt) -> str:
     """Create the hash corresponding to a challenge. It returns
     an hexadecimal number.
     """
@@ -213,7 +219,8 @@ def hashingChallenge(challenge: Challenge, attempt: ProofAttempt):
     h.update(bytes(attempt.contract + str(part_challenged), 'utf-8'))
     return "0x" + h.hexdigest()
 
-def hashingAnswer(answer: ProofAttempt, challenge: Challenge | None):
+
+def hashingAnswer(answer: ProofAttempt, challenge: Challenge | None) -> str:
     """Create the hash corresponding to an answer or a claim. It
     returns an hexadecimal number.
     """
@@ -222,223 +229,6 @@ def hashingAnswer(answer: ProofAttempt, challenge: Challenge | None):
     h.update(bytes(answer.proof + contractParent, 'utf-8'))
     return "0x" + h.hexdigest()
 
-@dataclass
-class ParametersBlockchain(AbstractParameters):
-    """Parameters of a Sprig instance on the blockchain"""
-
-    root_height: int
-    max_length: int
-    time_for_questions: int
-    time_for_answers: int
-    upstakes: list[int]
-    downstakes: list[int]
-    question_bounties: list[int]
-    verification_cost: int
-
-    def __post_init__(self) -> None:
-        assert self.root_height > 1
-        assert len(self.upstakes) == self.root_height
-        assert len(self.downstakes) == self.root_height
-        assert len(self.question_bounties) == self.root_height
-
-        assert self.downstakes[0] == 0
-        assert self.question_bounties[0] == 0
-
-        assert self.verification_cost > 0
-        assert self.max_length > 0
-        assert self.time_for_questions > 0
-        assert self.time_for_answers > 0
-
-    def protocol_height(self) -> int:
-        return self.root_height
-
-    def attempt_deadline(self, created: Time, height: int) -> Time:
-        return Time(created + self.time_for_questions)
-
-    def challenge_deadline(self, challenge: Challenge) -> Time:
-        if challenge.status == Status.UNCHALLENGED:
-            return Time(challenge.created_at + self.time_for_questions)
-        else:
-            assert challenge.challenged_at is not None  # Sanity check
-            return Time(challenge.challenged_at + self.time_for_answers)
-
-    def attempt_passes_constraints(self, attempt: ProofAttempt) -> bool:
-        return len(attempt.proof) < self.max_length
-
-    # Attempts
-
-    def pay_new_proof_attempt(self, attempt: ProofAttempt, sprig: Sprig) -> bool:
-        challenge = (None if attempt.parent is None
-                    else sprig.challenges[attempt.parent])
-        address_skeptic = ("None" if challenge is None else challenge.author)
-        if attempt.height == 0:
-            process = jsFrontendReach(["VERIFY",
-                                        "ANSWER",
-                                        str(attempt.contract),
-                                        attempt.author,
-                                        address_skeptic,
-                                        str(attempt.created_at + self.time_for_questions),
-                                        str(self.upstakes[attempt.height]),
-                                        '0',
-                                        hashingAnswer(attempt, challenge),
-                                        "true",
-                                        ])
-        else:
-            process = jsFrontendReach(["VERIFY",
-                                        "ANSWER",
-                                        str(attempt.contract),
-                                        attempt.author,
-                                        address_skeptic,
-                                        str(attempt.created_at + self.time_for_questions),
-                                        str(self.upstakes[attempt.height]),
-                                        str(self.downstakes[attempt.height]),
-                                        hashingAnswer(attempt, challenge),
-                                        "false",
-                                        ])
-        successful = process.returncode == 0 and process.stdout == "true\n"
-        if successful and challenge is not None:
-            jsFrontendReach(["ADD_PARTICIPANT",
-                            "CHALLENGE",
-                            str(challenge.contract),
-                            attempt.author,
-                            attempt.contract])
-        return successful
-
-        if attempt.height == 0:  # machine => upstake + verif cost
-            amount = self.verification_cost + self.upstakes[attempt.height]
-            msg = f"machine verification {attempt}"
-        else:
-            amount = self.downstakes[attempt.height]
-            if attempt.height < self.root_height - 1:  # non-root
-                amount += self.upstakes[attempt.height]
-            msg = f"new proof attempt - ⛰️{attempt.height}"
-
-        attempt.money_held += amount
-        success = transfer_money(attempt.author, SPRIG_ADDRESS, amount, msg)
-
-        # transfer machine verification cost, which never fails
-        if success and attempt.height == 0:
-            attempt.money_held -= self.verification_cost
-            transfer_money(SPRIG_ADDRESS, MACHINE_VERIF, self.verification_cost, msg)
-
-        return success
-
-    def pay_attempt_accepted(self, attempt: ProofAttempt) -> None:
-        if attempt.height == 0:
-            jsFrontendReach(["ANNOUNCE_VERIFICATION",
-                            "ANSWER",
-                            str(attempt.contract),
-                            "true",
-                            ], throwingError=True)
-        else:
-            jsFrontendReach(["ANNOUNCE_WINNER",
-                            "ANSWER",
-                            str(attempt.contract),
-                            "true",
-                            "0"], throwingError=True)
-        return
-        amount = 0
-
-        # non-machine: reimburse the downstake
-        if attempt.height > 0:
-            amount = self.downstakes[attempt.height]
-
-        # non-root: reimburse the upstake
-        if attempt.height < self.root_height - 1:
-            amount += self.upstakes[attempt.height]
-
-        attempt.money_held -= amount
-        transfer_money(SPRIG_ADDRESS, attempt.author, amount, f"attempt validated")
-
-    def pay_attempt_rejected(self, attempt: ProofAttempt, rejecting: Challenge | None,
-                             sprig: Sprig) -> None:
-
-        if attempt.height == 0:
-            jsFrontendReach(["ANNOUNCE_VERIFICATION",
-                            "ANSWER",
-                            str(attempt.contract),
-                            "false",
-                            ], throwingError=True)
-        else:
-            jsFrontendReach(["ANNOUNCE_WINNER",
-                            "ANSWER",
-                            str(attempt.contract),
-                            "false",
-                            str(rejecting.contract),
-                            ], throwingError=True)
-        return
-        # non-machine: downstakes goes to closing claim challenger.
-        if attempt.height > 0:
-            amount = self.downstakes[attempt.height]
-            attempt.money_held -= amount
-            assert rejecting and rejecting.author  # Sanity check (also for mypy)
-            transfer_money(SPRIG_ADDRESS, rejecting.author, amount,
-                           f"downstakes to {rejecting.hash}")
-        else:
-            assert rejecting is None
-
-        # non-root: upstake goes to challenge that was failed to answer
-        if attempt.parent is not None:
-            amount = self.upstakes[attempt.height]
-            parent_challenge = sprig.challenges[attempt.parent]
-            attempt.money_held -= amount
-            assert parent_challenge.author  # Sanity check (also for mypy)
-            transfer_money(SPRIG_ADDRESS, parent_challenge.author, amount,
-                           f"upstakes to {parent_challenge.hash}")
-
-    # Challenges
-
-    def pay_new_challenge(self, skeptic: Address, attempt: ProofAttempt,
-                          challenge: Challenge) -> bool:
-        process = jsFrontendReach(["VERIFY",
-                                    "CHALLENGE",
-                                    str(challenge.contract),
-                                    challenge.author,
-                                    "NONE",
-                                    str(challenge.open_until),
-                                    "0",
-                                    str(self.downstakes[challenge.height]),
-                                    hashingChallenge(challenge, attempt),
-                                    "false"])
-        successful = process.returncode == 0 and process.stdout == "true\n"
-        if successful:
-            jsFrontendReach(["ADD_PARTICIPANT",
-                            "ANSWER",
-                            str(attempt.contract),
-                            challenge.author,
-                            challenge.contract])
-        return successful
-        amount = self.question_bounties[challenge.height]
-        attempt.money_held += amount
-        return transfer_money(skeptic, SPRIG_ADDRESS, amount, f"challenge {challenge.hash}")
-
-    def pay_challenge_validated(self, attempt: ProofAttempt, challenge: Challenge) -> None:
-        assert challenge.author  # Sanity check
-        jsFrontendReach(["ANNOUNCE_WINNER",
-                        "CHALLENGE",
-                        str(challenge.contract),
-                        "true",
-                        "0"],
-                        throwingError=True)
-        return
-        amount = self.question_bounties[attempt.height]
-        attempt.money_held -= amount
-        transfer_money(SPRIG_ADDRESS, challenge.author, amount,
-                       f"challenge {challenge.hash} unanswered")
-
-    def pay_challenge_rejected(self, answer: ProofAttempt, sprig: Sprig) -> None:
-        challenge = sprig.challenges[answer.parent]
-        assert answer.parent is not None  # Sanity check
-        jsFrontendReach(["ANNOUNCE_WINNER",
-                        "CHALLENGE",
-                        str(challenge.contract),
-                        "false",
-                        answer.contract],
-                        throwingError=True)
-        return
-        amount = self.question_bounties[challenge.height]
-        sprig.proofs[challenge.parent].money_held -= amount
-        transfer_money(SPRIG_ADDRESS, answer.author, amount, f"challenge {challenge.hash} answered")
 
 @dataclass
 class Parameters(AbstractParameters):
@@ -485,7 +275,7 @@ class Parameters(AbstractParameters):
 
     # Attempts
 
-    def pay_new_proof_attempt(self, attempt: ProofAttempt) -> bool:
+    def pay_new_proof_attempt(self, attempt: ProofAttempt, sprig: Sprig) -> bool:
         if attempt.height == 0:  # machine => upstake + verif cost
             amount = self.verification_cost + self.upstakes[attempt.height]
             msg = f"machine verification {attempt}"
@@ -560,6 +350,225 @@ class Parameters(AbstractParameters):
         assert answer.parent is not None  # Sanity check
 
         challenge = sprig.challenges[answer.parent]
+        amount = self.question_bounties[challenge.height]
+        sprig.proofs[challenge.parent].money_held -= amount
+        transfer_money(SPRIG_ADDRESS, answer.author, amount, f"challenge {challenge.hash} answered")
+
+
+@dataclass
+class ParametersBlockchain(Parameters):
+    """Parameters of a Sprig instance on the blockchain"""
+
+    root_height: int
+    max_length: int
+    time_for_questions: int
+    time_for_answers: int
+    upstakes: list[int]
+    downstakes: list[int]
+    question_bounties: list[int]
+    verification_cost: int
+
+    def __post_init__(self) -> None:
+        assert self.root_height > 1
+        assert len(self.upstakes) == self.root_height
+        assert len(self.downstakes) == self.root_height
+        assert len(self.question_bounties) == self.root_height
+
+        assert self.downstakes[0] == 0
+        assert self.question_bounties[0] == 0
+
+        assert self.verification_cost > 0
+        assert self.max_length > 0
+        assert self.time_for_questions > 0
+        assert self.time_for_answers > 0
+
+    def protocol_height(self) -> int:
+        return self.root_height
+
+    def attempt_deadline(self, created: Time, height: int) -> Time:
+        return Time(created + self.time_for_questions)
+
+    def challenge_deadline(self, challenge: Challenge) -> Time:
+        if challenge.status == Status.UNCHALLENGED:
+            return Time(challenge.created_at + self.time_for_questions)
+        else:
+            assert challenge.challenged_at is not None  # Sanity check
+            return Time(challenge.challenged_at + self.time_for_answers)
+
+    def attempt_passes_constraints(self, attempt: ProofAttempt) -> bool:
+        return len(attempt.proof) < self.max_length
+
+    # Attempts
+
+    def pay_new_proof_attempt(self, attempt: ProofAttempt, sprig: Sprig) -> bool:
+        challenge = (None if attempt.parent is None else sprig.challenges[attempt.parent])
+        address_skeptic = ("None" if challenge is None else challenge.author)
+        if attempt.height == 0:
+            process = jsFrontendReach([
+                "VERIFY",
+                "ANSWER",
+                str(attempt.contract),
+                attempt.author,
+                address_skeptic,
+                str(attempt.created_at + self.time_for_questions),
+                str(self.upstakes[attempt.height]),
+                '0',
+                hashingAnswer(attempt, challenge),
+                "true",
+            ])
+        else:
+            process = jsFrontendReach([
+                "VERIFY",
+                "ANSWER",
+                str(attempt.contract),
+                attempt.author,
+                address_skeptic,
+                str(attempt.created_at + self.time_for_questions),
+                str(self.upstakes[attempt.height]),
+                str(self.downstakes[attempt.height]),
+                hashingAnswer(attempt, challenge),
+                "false",
+            ])
+        print(process.stdout)
+        successful = process.returncode == 0 and process.stdout.endswith("true\n")
+        if successful and challenge is not None:
+            jsFrontendReach([
+                "ADD_PARTICIPANT", "CHALLENGE",
+                str(challenge.contract), attempt.author, attempt.contract
+            ])
+        elif not successful:
+            print("Error: ", process.stderr)
+            print("Output: ", process.stdout)
+        return successful
+
+        if attempt.height == 0:  # machine => upstake + verif cost
+            amount = self.verification_cost + self.upstakes[attempt.height]
+            msg = f"machine verification {attempt}"
+        else:
+            amount = self.downstakes[attempt.height]
+            if attempt.height < self.root_height - 1:  # non-root
+                amount += self.upstakes[attempt.height]
+            msg = f"new proof attempt - ⛰️{attempt.height}"
+
+        attempt.money_held += amount
+        success = transfer_money(attempt.author, SPRIG_ADDRESS, amount, msg)
+
+        # transfer machine verification cost, which never fails
+        if success and attempt.height == 0:
+            attempt.money_held -= self.verification_cost
+            transfer_money(SPRIG_ADDRESS, MACHINE_VERIF, self.verification_cost, msg)
+
+        return success
+
+    def pay_attempt_accepted(self, attempt: ProofAttempt) -> None:
+        if attempt.height == 0:
+            jsFrontendReach([
+                "ANNOUNCE_VERIFICATION",
+                "ANSWER",
+                str(attempt.contract),
+                "true",
+            ],
+                            throwingError=True)
+        else:
+            jsFrontendReach(["ANNOUNCE_WINNER", "ANSWER",
+                             str(attempt.contract), "true", "0"],
+                            throwingError=True)
+        return
+        amount = 0
+
+        # non-machine: reimburse the downstake
+        if attempt.height > 0:
+            amount = self.downstakes[attempt.height]
+
+        # non-root: reimburse the upstake
+        if attempt.height < self.root_height - 1:
+            amount += self.upstakes[attempt.height]
+
+        attempt.money_held -= amount
+        transfer_money(SPRIG_ADDRESS, attempt.author, amount, f"attempt validated")
+
+    def pay_attempt_rejected(self, attempt: ProofAttempt, rejecting: Challenge | None,
+                             sprig: Sprig) -> None:
+
+        if attempt.height == 0:
+            jsFrontendReach([
+                "ANNOUNCE_VERIFICATION",
+                "ANSWER",
+                str(attempt.contract),
+                "false",
+            ],
+                            throwingError=True)
+        else:
+            jsFrontendReach([
+                "ANNOUNCE_WINNER",
+                "ANSWER",
+                str(attempt.contract),
+                "false",
+                str(rejecting.contract),
+            ],
+                            throwingError=True)
+        return
+        # non-machine: downstakes goes to closing claim challenger.
+        if attempt.height > 0:
+            amount = self.downstakes[attempt.height]
+            attempt.money_held -= amount
+            assert rejecting and rejecting.author  # Sanity check (also for mypy)
+            transfer_money(SPRIG_ADDRESS, rejecting.author, amount,
+                           f"downstakes to {rejecting.hash}")
+        else:
+            assert rejecting is None
+
+        # non-root: upstake goes to challenge that was failed to answer
+        if attempt.parent is not None:
+            amount = self.upstakes[attempt.height]
+            parent_challenge = sprig.challenges[attempt.parent]
+            attempt.money_held -= amount
+            assert parent_challenge.author  # Sanity check (also for mypy)
+            transfer_money(SPRIG_ADDRESS, parent_challenge.author, amount,
+                           f"upstakes to {parent_challenge.hash}")
+
+    # Challenges
+
+    def pay_new_challenge(self, skeptic: Address, attempt: ProofAttempt,
+                          challenge: Challenge) -> bool:
+        process = jsFrontendReach([
+            "VERIFY", "CHALLENGE",
+            str(challenge.contract), challenge.author, "NONE",
+            str(challenge.open_until), "0",
+            str(self.downstakes[challenge.height]),
+            hashingChallenge(challenge, attempt), "false"
+        ])
+        print(process.stdout)
+        successful = process.returncode == 0 and process.stdout.endswith("true\n")
+        if successful:
+            jsFrontendReach([
+                "ADD_PARTICIPANT", "ANSWER",
+                str(attempt.contract), challenge.author, challenge.contract
+            ])
+        return successful
+        amount = self.question_bounties[challenge.height]
+        attempt.money_held += amount
+        return transfer_money(skeptic, SPRIG_ADDRESS, amount, f"challenge {challenge.hash}")
+
+    def pay_challenge_validated(self, attempt: ProofAttempt, challenge: Challenge) -> None:
+        assert challenge.author  # Sanity check
+        jsFrontendReach(["ANNOUNCE_WINNER", "CHALLENGE",
+                         str(challenge.contract), "true", "0"],
+                        throwingError=True)
+        return
+        amount = self.question_bounties[attempt.height]
+        attempt.money_held -= amount
+        transfer_money(SPRIG_ADDRESS, challenge.author, amount,
+                       f"challenge {challenge.hash} unanswered")
+
+    def pay_challenge_rejected(self, answer: ProofAttempt, sprig: Sprig) -> None:
+        challenge = sprig.challenges[answer.parent]
+        assert answer.parent is not None  # Sanity check
+        jsFrontendReach(
+            ["ANNOUNCE_WINNER", "CHALLENGE",
+             str(challenge.contract), "false", answer.contract],
+            throwingError=True)
+        return
         amount = self.question_bounties[challenge.height]
         sprig.proofs[challenge.parent].money_held -= amount
         transfer_money(SPRIG_ADDRESS, answer.author, amount, f"challenge {challenge.hash} answered")
@@ -747,7 +756,8 @@ SPRIG instance:
 
         return challenge
 
-    def answer(self, challenge_hash: Hash, claimer: Address, proof: str, contract: str) -> ProofAttempt:
+    def answer(self, challenge_hash: Hash, claimer: Address, proof: str,
+               contract: str) -> ProofAttempt:
         """Answer a challenge with a (non-machine) proof."""
 
         if challenge_hash is ROOT_HASH:
@@ -785,7 +795,7 @@ SPRIG instance:
                                challenges=challenges_hashes,
                                money_held=0)
 
-        assert self.params.pay_new_proof_attempt(attempt), "Cannot pay the proof attempt."
+        assert self.params.pay_new_proof_attempt(attempt, self), "Cannot pay the proof attempt."
 
         # Since the payment was successful, we can now modify the sprig instance
         self.proofs[attempt.hash] = attempt
@@ -811,8 +821,8 @@ SPRIG instance:
         # self.distribute_all_bets()
         return attempt
 
-    def answer_low_level(self, challenge_hash: Hash, claimer: Address,
-                         proof: str, contract: str) -> ProofAttempt:
+    def answer_low_level(self, challenge_hash: Hash, claimer: Address, proof: str,
+                         contract: str) -> ProofAttempt:
         self.distribute_all_bets()
 
         assert challenge_hash in self.challenges, "No such challenge."
@@ -831,7 +841,7 @@ SPRIG instance:
                                challenges=[],
                                money_held=0)
 
-        assert self.params.pay_new_proof_attempt(attempt)
+        assert self.params.pay_new_proof_attempt(attempt, self)
 
         self.proofs[attempt.hash] = attempt
         challenge.attempts.append(attempt.hash)
@@ -947,7 +957,7 @@ SPRIG instance:
         return json.dumps(base)
 
     @classmethod
-    def loads(cls, s: str) -> Sprig:
+    def loads(cls, s: str, blockchain: bool=False) -> Sprig:
         data = json.loads(s)
 
         def mkStatus(d: dict[str, Any]) -> None:
@@ -960,7 +970,11 @@ SPRIG instance:
 
         mkStatus(data)
 
-        params = Parameters(**data["params"])
+        if not blockchain:
+            params = Parameters(**data["params"])
+        else:
+            params = ParametersBlockchain(**data["params"])
+
         proofs = {h: ProofAttempt(**attempt) for h, attempt in data["proofs"].items()}
         challenges = {h: Challenge(**challenge) for h, challenge in data["challenges"].items()}
         language = Language.load(data['language'])
@@ -1125,7 +1139,6 @@ theorem this_add_comm (m n : Nat) : m + n = n + m := sorry
     time_passes(sprig)
 
     c4 = sprig.challenge(MICHAEL, a3.challenges[0], "ctc8")
-
 
     time_passes(sprig)
 

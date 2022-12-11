@@ -59,6 +59,7 @@ import Duree from '../small/Duree.vue';
 import UidTag from '../small/UidTag.vue';
 import User from './User.vue';
 import WaitWallectConnect from './WaitWallectConnect.vue';
+import { ElNotification } from 'element-plus';
 
 const slideOpen = ref(false);
 const showSignTransaction = ref(false);
@@ -74,7 +75,15 @@ function openDialog() {
 
 function startChallenge() {
   store.challenge(showSignTransaction, props.instance.hash, props.challenge.hash)
-    .then(() => slideOpen.value = false);
+    .then(() => slideOpen.value = false)
+    .catch((e) => {
+      console.error('Challenge failed', e);
+      ElNotification({
+        title: 'Challenge failed',
+        message: 'Server error while submitting the challenge. See console for details. Please report this.',
+        type: 'error',
+      });
+    });
 }
 
 provide('readOnly', true);

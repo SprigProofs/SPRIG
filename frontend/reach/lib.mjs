@@ -8,8 +8,6 @@ export const stdlib = typeof process === 'object'
 
 // stdlib.setProviderByName("TestNet");
 
-export const securityConnection = "0x" + "0".repeat(64);
-
 // Function to get the UNIX timestamp that it will be after some time. Time should be a number of milliseconds
 export const deadlineFromTime = (time) => time + Date.now();
 
@@ -26,7 +24,7 @@ const uIntArrayToHex = (a) => "0x" + Array.from(a)
 export const hashingChallenge = (addressContractAnswer, indexPartChallenged) =>
   sha256(addressContractAnswer + indexPartChallenged.toString());
 
-export const answer = async (account,
+export const answer = (account,
                    addressSprig,
                    addressSkeptic,
                    interactionHash,
@@ -53,12 +51,12 @@ export const answer = async (account,
 };
 
 // To create and return the contract for a new Sprig
-export const newSprig = async (account,
+export const newSprig = (account,
                         addressSprig,
                         interactionHash,
                         deadline,
                         wagerDown,
-) => await answer(account,
+) => answer(account,
   addressSprig,
   null,
   interactionHash,
@@ -68,7 +66,7 @@ export const newSprig = async (account,
   false,
   );
 
-export const challenge = async (account,
+export const challenge = (account,
                          addressSprig,
                          interactionHash,
                          deadline,
@@ -89,7 +87,7 @@ export const challenge = async (account,
   return [ctc, ctc.p.Alice(interact)];
 }
 
-const verifyAnswer = async (ctc,
+export const verifyAnswer = async (ctc,
                           author,
                           addressSprig,
                           addressSkeptic,
@@ -103,41 +101,47 @@ const verifyAnswer = async (ctc,
     To verify the answer contract given by the user. Returns a boolean.
     A view is a function that returns a Maybe, because it can be not set for the moment.
   */
-  const views = [(await ctc.views.author())[1],
-          (await ctc.views.addressSprig())[1],
-          (await ctc.views.addressSkeptic())[1][1],
-          uIntArrayToHex((await ctc.views.interaction())[1]),
-          (await ctc.views.wagerDown())[1],
-          (await ctc.views.wagerUp())[1],
-          (await ctc.views.deadline())[1]];
-  const correctAuthor = views[0] == author;
-  const correctSprig = views[1] == addressSprig;
-  const correctSkeptic = views[2] ==  addressSkeptic;
-  const correctInteraction = views[3] == interactionHash;
-  const correctWagerDown = stdlib.eq(views[4], wagerDown);
-  const correctWagerUp = stdlib.eq(views[5], wagerUp);
-  const correctDeadline = stdlib.eq(views[6], deadline);
-  const correctBottom = views[7] == isBottom;
-  console.log(views);
-  console.log([correctSprig, correctSkeptic, correctInteraction, correctWagerDown, correctWagerUp, correctDeadline, correctBottom, correctAuthor]);
+  const correctAuthor = stdlib.formatAddress((await ctc.views.author())[1]) == author;
+  const correctSprig = stdlib.formatAddress((await ctc.views.addressSprig())[1]) == addressSprig;
+  const correctSkeptic = (await ctc.views.addressSkeptic())[1][1] ==  addressSkeptic;
+  const correctInteraction = uIntArrayToHex((await ctc.views.interaction())[1]) == interactionHash;
+  const correctWagerDown = stdlib.eq((await ctc.views.wagerDown())[1], wagerDown);
+  const correctWagerUp = stdlib.eq((await ctc.views.wagerUp())[1], wagerUp);
+  const correctDeadline = stdlib.eq((await ctc.views.deadline())[1], deadline);
+  const correctBottom = (await ctc.views.isBottom())[1] == isBottom;
+  console.log(
+    "correctSprig", correctSprig,
+    "correctSkeptic", correctSkeptic,
+    "correctInteraction", correctInteraction,
+    "correctWagerDown", correctWagerDown,
+    "correctWagerUp", correctWagerUp,
+    "correctDeadline", correctDeadline,
+    "correctBottom", correctBottom,
+    "correctAuthor", correctAuthor, (await ctc.views.author())[1]
+  );
   return correctSprig && correctSkeptic
         && correctInteraction && correctWagerDown
         && correctWagerUp && correctDeadline
         && correctBottom && correctAuthor;
 };
 
-const verifyChallenge = async (ctc,
+export const verifyChallenge = async (ctc,
                               author,
                                addressSprig,
                                interactionHash,
                                deadline,
                                wagerDown,
                                ) => {
-  const correctAuthor = (await ctc.views.author())[1] == author;
-  const correctSprig = (await ctc.views.addressSprig())[1] == addressSprig;
+  const correctAuthor = stdlib.formatAddress((await ctc.views.author())[1]) == author;
+  const correctSprig = stdlib.formatAddress((await ctc.views.addressSprig())[1]) == addressSprig;
   const correctInteraction = uIntArrayToHex((await ctc.views.interaction())[1]) == interactionHash;
   const correctWagerDown = stdlib.eq((await ctc.views.wagerDown())[1], wagerDown);
   const correctDeadline = stdlib.ge((await ctc.views.deadline())[1], deadline);
+  console.log("correctAuthor", correctAuthor,
+    "correctSprig", correctSprig,
+    "correctInteraction", correctInteraction,
+    "correctWagerDown", correctWagerDown,
+    "correctDeadline", correctDeadline);
   return correctAuthor && correctSprig && correctInteraction && correctWagerDown && correctDeadline;
 };
 
@@ -161,37 +165,6 @@ export const monitorEventsChallenge = async (ctc) => {
   ctc.events.newParticipant.monitor((event) => {console.log(`A new participant has been added, with address ${event.what[0]}, with contract ${event.what[1]}`)});
   ctc.events.announceWinner.monitor((event) => {console.log(`The winner is announced: the claim was ${event.what[0] ? "correct" : "incorrect"} and the winner is ${event.what[1]} with contract ${event.what[2]}`)});
 }
-
-const getParticipants = async (ctc) => {
-  /*
-    Return the list of participants. More precisely, it
-    returns the list of pairs (addressAccount, addressContract).
-    If there is no participants, it returns None.
-
-  */
-  const resultView = await ctc.views.participants()
-  if (resultView[0] == "None"){
-    return None
-  }
-  else{
-    // resultView[1] is of the form [["Some", address0], ["Some", address1],..., ["Some", addressn], ["None", Null], ["None", Null],..., ["None", Null]]
-    // and each addressk is a tuple (addressAccount, addressContract)
-    return resultView[1].filter(x => x[0] == "Some").map(x => x[1]);
-  }
-}
-
-const announceIsCorrect = (ctc) => {
-  ctc.apis.Sprig.announceWinner(true, 0);
-}
-
-const announceVerification = (ctc, verification) => {
-  ctc.apis.Sprig.announceVerification(verification);
-}
-
-const announceWinner = (ctc, index) => {
-  ctc.apis.Sprig.announceWinner(false, index);
-}
-
 export const getBalance = async (acc) => {
   // To get the balance of an account
   const bal = await acc.balanceOf();

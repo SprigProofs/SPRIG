@@ -167,7 +167,7 @@ function togglePreview() {
       hash: "X",
       instanceHash: hash,
       parent: props.challenge.hash,
-      author: store.user,
+      author: store.account?.address || "You!",
       proof: proofInput.value,
       height,
       status: Status.UNCHALLENGED,

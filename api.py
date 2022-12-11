@@ -62,7 +62,7 @@ def save(instance: sprig.Sprig, hash_: str) -> None:
 
 def load(instance_hash: str) -> sprig.Sprig:
     """Load a prig instance from disk."""
-    return sprig.Sprig.loads(path_from_hash(instance_hash).read_text())
+    return sprig.Sprig.loads(path_from_hash(instance_hash).read_text(), blockchain=True)
 
 
 @api.exception_handler(AssertionError)
@@ -137,7 +137,7 @@ def add_new_instance(new_instance: SprigInitData) -> dict[str, Any]:  # SprigDat
     """
 
     with sprig.time_mode('real'):
-        parameters = sprig.Parameters(**new_instance.params.dict())
+        parameters = sprig.ParametersBlockchain(**new_instance.params.dict())
         instance = sprig.Sprig.start(
             new_instance.language,
             parameters,
@@ -208,7 +208,8 @@ def new_proof_attempt(instance_hash: sprig.Hash, challenge_hash: sprig.Hash,
             method = instance.answer_low_level
         else:
             method = instance.answer
-        attempt = method(challenge_hash, attempt_data.author, attempt_data.statement, attempt_data.contract)
+        attempt = method(challenge_hash, attempt_data.author, attempt_data.statement,
+                         attempt_data.contract)
 
     save(instance, instance_hash)
 
