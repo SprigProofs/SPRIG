@@ -1,7 +1,9 @@
 import { ElNotification } from 'element-plus';
-import { api, dayjs, Parameters, ProofAttempt, Sprig, User } from "./sprig";
+import { api, dayjs, Parameters, ProofAttempt, Sprig, User, isLocalhost } from "./sprig";
 import { reactive, type Ref } from "vue";
 import type { Account as AccountReach, Backend, Contract } from '@reach-sh/stdlib/ALGO';
+
+const USE_TESTNET = false;
 
 interface Account extends AccountReach {
     balance: number;
@@ -55,7 +57,7 @@ export const store: Store = reactive<Store>({
                 const parent = inst.proofs[chall.parent];
                 return blockchain.challenge(
                     acc,
-                    SPRIG_ADDRESS,
+                    blockchain.SPRIG_ADDRESS,
                     blockchain.hashingChallenge(parent.contract, parent.challenges.indexOf(challenge)),
                     creation.add(inst.params.timeForAnswers).valueOf(),
                     reach.parseCurrency(inst.params.downstakes[chall.height]),
@@ -75,9 +77,9 @@ export const store: Store = reactive<Store>({
             // @ts-ignore
             (acc) => blockchain.newSprig(
                 acc,
-                SPRIG_ADDRESS,
+                blockchain.SPRIG_ADDRESS,
                 blockchain.hashingAnswer(proof),
-                creation.add(params.timeForAnswers).valueOf(),
+                creation.add(params.timeForQuestions).valueOf(),
                 reach.parseCurrency(params.downstakes[params.rootHeight - 1]),
             ),
             (ctcAddress) => api.newInstance(language, params, store.account.address, rootClaim, proof, ctcAddress, creation),
@@ -97,10 +99,10 @@ export const store: Store = reactive<Store>({
                 const height = isMachineLevel ? 0 : chall.height - 1;
                 return blockchain.answer(
                     acc,
-                    SPRIG_ADDRESS,
+                    blockchain.SPRIG_ADDRESS,
                     chall.author,
                     blockchain.hashingAnswer(proof, chall.contract),
-                    creation.add(inst.params.timeForAnswers).valueOf(),
+                    creation.add(inst.params.timeForQuestions).valueOf(),
                     reach.parseCurrency(inst.params.upstakes[height]),
                     reach.parseCurrency(inst.params.downstakes[height]),
                     isMachineLevel,
@@ -158,12 +160,9 @@ async function createContract(what: string,
 // Blockchain
 
 import * as blockchain from '../reach/lib.mjs';
-import { ALGO_WalletConnect as WalletConnect } from '@reach-sh/stdlib';
 import { ALGO_MyAlgoConnect as MyAlgoConnect } from '@reach-sh/stdlib';
 
 export const reach = blockchain.stdlib;
-// const SPRIG_ADDRESS = 'GQPTXRWAHCQCML7G6DNPMGJ5BE7AUXYLEPPMVJPP67KPASTF2MKIVWFSKQ';
-const SPRIG_ADDRESS = 'HNVCPPGOW2SC2YVDVDICU3YNONSTEFLXDXREHJR2YBEKDC2Z3IUZSC6YGI';
 
 export async function ensureWalletConnected() {
     console.log("Wallet connecting...", store.account);
@@ -175,7 +174,7 @@ export async function ensureWalletConnected() {
             // ElNotification.info({ title: e.eventName, message: JSON.stringify(e) });
         });
         console.log("Set wallet fallback...", store.account);
-        if (!"TestNet") {
+        if (!isLocalhost || USE_TESTNET) {
             reach.setWalletFallback(reach.walletFallback({
                 providerEnv: 'TestNet', MyAlgoConnect
             }));
@@ -187,7 +186,7 @@ export async function ensureWalletConnected() {
             // Private devnet
             store.account = await reach.newTestAccount(reach.parseCurrency(5));
             // We make sure there is some money on the sprig address, otherwise it fails
-            await reach.fundFromFaucet(SPRIG_ADDRESS, reach.parseCurrency(2));
+            await reach.fundFromFaucet(blockchain.SPRIG_ADDRESS, reach.parseCurrency(2));
         }
         ElNotification.info({ title: "Wallet connected", message: store.account.address });
 
