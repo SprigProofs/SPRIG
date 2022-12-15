@@ -83,10 +83,10 @@ class ParameterData(BaseModel):
     max_length: int
     time_for_questions: int
     time_for_answers: int
-    upstakes: list[int]
-    downstakes: list[int]
-    question_bounties: list[int]
-    verification_cost: int
+    upstakes: list[float]
+    downstakes: list[float]
+    question_bounties: list[float]
+    verification_cost: float
 
 
 class SprigData(BaseModel):
@@ -126,6 +126,7 @@ class SprigInitData(BaseModel):
     root_claim: str
     proof: str
     contract: str
+    created_at: sprig.Time
 
 
 @api.post("/instances", response_model=SprigData)
@@ -145,6 +146,7 @@ def add_new_instance(new_instance: SprigInitData) -> dict[str, Any]:  # SprigDat
             new_instance.root_claim,
             new_instance.proof,
             new_instance.contract,
+            new_instance.created_at,
         )
 
         h = new_hash()
@@ -171,13 +173,13 @@ class ChallengeCreatedData(BaseModel):
     "/challenge/{instance_hash}/{claim_hash}"
 )  #, response_model=ChallengeCreatedData)  # The response_model is not working and I don't know why.
 def new_challenge(skeptic: sprig.Address, claim_hash: sprig.Hash, instance_hash: sprig.Hash,
-                  contract: str) -> ChallengeCreatedData:
+                  contract: str, created_at: sprig.Time) -> ChallengeCreatedData:
     """Challenge a claim that isn't yet challenged and still active."""
 
     instance = load(instance_hash)
 
     with sprig.time_mode('real'):
-        challenge = instance.challenge(skeptic, claim_hash, contract)
+        challenge = instance.challenge(skeptic, claim_hash, contract, created_at)
 
     save(instance, instance_hash)
 
@@ -194,6 +196,7 @@ class NewProofAttemptData(BaseModel):
     statement: str
     author: sprig.Address
     machine_level: bool
+    created_at: sprig.Time
 
 
 @api.post("/proof/{instance_hash}/{challenge_hash}")
@@ -209,7 +212,7 @@ def new_proof_attempt(instance_hash: sprig.Hash, challenge_hash: sprig.Hash,
         else:
             method = instance.answer
         attempt = method(challenge_hash, attempt_data.author, attempt_data.statement,
-                         attempt_data.contract)
+                         attempt_data.contract, attempt_data.created_at)
 
     save(instance, instance_hash)
 

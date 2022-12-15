@@ -39,10 +39,11 @@ export const store: Store = reactive<Store>({
         }, () => {
             store.fail = true;
             store.loaded = false;
-        })
+        });
     },
     async challenge(togglePopup: Ref<boolean>, instance: string, challenge: string) {
         console.log("Challenge", instance, challenge);
+        const creation = dayjs();
 
         return await createContract(
             "Challenge",
@@ -56,15 +57,16 @@ export const store: Store = reactive<Store>({
                     acc,
                     SPRIG_ADDRESS,
                     blockchain.hashingChallenge(parent.contract, parent.challenges.indexOf(challenge)),
-                    blockchain.deadlineFromTime(inst.params.timeForAnswers.asMilliseconds()),
+                    creation.add(inst.params.timeForAnswers).valueOf(),
                     reach.parseCurrency(inst.params.downstakes[chall.height]),
-                    );
+                );
             },
-            (ctcAddress) => api.challenge(instance, challenge, store.account.address, ctcAddress),
-        )
+            (ctcAddress) => api.challenge(instance, challenge, store.account.address, ctcAddress, creation),
+        );
     },
     async newInstance(togglePopup: Ref<boolean>, language: string, params: Parameters, rootClaim: string, proof: string) {
         console.log("New instance", language, params, rootClaim, proof);
+        const creation = dayjs();
 
         // Blockchain
         return await createContract(
@@ -75,14 +77,15 @@ export const store: Store = reactive<Store>({
                 acc,
                 SPRIG_ADDRESS,
                 blockchain.hashingAnswer(proof),
-                blockchain.deadlineFromTime(params.timeForQuestions.asMilliseconds()),
-                reach.parseCurrency(params.downstakes[params.rootHeight-1]),
+                creation.add(params.timeForAnswers).valueOf(),
+                reach.parseCurrency(params.downstakes[params.rootHeight - 1]),
             ),
-            (ctcAddress) => api.newInstance(language, params, store.account.address, rootClaim, proof, ctcAddress),
-        )
+            (ctcAddress) => api.newInstance(language, params, store.account.address, rootClaim, proof, ctcAddress, creation),
+        );
     },
     async newProofAttempt(togglePopup: Ref<boolean>, instance: string, challenge: string, isMachineLevel: boolean, proof: string) {
         console.log("New proof attempt", instance, challenge, proof);
+        const creation = dayjs();
 
         return await createContract(
             "Proof attempt",
@@ -97,14 +100,15 @@ export const store: Store = reactive<Store>({
                     SPRIG_ADDRESS,
                     chall.author,
                     blockchain.hashingAnswer(proof, chall.contract),
-                    blockchain.deadlineFromTime(inst.params.timeForQuestions),
+                    creation.add(inst.params.timeForAnswers).valueOf(),
                     reach.parseCurrency(inst.params.upstakes[height]),
                     reach.parseCurrency(inst.params.downstakes[height]),
                     isMachineLevel,
-                    );
+                );
             },
-            (ctcAddress) => api.newProofAttempt(instance, challenge, isMachineLevel, proof, store.account.address, ctcAddress),
-        )
+            (ctcAddress) => api.newProofAttempt(instance, challenge,
+                isMachineLevel, proof, store.account.address, ctcAddress, creation),
+        );
     },
     getUser(name: string) {
         return new User(name, store.bank[name] || 0, store.instances);
@@ -117,38 +121,38 @@ async function createContract(what: string,
     togglePopup: Ref<boolean>,
     blockchainInteract: (acc: Account) => [Contract, Promise<void>],
     serverInteract: (ctcAddress: string) => any) {
-        // Blockchain
-        const acc = await ensureWalletConnected();
+    // Blockchain
+    const acc = await ensureWalletConnected();
 
-        togglePopup.value = true;
-        const [ctc, p] = blockchainInteract(acc);
+    togglePopup.value = true;
+    const [ctc, p] = blockchainInteract(acc);
 
-        // Catch errors from the promise p
-        let hasFailed = null;
-        p.catch((e: { message: any; }) => {
-            hasFailed = e;
-            console.log("Error", e);
-            ElNotification.error({ title: "Error", message: e.message });
+    // Catch errors from the promise p
+    let hasFailed = null;
+    p.catch((e: { message: any; }) => {
+        hasFailed = e;
+        console.log("Error", e);
+        ElNotification.error({ title: "Error", message: e.message });
+        togglePopup.value = false;
+    });
+    // Wait for the contract to be created
+    while (hasFailed === null) {
+        await wait(500);
+        // @ts-ignore // author is not defined on the type, but always is in practice
+        const a = await ctc.views.author();
+        if (a[0] == "Some") {
+            ElNotification({ title: "Contract created", message: await ctc.getContractAddress() });
             togglePopup.value = false;
-        });
-        // Wait for the contract to be created
-        while (hasFailed === null) {
-            await wait(500)
-            // @ts-ignore // author is not defined on the type, but always is in practice
-            const a = await ctc.views.author();
-            if (a[0] == "Some") {
-                ElNotification({ title: "Contract created", message: await ctc.getContractAddress() });
-                togglePopup.value = false;
 
-                // Server
-                const obj = await serverInteract(await ctcInfo(ctc));
-                ElNotification({ title: `${what} created!` })
-                await store.reload();
-                return obj;
-            }
+            // Server
+            const obj = await serverInteract(await ctcInfo(ctc));
+            ElNotification({ title: `${what} created!` });
+            await store.reload();
+            return obj;
         }
+    }
 
-        throw hasFailed;
+    throw hasFailed;
 }
 
 // Blockchain
@@ -157,12 +161,12 @@ import * as blockchain from '../reach/lib.mjs';
 import { ALGO_WalletConnect as WalletConnect } from '@reach-sh/stdlib';
 import { ALGO_MyAlgoConnect as MyAlgoConnect } from '@reach-sh/stdlib';
 
-export const reach = blockchain.stdlib
+export const reach = blockchain.stdlib;
 // const SPRIG_ADDRESS = 'GQPTXRWAHCQCML7G6DNPMGJ5BE7AUXYLEPPMVJPP67KPASTF2MKIVWFSKQ';
 const SPRIG_ADDRESS = 'HNVCPPGOW2SC2YVDVDICU3YNONSTEFLXDXREHJR2YBEKDC2Z3IUZSC6YGI';
 
 export async function ensureWalletConnected() {
-    console.log("Wallet connecting...", store.account)
+    console.log("Wallet connecting...", store.account);
     if (!store.account) {
         // @ts-ignore
         delete window.algorand;
@@ -170,33 +174,34 @@ export async function ensureWalletConnected() {
             console.log("HTTP Event", e);
             // ElNotification.info({ title: e.eventName, message: JSON.stringify(e) });
         });
-        console.log("Set wallet fallback...", store.account)
+        console.log("Set wallet fallback...", store.account);
         if (!"TestNet") {
             reach.setWalletFallback(reach.walletFallback({
-                providerEnv: 'TestNet', MyAlgoConnect }));
+                providerEnv: 'TestNet', MyAlgoConnect
+            }));
             // reach.setWalletFallback(reach.walletFallback({
             //     providerEnv: 'TestNet', WalletConnect }));
             store.account = await reach.getDefaultAccount();
-            console.log("Account:", store.account)
+            console.log("Account:", store.account);
         } else {
             // Private devnet
-            store.account = await reach.newTestAccount(reach.parseCurrency(5))
+            store.account = await reach.newTestAccount(reach.parseCurrency(5));
             // We make sure there is some money on the sprig address, otherwise it fails
-            await reach.fundFromFaucet(SPRIG_ADDRESS, reach.parseCurrency(2))
+            await reach.fundFromFaucet(SPRIG_ADDRESS, reach.parseCurrency(2));
         }
         ElNotification.info({ title: "Wallet connected", message: store.account.address });
 
         // Adding more properties for convenience
-        const address = reach.formatAddress(store.account)
+        const address = reach.formatAddress(store.account);
         store.account.address = address;
         store.account.shortAddress = address.slice(0, 4) + '..' + address.slice(-4);
         store.account.updateBalance = async () => {
             const bal = await reach.balanceOf(store.account);
             store.account.balance = +reach.formatCurrency(bal, 4);
-        }
+        };
         await store.account.updateBalance();
     }
-    return store.account
+    return store.account;
 }
 
 // async function createAccount() {

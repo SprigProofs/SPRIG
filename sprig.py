@@ -7,6 +7,7 @@ import sys
 import subprocess
 from collections import defaultdict
 from contextlib import contextmanager
+from copy import deepcopy
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
@@ -203,11 +204,7 @@ def jsFrontendReach(parameters: list[str],
     env.update({'REACH_CONNECTOR_MODE': 'ALGO'})
     parameters = ["node", "./frontend/reach/index.mjs"] + parameters
     print("Running", parameters)
-    return subprocess.run(parameters,
-                          capture_output=True,
-                          check=throwingError,
-                          env=env,
-                          text=True)
+    return subprocess.run(parameters, capture_output=True, check=throwingError, env=env, text=True)
 
 
 def hashingChallenge(challenge: Challenge, attempt: ProofAttempt) -> str:
@@ -238,10 +235,10 @@ class Parameters(AbstractParameters):
     max_length: int
     time_for_questions: int
     time_for_answers: int
-    upstakes: list[int]
-    downstakes: list[int]
-    question_bounties: list[int]
-    verification_cost: int
+    upstakes: list[float]
+    downstakes: list[float]
+    question_bounties: list[float]
+    verification_cost: float
 
     def __post_init__(self) -> None:
         assert self.root_height > 1
@@ -251,6 +248,9 @@ class Parameters(AbstractParameters):
 
         assert self.downstakes[0] == 0
         assert self.question_bounties[0] == 0
+        assert all(x > 0 for x in self.upstakes[:-1])
+        assert all(x > 0 for x in self.downstakes[1:])
+        assert all(x > 0 for x in self.question_bounties[1:])
 
         assert self.verification_cost > 0
         assert self.max_length > 0
@@ -359,50 +359,20 @@ class Parameters(AbstractParameters):
 class ParametersBlockchain(Parameters):
     """Parameters of a Sprig instance on the blockchain"""
 
-    root_height: int
-    max_length: int
-    time_for_questions: int
-    time_for_answers: int
-    upstakes: list[int]
-    downstakes: list[int]
-    question_bounties: list[int]
-    verification_cost: int
-
-    def __post_init__(self) -> None:
-        assert self.root_height > 1
-        assert len(self.upstakes) == self.root_height
-        assert len(self.downstakes) == self.root_height
-        assert len(self.question_bounties) == self.root_height
-
-        assert self.downstakes[0] == 0
-        assert self.question_bounties[0] == 0
-
-        assert self.verification_cost > 0
-        assert self.max_length > 0
-        assert self.time_for_questions > 0
-        assert self.time_for_answers > 0
-
-    def protocol_height(self) -> int:
-        return self.root_height
-
-    def attempt_deadline(self, created: Time, height: int) -> Time:
-        return Time(created + self.time_for_questions)
-
-    def challenge_deadline(self, challenge: Challenge) -> Time:
-        if challenge.status == Status.UNCHALLENGED:
-            return Time(challenge.created_at + self.time_for_questions)
-        else:
-            assert challenge.challenged_at is not None  # Sanity check
-            return Time(challenge.challenged_at + self.time_for_answers)
-
-    def attempt_passes_constraints(self, attempt: ProofAttempt) -> bool:
-        return len(attempt.proof) < self.max_length
-
+    DELAY = 10 * 60 * 1000  # 10 minutes
     # Attempts
 
     def pay_new_proof_attempt(self, attempt: ProofAttempt, sprig: Sprig) -> bool:
-        challenge = (None if attempt.parent is None else sprig.challenges[attempt.parent])
-        address_skeptic = ("None" if challenge is None else challenge.author)
+        # Check that it was not created too long ago
+        if not (now() - self.DELAY < attempt.created_at < now()):
+            raise AssertionError("Attempt created too long ago (more than 10min).")
+
+        if attempt.parent is None:
+            challenge = None
+            address_skeptic = "None"
+        else:
+            challenge = sprig.challenges[attempt.parent]
+            address_skeptic = str(challenge.author)
         if attempt.height == 0:
             process = jsFrontendReach([
                 "VERIFY",
@@ -531,6 +501,10 @@ class ParametersBlockchain(Parameters):
 
     def pay_new_challenge(self, skeptic: Address, attempt: ProofAttempt,
                           challenge: Challenge) -> bool:
+        # Check that it was not created too long ago
+        if not (now() - self.DELAY < challenge.created_at < now()):
+            raise AssertionError("Attempt created too long ago (more than 10min).")
+
         process = jsFrontendReach([
             "VERIFY", "CHALLENGE",
             str(challenge.contract), challenge.author, "NONE",
@@ -676,6 +650,7 @@ class Sprig:
         claim: str,
         proof_attempt: str,
         contract: str,
+        created_at: Time | None = None,
     ) -> Sprig:
         """Start a new instance of the SPRIG protocol, originating from a claim."""
 
@@ -685,7 +660,7 @@ class Sprig:
 
         assert self.language.validate_top_level(claim), "Invalid top level statement"
 
-        self.answer(ROOT_HASH, claimer, proof_attempt, contract)
+        self.answer(ROOT_HASH, claimer, proof_attempt, contract, created_at)
 
         return self
 
@@ -732,7 +707,11 @@ SPRIG instance:
 
     # Public interface to add claims/challenges
 
-    def challenge(self, skeptic: Address, challenge_hash: Hash, contract: str) -> Challenge:
+    def challenge(self,
+                  skeptic: Address,
+                  challenge_hash: Hash,
+                  contract: str,
+                  created_at: Time | None = None) -> Challenge:
         self.distribute_all_bets()
 
         assert challenge_hash in self.challenges, f"The claim hash ({challenge_hash}) is not valid. Valid hashes are {list(self.challenges.keys())}"
@@ -743,21 +722,27 @@ SPRIG instance:
         assert contract
 
         attempt = self.proofs[challenge.parent]
-        challenge.contract = contract
-        if not self.params.pay_new_challenge(skeptic, attempt, challenge):
-            challenge.contract = None
-            assert False, "Payment failed"
+        new = deepcopy(challenge)
+        new.contract = contract
+        new.status = Status.CHALLENGED
+        new.author = skeptic
+        new.challenged_at = created_at or now()
+        new.open_until = self.params.challenge_deadline(challenge)
 
-        challenge.status = Status.CHALLENGED
-        challenge.author = skeptic
-        challenge.challenged_at = now()
-        challenge.open_until = self.params.challenge_deadline(challenge)
+        if not self.params.pay_new_challenge(skeptic, attempt, new):
+            raise AssertionError("Payment/verification failed")
+
+        self.challenges[challenge_hash] = new
         attempt.status = Status.CHALLENGED
 
-        return challenge
+        return new
 
-    def answer(self, challenge_hash: Hash, claimer: Address, proof: str,
-               contract: str) -> ProofAttempt:
+    def answer(self,
+               challenge_hash: Hash,
+               claimer: Address,
+               proof: str,
+               contract: str,
+               created_at: Time | None = None) -> ProofAttempt:
         """Answer a challenge with a (non-machine) proof."""
 
         if challenge_hash is ROOT_HASH:
@@ -783,7 +768,8 @@ SPRIG instance:
         challenges_hashes = self.next_hashes(nb_of_challenges, for_attempts=False)
         assert nb_of_challenges > 0, "Proof with no challenges must be submitted with answer_low_level."
 
-        current_time = now()
+        if created_at is None:
+            created_at = now()
         attempt = ProofAttempt(hash=attempt_hash,
                                parent=challenge_hash if challenge_hash is not ROOT_HASH else None,
                                author=claimer,
@@ -791,7 +777,7 @@ SPRIG instance:
                                contract=contract,
                                height=height,
                                status=Status.UNCHALLENGED,
-                               created_at=current_time,
+                               created_at=created_at,
                                challenges=challenges_hashes,
                                money_held=0)
 
@@ -805,7 +791,7 @@ SPRIG instance:
                 parent=attempt.hash,
                 author=None,
                 contract=None,
-                created_at=current_time,
+                created_at=created_at,
                 open_until=Time(-1),  # placeholder
                 challenged_at=None,
                 attempts=[],
@@ -821,8 +807,12 @@ SPRIG instance:
         # self.distribute_all_bets()
         return attempt
 
-    def answer_low_level(self, challenge_hash: Hash, claimer: Address, proof: str,
-                         contract: str) -> ProofAttempt:
+    def answer_low_level(self,
+                         challenge_hash: Hash,
+                         claimer: Address,
+                         proof: str,
+                         contract: str,
+                         created_at: Time | None = None) -> ProofAttempt:
         self.distribute_all_bets()
 
         assert challenge_hash in self.challenges, "No such challenge."
@@ -837,7 +827,7 @@ SPRIG instance:
                                contract=contract,
                                height=0,
                                status=Status.UNCHALLENGED,
-                               created_at=now(),
+                               created_at=created_at or now(),
                                challenges=[],
                                money_held=0)
 
@@ -957,7 +947,7 @@ SPRIG instance:
         return json.dumps(base)
 
     @classmethod
-    def loads(cls, s: str, blockchain: bool=False) -> Sprig:
+    def loads(cls, s: str, blockchain: bool = False) -> Sprig:
         data = json.loads(s)
 
         def mkStatus(d: dict[str, Any]) -> None:

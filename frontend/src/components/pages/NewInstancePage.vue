@@ -14,6 +14,8 @@ import LoadingIndicator from '../small/LoadingIndicator.vue';
 const router = useRouter();
 
 const unit = 0.001;
+// const unit = 1/5;
+
 const costs = reactive([
   {  // machine level
     upstake: 5 * unit,

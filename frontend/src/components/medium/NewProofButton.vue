@@ -62,7 +62,6 @@
             <li v-if="costs.downstake > 0"><Price :amount="costs.downstake" /> for the downstake (reimbursed if the proof is true)</li>
             <li v-if="costs.verification > 0"><Price :amount="costs.verification" /> for machine verification</li>
           </ul>
-
         </div>
 
       </div>
