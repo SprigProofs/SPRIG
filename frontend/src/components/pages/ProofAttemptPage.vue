@@ -36,6 +36,11 @@
                 <v-icon name="md-lockclock" class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" aria-hidden="true" />
                 Closing&nbsp;<Time :time="attempt.expires(instance)" suffix />
               </div>
+              <a :href="'https://testnet.algoexplorer.io/application/'+attempt.contract"
+                  class="mt-2 flex items-center text-sm text-gray-500">
+                  <v-icon name="md-insertdrivefile-round" class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" aria-hidden="true" />
+                  Contract&nbsp;{{ attempt.contract }}
+              </a>
             </div>
           </div>
         </div>

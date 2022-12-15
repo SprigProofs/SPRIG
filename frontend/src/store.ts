@@ -143,7 +143,7 @@ async function createContract(what: string,
         // @ts-ignore // author is not defined on the type, but always is in practice
         const a = await ctc.views.author();
         if (a[0] == "Some") {
-            ElNotification({ title: "Contract created", message: await ctc.getContractAddress() });
+            ElNotification({ title: "Contract created", message: await ctcInfo(ctc) });
             togglePopup.value = false;
 
             // Server
