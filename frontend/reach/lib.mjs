@@ -7,6 +7,7 @@ export const stdlib = typeof process === 'object'
     : loadStdlib('ALGO');  // Browser
 
 // stdlib.setProviderByName("TestNet");
+export const SPRIG_ADDRESS = 'H4RUFKUVAVR7MH6GF45IE3GW73D4ISNJ4Q6CEWLMI6E4NN6TZATHNIUKQM';
 
 // Function to get the UNIX timestamp that it will be after some time. Time should be a number of milliseconds
 export const deadlineFromTime = (time) => time + Date.now();
@@ -103,7 +104,9 @@ export const verifyAnswer = async (ctc,
   */
   const correctAuthor = stdlib.formatAddress((await ctc.views.author())[1]) == author;
   const correctSprig = stdlib.formatAddress((await ctc.views.addressSprig())[1]) == addressSprig;
-  const correctSkeptic = stdlib.formatAddress((await ctc.views.addressSkeptic())[1][1]) ==  addressSkeptic;
+  const correctSkeptic = (addressSkeptic === null)
+    ? (await ctc.views.addressSkeptic())[1][0] == 'None'
+    : stdlib.formatAddress((await ctc.views.addressSkeptic())[1][1]) ==  addressSkeptic;
   const correctInteraction = uIntArrayToHex((await ctc.views.interaction())[1]) == interactionHash;
   const correctWagerDown = stdlib.eq((await ctc.views.wagerDown())[1], wagerDown);
   const correctWagerUp = stdlib.eq((await ctc.views.wagerUp())[1], wagerUp);
@@ -119,7 +122,6 @@ export const verifyAnswer = async (ctc,
     "correctBottom", correctBottom,
     "correctAuthor", correctAuthor, (await ctc.views.author())[1]
   );
-  console.log("skeptic", stdlib.formatAddress((await ctc.views.addressSkeptic())[1][1]), addressSkeptic)
   console.log("deadlines", stdlib.bigNumberToNumber((await ctc.views.deadline())[1]), deadline)
   return correctSprig && correctSkeptic
         && correctInteraction && correctWagerDown
@@ -128,22 +130,25 @@ export const verifyAnswer = async (ctc,
 };
 
 export const verifyChallenge = async (ctc,
-                              author,
+                               author,
                                addressSprig,
                                interactionHash,
                                deadline,
                                wagerDown,
                                ) => {
+  console.log("YOOOO")
   const correctAuthor = stdlib.formatAddress((await ctc.views.author())[1]) == author;
   const correctSprig = stdlib.formatAddress((await ctc.views.addressSprig())[1]) == addressSprig;
   const correctInteraction = uIntArrayToHex((await ctc.views.interaction())[1]) == interactionHash;
   const correctWagerDown = stdlib.eq((await ctc.views.wagerDown())[1], wagerDown);
-  const correctDeadline = stdlib.ge((await ctc.views.deadline())[1], deadline);
+  const correctDeadline = stdlib.eq((await ctc.views.deadline())[1], deadline);
   console.log("correctAuthor", correctAuthor,
     "correctSprig", correctSprig,
     "correctInteraction", correctInteraction,
     "correctWagerDown", correctWagerDown,
     "correctDeadline", correctDeadline);
+  // log deadlines
+  console.log("deadlines", stdlib.bigNumberToNumber((await ctc.views.deadline())[1]), deadline)
   return correctAuthor && correctSprig && correctInteraction && correctWagerDown && correctDeadline;
 };
 

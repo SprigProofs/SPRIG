@@ -768,6 +768,7 @@ export {
   decided,
   dedent,
   download,
+  isLocalhost,
   linkTo,
   Parameters,
   ProofAttempt,

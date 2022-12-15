@@ -17,7 +17,7 @@ import UserPage from './components/pages/UserPage.vue'
 import DocsPage from './components/pages/DocsPage.vue'
 import TestWeb3 from './components/pages/TestWeb3.vue';
 import { OhVueIcon, addIcons } from "oh-vue-icons";
-import { PiPikachu, CiAlgo, MdClearRound, MdCheckRound, MdMenu, MdModeedit, MdCancel, MdCheckcircle, MdOfflineboltSharp, MdKeyboarddoublearrowdown, MdKeyboarddoublearrowup, MdBolt, MdOfflinebolt, MdQuestionmarkRound, MdInfoRound, MdAccesstimeRound, MdPersonRound, FaMountain, MdLockclock, MdLockopenRound, MdPriorityhighRound, MdCloseRound, MdDownload, MdDownloading, MdExpandmoreRound, MdAddRound, MdLockoutline, HiSolidQuestionMarkCircle, MdVisibility, MdVisibilityoff, MdCopyall, MdSimcarddownloadRound } from "oh-vue-icons/icons";
+import { PiPikachu, CiAlgo, MdClearRound, MdCheckRound, MdMenu, MdModeedit, MdCancel, MdCheckcircle, MdOfflineboltSharp, MdKeyboarddoublearrowdown, MdKeyboarddoublearrowup, MdBolt, MdOfflinebolt, MdQuestionmarkRound, MdInfoRound, MdAccesstimeRound, MdPersonRound, FaMountain, MdLockclock, MdLockopenRound, MdPriorityhighRound, MdCloseRound, MdDownload, MdDownloading, MdExpandmoreRound, MdAddRound, MdLockoutline, HiSolidQuestionMarkCircle, MdVisibility, MdVisibilityoff, MdCopyall, MdSimcarddownloadRound, MdInsertdrivefileRound } from "oh-vue-icons/icons";
 
 // This should be replaced before production, with only what I use. See https://www.chartjs.org/docs/latest/getting-started/integration.html#bundlers-webpack-rollup-etc
 import Chart from 'chart.js/auto';
@@ -31,6 +31,7 @@ addIcons(
     HiSolidQuestionMarkCircle,
     MdAccesstimeRound,
     MdAddRound,
+    MdInsertdrivefileRound,
     MdBolt,
     MdCancel,
     MdCheckcircle,

@@ -364,7 +364,7 @@ class ParametersBlockchain(Parameters):
 
     def pay_new_proof_attempt(self, attempt: ProofAttempt, sprig: Sprig) -> bool:
         # Check that it was not created too long ago
-        if not (now() - self.DELAY < attempt.created_at < now()):
+        if not (now() - self.DELAY < attempt.created_at <= now()):
             raise AssertionError("Attempt created too long ago (more than 10min).")
 
         if attempt.parent is None:
@@ -502,7 +502,8 @@ class ParametersBlockchain(Parameters):
     def pay_new_challenge(self, skeptic: Address, attempt: ProofAttempt,
                           challenge: Challenge) -> bool:
         # Check that it was not created too long ago
-        if not (now() - self.DELAY < challenge.created_at < now()):
+        if not (now() - self.DELAY < challenge.challenged_at <= now()):
+            print(now() - self.DELAY, challenge.challenged_at, now())
             raise AssertionError("Attempt created too long ago (more than 10min).")
 
         process = jsFrontendReach([
@@ -512,7 +513,8 @@ class ParametersBlockchain(Parameters):
             str(self.downstakes[challenge.height]),
             hashingChallenge(challenge, attempt), "false"
         ])
-        print(process.stdout)
+        print("stderr js:", process.stderr)
+        print("stdout js:", process.stdout)
         successful = process.returncode == 0 and process.stdout.endswith("true\n")
         if successful:
             jsFrontendReach([
@@ -727,7 +729,7 @@ SPRIG instance:
         new.status = Status.CHALLENGED
         new.author = skeptic
         new.challenged_at = created_at or now()
-        new.open_until = self.params.challenge_deadline(challenge)
+        new.open_until = self.params.challenge_deadline(new)
 
         if not self.params.pay_new_challenge(skeptic, attempt, new):
             raise AssertionError("Payment/verification failed")
