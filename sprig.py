@@ -7,6 +7,7 @@ import sys
 import subprocess
 from collections import defaultdict
 from contextlib import contextmanager
+from copy import deepcopy
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
@@ -234,10 +235,10 @@ class Parameters(AbstractParameters):
     max_length: int
     time_for_questions: int
     time_for_answers: int
-    upstakes: list[int]
-    downstakes: list[int]
-    question_bounties: list[int]
-    verification_cost: int
+    upstakes: list[float]
+    downstakes: list[float]
+    question_bounties: list[float]
+    verification_cost: float
 
     def __post_init__(self) -> None:
         assert self.root_height > 1
@@ -247,6 +248,9 @@ class Parameters(AbstractParameters):
 
         assert self.downstakes[0] == 0
         assert self.question_bounties[0] == 0
+        assert all(x > 0 for x in self.upstakes[:-1])
+        assert all(x > 0 for x in self.downstakes[1:])
+        assert all(x > 0 for x in self.question_bounties[1:])
 
         assert self.verification_cost > 0
         assert self.max_length > 0
@@ -355,46 +359,7 @@ class Parameters(AbstractParameters):
 class ParametersBlockchain(Parameters):
     """Parameters of a Sprig instance on the blockchain"""
 
-    root_height: int
-    max_length: int
-    time_for_questions: int
-    time_for_answers: int
-    upstakes: list[int]
-    downstakes: list[int]
-    question_bounties: list[int]
-    verification_cost: int
     DELAY = 10 * 60 * 1000  # 10 minutes
-
-    def __post_init__(self) -> None:
-        assert self.root_height > 1
-        assert len(self.upstakes) == self.root_height
-        assert len(self.downstakes) == self.root_height
-        assert len(self.question_bounties) == self.root_height
-
-        assert self.downstakes[0] == 0
-        assert self.question_bounties[0] == 0
-
-        assert self.verification_cost > 0
-        assert self.max_length > 0
-        assert self.time_for_questions > 0
-        assert self.time_for_answers > 0
-
-    def protocol_height(self) -> int:
-        return self.root_height
-
-    def attempt_deadline(self, created: Time, height: int) -> Time:
-        return Time(created + self.time_for_questions)
-
-    def challenge_deadline(self, challenge: Challenge) -> Time:
-        if challenge.status == Status.UNCHALLENGED:
-            return Time(challenge.created_at + self.time_for_questions)
-        else:
-            assert challenge.challenged_at is not None  # Sanity check
-            return Time(challenge.challenged_at + self.time_for_answers)
-
-    def attempt_passes_constraints(self, attempt: ProofAttempt) -> bool:
-        return len(attempt.proof) < self.max_length
-
     # Attempts
 
     def pay_new_proof_attempt(self, attempt: ProofAttempt, sprig: Sprig) -> bool:
@@ -757,18 +722,20 @@ SPRIG instance:
         assert contract
 
         attempt = self.proofs[challenge.parent]
-        challenge.contract = contract
-        if not self.params.pay_new_challenge(skeptic, attempt, challenge):
-            challenge.contract = None
-            assert False, "Payment failed"
+        new = deepcopy(challenge)
+        new.contract = contract
+        new.status = Status.CHALLENGED
+        new.author = skeptic
+        new.challenged_at = created_at or now()
+        new.open_until = self.params.challenge_deadline(challenge)
 
-        challenge.status = Status.CHALLENGED
-        challenge.author = skeptic
-        challenge.challenged_at = created_at or now()
-        challenge.open_until = self.params.challenge_deadline(challenge)
+        if not self.params.pay_new_challenge(skeptic, attempt, new):
+            raise AssertionError("Payment/verification failed")
+
+        self.challenges[challenge_hash] = new
         attempt.status = Status.CHALLENGED
 
-        return challenge
+        return new
 
     def answer(self,
                challenge_hash: Hash,

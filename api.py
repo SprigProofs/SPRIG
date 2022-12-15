@@ -83,10 +83,10 @@ class ParameterData(BaseModel):
     max_length: int
     time_for_questions: int
     time_for_answers: int
-    upstakes: list[int]
-    downstakes: list[int]
-    question_bounties: list[int]
-    verification_cost: int
+    upstakes: list[float]
+    downstakes: list[float]
+    question_bounties: list[float]
+    verification_cost: float
 
 
 class SprigData(BaseModel):

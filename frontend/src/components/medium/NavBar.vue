@@ -13,16 +13,8 @@
                         color="orange" filled
                         class="bg-gradient-to-br from-orange-500 to-pink-500"
                         >Connect Wallet</Button>
-                    <div v-else class="space-x-2">
-                        <Tooltip>
-                            <template #reference>
-                                <span class="text-gray-700 font-mono">
-                                {{ store.account.shortAddress }}
-                                </span>
-                            </template>
-                            <span class="text-gray-700 font-mono">
-                            {{ store.account.address }} </span>
-                        </Tooltip>
+                    <div v-else-if="store.account.address" class="space-x-2">
+                        <User :name="store.account.address" />
                         <Price :amount="store.account.balance"/>
                     </div>
                 </li>
@@ -35,6 +27,7 @@
 </template>
 
 <script setup lang="ts">
+import User from '../medium/User.vue';
 import { store, ensureWalletConnected, reach } from '../../store';
 import { Tooltip } from '../small';
 
