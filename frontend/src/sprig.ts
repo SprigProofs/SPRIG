@@ -623,10 +623,12 @@ const api = {
     challengeHash: string,
     skeptic: string,
     contract: string,
+    createdAt: dayjs.Dayjs,
   ): Promise<void> {
     return await this.post(
       ["challenge", instanceHash, challengeHash],
-      { skeptic, contract },
+      { skeptic, contract,
+        created_at: createdAt.valueOf().toString(),},
       null
     );
   },
@@ -638,6 +640,7 @@ const api = {
     rootClaim: string,
     proof: string,
     contract: string,
+    createdAt: dayjs.Dayjs,
   ): Promise<Sprig> {
     return await this.post(
       ["instances"],
@@ -658,6 +661,7 @@ const api = {
         root_claim: rootClaim,
         proof: proof,
         contract: contract,
+        created_at: createdAt.valueOf(),
       }
     ).then((data) => new Sprig(data));
   },
@@ -668,11 +672,14 @@ const api = {
     proof: string,
     author: string,
     contract: string,
+    createdAt: dayjs.Dayjs,
   ): Promise<ProofAttempt> {
     return this.post(
       ["proof", instanceHash, challengeHash],
-      { contract },
-      { author, statement: proof, machine_level: isMachineLevel }
+      { },
+      { contract, author, statement: proof, machine_level: isMachineLevel,
+        created_at: createdAt.valueOf(),
+      }
     ).then((data) => new ProofAttempt({ instanceHash, ...data }));
   },
 };

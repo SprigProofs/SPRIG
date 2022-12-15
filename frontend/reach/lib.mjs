@@ -119,6 +119,7 @@ export const verifyAnswer = async (ctc,
     "correctBottom", correctBottom,
     "correctAuthor", correctAuthor, (await ctc.views.author())[1]
   );
+  console.log("deadlines", stdlib.bigNumberToNumber((await ctc.views.deadline())[1]), deadline)
   return correctSprig && correctSkeptic
         && correctInteraction && correctWagerDown
         && correctWagerUp && correctDeadline
