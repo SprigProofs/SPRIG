@@ -14,6 +14,7 @@ deploy: deploy-frontend deploy-backend
 
 deploy-frontend:
 	cd frontend && npm run build && scp -r dist sprig.therandom.space:sprig/frontend/
+	scp SPRIG.SECRET sprig.therandom.space:sprig
 
 deploy-backend:
 	git ls-files | rsync -azP --files-from=- . sprig.therandom.space:sprig
