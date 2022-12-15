@@ -1,6 +1,5 @@
 'reach 0.1';
 
-const fee = 1000; // Money that goes to Sprig
 const maxParticipants = 10;
 const sizeBinaryInfo = 32;
 
@@ -42,8 +41,7 @@ export const main = Reach.App(() => {
   });
 
   A.publish(addressSprig, interaction, wagerDown, deadline)
-  .pay(wagerDown + fee);
-  transfer(fee).to(addressSprig);
+  .pay(wagerDown);
   V.author.set(A);
   V.addressSprig.set(addressSprig);
   V.interaction.set(interaction);

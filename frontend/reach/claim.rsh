@@ -1,6 +1,5 @@
 'reach 0.1';
 
-const fee = 1000; // Money that goes to Sprig
 const maxParticipants = 10;
 const sizeBinaryInfo = 32;
 
@@ -54,10 +53,9 @@ export const main = Reach.App(() => {
   });
 
   A.publish(addressSprig, addressSkeptic, interaction, wagerUp, wagerDown, deadline, isBottom)
-  .pay(wagerUp + wagerDown + fee);
+  .pay(wagerUp + wagerDown);
   require(implies(isBottom, wagerDown == 0));
 
-  transfer(fee).to(addressSprig);
   V.author.set(A);
   V.addressSprig.set(addressSprig);
   V.addressSkeptic.set(addressSkeptic);
