@@ -21,20 +21,34 @@ const getParticipants = async (ctc) => {
   }
 }
 
-const announceIsCorrect = (ctc) => {
-  ctc.apis.Sprig.announceWinner(true, 0);
-}
-
-const announceVerification = (ctc, verification) => {
-  ctc.apis.Sprig.announceVerification(verification);
-}
-
-const announceWinner = (ctc, index) => {
-  ctc.apis.Sprig.announceWinner(false, index);
-}
 
 import { readFile } from 'fs/promises';
 import assert from 'assert';
+
+/* When called with parameters from a command line
+  To verify a claim:
+    ["VERIFY", "ANSWER", addressContract,
+    author, addressSkeptic, deadline,
+    wagerUp, wagerDown, hashInteraction,
+    isBottom]
+  To verify a challenge:
+    ["VERIFY", "CHALLENGE", addressContract,
+    author, "None", deadline,
+    0, wagerDown, hashInteraction,
+    "False"]
+  To add a participant:
+    ["ADD_PARTICIPANT", "ANSWER" || "CHALLENGE",
+    addressContract, addressNewParticipant,
+    adressContractNewParticipant]
+  To announce a verification:
+    ["ANNOUNCE_VERIFICATION", "ANSWER", addressContract,
+    wasRight]
+    
+  To announce a winner:
+    ["ANNOUNCE_WINNER", "ANSWER" || "CHALLENGE",
+    wasRight, addressContractWinner]
+  if wasRight = true, you can put addressContractWinner = 0
+*/
 
 if (process.argv.length > 2){
   const passPhrase = await readFile("./SPRIG.SECRET", {encoding: "utf-8"});
