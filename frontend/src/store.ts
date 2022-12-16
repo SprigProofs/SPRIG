@@ -3,7 +3,7 @@ import { api, dayjs, Parameters, ProofAttempt, Sprig, User, isLocalhost } from "
 import { reactive, type Ref } from "vue";
 import type { Account as AccountReach, Backend, Contract } from '@reach-sh/stdlib/ALGO';
 
-const USE_TESTNET = false;
+const USE_TESTNET = true;
 
 interface Account extends AccountReach {
     balance: number;
@@ -143,11 +143,12 @@ async function createContract(what: string,
         // @ts-ignore // author is not defined on the type, but always is in practice
         const a = await ctc.views.author();
         if (a[0] == "Some") {
-            ElNotification({ title: "Contract created", message: await ctcInfo(ctc) });
+            const ctcID = await ctcInfo(ctc);
+            ElNotification({ title: "Contract created", message: ctcID });
             togglePopup.value = false;
 
             // Server
-            const obj = await serverInteract(await ctcInfo(ctc));
+            const obj = await serverInteract(ctcID);
             ElNotification({ title: `${what} created!` });
             await store.reload();
             return obj;

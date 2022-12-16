@@ -176,7 +176,7 @@ const stats = computed(() => [
     },
     {
         label: 'Total Bounties',
-        value: _.sumBy(instances, s => s.totalBounties()),
+        value: Math.round(_.sumBy(instances, s => s.totalBounties()) * 1000) / 1000,
         color:'from-red-100 hover:via-red-100',
     },
 ])

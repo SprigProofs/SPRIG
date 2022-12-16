@@ -37,6 +37,8 @@ import { readFile } from 'fs/promises';
 import assert from 'assert';
 
 if (process.argv.length > 2){
+  stdlib.setProviderByName("TestNet");
+
   const passPhrase = await readFile("./SPRIG.SECRET", {encoding: "utf-8"});
 
   const [action, typeContract, addressContract] = process.argv.slice(2,5);

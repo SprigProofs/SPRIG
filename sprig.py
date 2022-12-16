@@ -204,7 +204,12 @@ def jsFrontendReach(parameters: list[str],
     env.update({'REACH_CONNECTOR_MODE': 'ALGO'})
     parameters = ["node", "./frontend/reach/index.mjs"] + parameters
     print("Running", parameters)
-    return subprocess.run(parameters, capture_output=True, check=throwingError, env=env, text=True)
+    process = subprocess.run(parameters, capture_output=True, env=env, text=True)
+    print("JS stdout", process.stdout)
+    if throwingError and process.returncode != 0:
+        print("JS stderr", process.stderr)
+        raise Exception("JS error")
+    return process
 
 
 def hashingChallenge(challenge: Challenge, attempt: ProofAttempt) -> str:
@@ -1075,7 +1080,8 @@ def play_lean(params: Parameters) -> Sprig:
         Lean4().dump(), params, Address("Diego"), """
 --! SPRIG Claim
 theorem this_add_comm (m n : Nat) : m + n = n + m := sorry
---! Claim end""", """
+--! Claim end
+""", """
 open Nat
 
 example : m + 0 = m := add_zero m
