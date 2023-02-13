@@ -7,8 +7,14 @@ BACKEND_PORT=8601
 backend:
 	DEV=true poetry run uvicorn api:api --port $(BACKEND_PORT) --reload --log-level=trace
 
+
 frontend:
 	cd frontend && PORT=$(PORT) npm run dev
+
+backends:
+	DEV=true DATA=data0 poetry run uvicorn api:api --port $(BACKEND_PORT) --reload --log-level=trace &
+	DEV=true DATA=data1 poetry run uvicorn api:api --port $$(($(BACKEND_PORT)+1)) --reload --log-level=trace &
+	DEV=true DATA=data2 poetry run uvicorn api:api --port $$(($(BACKEND_PORT)+2)) --reload --log-level=trace &
 
 deploy: deploy-frontend deploy-backend
 

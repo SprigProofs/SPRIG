@@ -2,6 +2,10 @@
 This file contains the code of the API / Server.
 
 It reads and updates the sprig instances in the data/ folder.
+
+Environment variables:
+- DATA: the path to the folder where the sprig instances are stored.
+- DEV: set to true if run on localhost (allow cross-origin requests & move the API to / instead of /api).
 """
 
 import os
@@ -14,14 +18,18 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-os.environ["BANK_FILE"] = str((Path(__file__).parent / "data" / "api_bank").absolute())
+# os.environ["BANK_FILE"] = str((Path(__file__).parent / "data" / "api_bank").absolute())
 
 import sprig
 import utils
 
 DEV = os.environ.get("DEV", "").lower() in ("true", "1", "yes", "y'")
+DATA = Path(os.environ.get("DATA", str(Path(__file__).parent / "data")))
 ROOT_PATH = "/api" if not DEV else ""
 api = FastAPI(root_path=ROOT_PATH)
+
+if not DATA.exists():
+    DATA.mkdir(parents=True)
 
 if DEV:
     # This allows cross-origin requests.
@@ -37,7 +45,7 @@ if DEV:
 
 def all_instances_filenames() -> Iterator[Path]:
     """Yield all the filenames of sprig instances stored on disk."""
-    for file in sprig.DATA.glob("*.json"):
+    for file in DATA.glob("*.json"):
         if file.stem != "users":
             yield file
 
@@ -52,7 +60,7 @@ def path_from_hash(hash_: str) -> Path:
     """Return the path where the sprig instance corresponding to the hash is stored."""
     assert len(hash_) == 5
     assert hash_.isnumeric()
-    return sprig.DATA / f"{hash_}.json"
+    return DATA / f"{hash_}.json"
 
 
 def save(instance: sprig.Sprig, hash_: str) -> None:
