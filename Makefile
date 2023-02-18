@@ -29,10 +29,10 @@ deploy-backend:
 test:
 	poetry run pytest
 	poetry run mypy .
-	poetry run yapf --diff --parallel --recursive .
+	poetry run yapf --exclude frontend/node_modules --diff --parallel --recursive .
 
 fmt:
-	poetry run yapf --in-place --parallel --recursive .
+	poetry run yapf --exclude frontend/node_modules --in-place --parallel --recursive .
 
 install:
 	poetry install

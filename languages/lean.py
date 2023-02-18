@@ -109,7 +109,9 @@ class Lean4(Language):
         challenged_header = challenged_text[challenged_thm.start():challenged_thm.end() + 1]
 
         # Verify that challenged claim is proven again
-        assert any([line.strip().startswith(challenged_header.strip()) for line in proof.split('\n')]), "The challenged claim is not proven again."
+        assert any([
+            line.strip().startswith(challenged_header.strip()) for line in proof.split('\n')
+        ]), "The challenged claim is not proven again."
 
         return True
 

@@ -794,15 +794,16 @@ SPRIG instance:
 
         if created_at is None:
             created_at = now()
-        attempt = ProofAttempt(parent=challenge_hash if challenge_hash is not self.root_hash else None,
-                               author=claimer,
-                               proof=proof,
-                               contract=contract,
-                               height=height,
-                               status=Status.UNCHALLENGED,
-                               created_at=created_at,
-                               challenges=challenges_hashes,
-                               money_held=0)
+        attempt = ProofAttempt(
+            parent=challenge_hash if challenge_hash is not self.root_hash else None,
+            author=claimer,
+            proof=proof,
+            contract=contract,
+            height=height,
+            status=Status.UNCHALLENGED,
+            created_at=created_at,
+            challenges=challenges_hashes,
+            money_held=0)
 
         assert self.params.pay_new_proof_attempt(attempt, self), "Cannot pay the proof attempt."
 
