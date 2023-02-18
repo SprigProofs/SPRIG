@@ -28,7 +28,7 @@ Hash = NewType("Hash", str)
 Time = NewType("Time", int)
 Branch = list[tuple[str, int]]
 
-ROOT_HASH = Hash("P0")
+# ROOT_HASH = Hash("P0")
 SPRIG_ADDRESS = Address("@SPRIG")
 MACHINE_VERIF = Address("@MACHINE_VERIF")
 
@@ -80,7 +80,7 @@ def time_mode(mode: Literal["real", "discrete"]) -> Generator[None, None, None]:
         TIME_MODE = old_mode
 
 
-def transfer_money(from_: Address, to: Address, amount: int, msg: str = "") -> bool:
+def transfer_money(from_: Address, to: Address, amount: float, msg: str = "") -> bool:
     """Function called to for all payments. Return whether the transaction was a success."""
 
     assert from_
@@ -228,6 +228,7 @@ def hashingAnswer(answer: ProofAttempt, challenge: Challenge | None) -> str:
     """
     contractParent = "" if challenge is None else challenge.contract
     h = sha256()
+    assert isinstance(contractParent, str), "contractParent is not a string: report this bug"
     h.update(bytes(answer.proof + contractParent, 'utf-8'))
     return "0x" + h.hexdigest()
 
@@ -301,7 +302,7 @@ class Parameters(AbstractParameters):
         return success
 
     def pay_attempt_accepted(self, attempt: ProofAttempt) -> None:
-        amount = 0
+        amount = 0.0
 
         # non-machine: reimburse the downstake
         if attempt.height > 0:
@@ -365,6 +366,7 @@ class ParametersBlockchain(Parameters):
     """Parameters of a Sprig instance on the blockchain"""
 
     DELAY = 10 * 60 * 1000  # 10 minutes
+
     # Attempts
 
     def pay_new_proof_attempt(self, attempt: ProofAttempt, sprig: Sprig) -> bool:
@@ -474,6 +476,7 @@ class ParametersBlockchain(Parameters):
             ],
                             throwingError=True)
         else:
+            assert rejecting is not None
             jsFrontendReach([
                 "ANNOUNCE_WINNER",
                 "ANSWER",
@@ -506,6 +509,10 @@ class ParametersBlockchain(Parameters):
 
     def pay_new_challenge(self, skeptic: Address, attempt: ProofAttempt,
                           challenge: Challenge) -> bool:
+        assert challenge.challenged_at is not None
+        assert challenge.author is not None
+        assert challenge.contract is not None
+
         # Check that it was not created too long ago
         if not (now() - self.DELAY < challenge.challenged_at <= now()):
             print(now() - self.DELAY, challenge.challenged_at, now())
@@ -513,7 +520,8 @@ class ParametersBlockchain(Parameters):
 
         process = jsFrontendReach([
             "VERIFY", "CHALLENGE",
-            str(challenge.contract), challenge.author, "NONE",
+            str(challenge.contract),
+            str(challenge.author), "NONE",
             str(challenge.open_until), "0",
             str(self.downstakes[challenge.height]),
             hashingChallenge(challenge, attempt), "false"
@@ -543,8 +551,8 @@ class ParametersBlockchain(Parameters):
                        f"challenge {challenge.hash} unanswered")
 
     def pay_challenge_rejected(self, answer: ProofAttempt, sprig: Sprig) -> None:
-        challenge = sprig.challenges[answer.parent]
         assert answer.parent is not None  # Sanity check
+        challenge = sprig.challenges[answer.parent]
         jsFrontendReach(
             ["ANNOUNCE_WINNER", "CHALLENGE",
              str(challenge.contract), "false", answer.contract],
@@ -573,11 +581,10 @@ class DefaultParameters(Parameters):
 
 @dataclass
 class ProofAttempt:
-    hash: Hash
     # Hash of the parent challenge
     parent: Optional[Hash]
     # Address of the contract on the blockchain
-    contract: Optional[str]
+    contract: str
     # Address of the author of the contract
     author: Address
     proof: str
@@ -600,7 +607,11 @@ class ProofAttempt:
     # So for example the challenge at index 4 challenges the fifth part of the proof.
     challenges: list[Hash]
 
-    money_held: int
+    money_held: float
+
+    @property
+    def hash(self) -> Hash:
+        return Hash(self.contract)
 
     def __str__(self) -> str:
         return (
@@ -643,6 +654,7 @@ class Sprig:
     proofs: dict[Hash, ProofAttempt]
     challenges: dict[Hash, Challenge]
     root_question: str
+    root_hash: Hash
 
     # Calls to fixup that will need to be done in the future,
     # when we reached timeouts.
@@ -656,18 +668,23 @@ class Sprig:
         claimer: Address,
         claim: str,
         proof_attempt: str,
-        contract: str,
+        contract: Hash,
         created_at: Time | None = None,
     ) -> Sprig:
         """Start a new instance of the SPRIG protocol, originating from a claim."""
 
         height = params.protocol_height()
         language = Language.load(language_type)
-        self = cls(language, params, proofs={}, challenges={}, root_question=claim)
+        self = cls(language,
+                   params,
+                   proofs={},
+                   challenges={},
+                   root_question=claim,
+                   root_hash=contract)
 
         assert self.language.validate_top_level(claim), "Invalid top level statement"
 
-        self.answer(ROOT_HASH, claimer, proof_attempt, contract, created_at)
+        self.answer(contract, claimer, proof_attempt, contract, created_at)
 
         return self
 
@@ -692,12 +709,13 @@ class Sprig:
 SPRIG instance:
  - Language: {self.language}
  - Claim: {self.root_question}
-{indent(attempt_str(ROOT_HASH), "   ")}"""
+{indent(attempt_str(self.root_hash), "   ")}"""
 
     def next_hashes(self, count: int = 1, for_attempts: bool = True) -> list[Hash]:
         """Generate a new hashes for attempt or challenges.
 
         Those hash needs to be added to the attempt/challenges dictionary before other hashes can be generated."""
+        assert not for_attempts
 
         first = len(self.proofs) if for_attempts else len(self.challenges)
         prefix = 'P' if for_attempts else 'C'
@@ -708,7 +726,7 @@ SPRIG instance:
         """Count the number of challenges of a given status."""
         return sum(1 for claim in self.challenges.values() if claim.status is status)
 
-    def total_bounties(self) -> int:
+    def total_bounties(self) -> float:
         """Count the total amount of money held by all attempts and challenges."""
         return sum(attempt.money_held for attempt in self.proofs.values())
 
@@ -752,8 +770,8 @@ SPRIG instance:
                created_at: Time | None = None) -> ProofAttempt:
         """Answer a challenge with a (non-machine) proof."""
 
-        if challenge_hash is ROOT_HASH:
-            assert ROOT_HASH not in self.proofs, "The root question already has an attempt."
+        if challenge_hash is self.root_hash:
+            assert self.root_hash not in self.proofs, "The root question already has an attempt."
             height = self.params.protocol_height() - 1
             parents: Branch = []
         else:
@@ -770,15 +788,13 @@ SPRIG instance:
         assert self.language.validate_attempt(self.root_question, parents,
                                               proof), "Invalid proof attempt."
 
-        attempt_hash = self.next_hashes()[0]
         nb_of_challenges = self.language.nb_of_challenges(proof)
         challenges_hashes = self.next_hashes(nb_of_challenges, for_attempts=False)
         assert nb_of_challenges > 0, "Proof with no challenges must be submitted with answer_low_level."
 
         if created_at is None:
             created_at = now()
-        attempt = ProofAttempt(hash=attempt_hash,
-                               parent=challenge_hash if challenge_hash is not ROOT_HASH else None,
+        attempt = ProofAttempt(parent=challenge_hash if challenge_hash is not self.root_hash else None,
                                author=claimer,
                                proof=proof,
                                contract=contract,
@@ -807,8 +823,8 @@ SPRIG instance:
             challenge.open_until = self.params.challenge_deadline(challenge)
             self.challenges[h] = challenge
 
-        if challenge_hash is not ROOT_HASH:
-            self.challenges[challenge_hash].attempts.append(attempt_hash)
+        if challenge_hash is not self.root_hash:
+            self.challenges[challenge_hash].attempts.append(attempt.hash)
 
         # No need to update anything else in the tree
         # self.distribute_all_bets()
@@ -827,8 +843,7 @@ SPRIG instance:
         assert challenge.status is Status.CHALLENGED, "The challenge is not open."
         assert contract
 
-        attempt = ProofAttempt(hash=self.next_hashes()[0],
-                               parent=challenge_hash,
+        attempt = ProofAttempt(parent=challenge_hash,
                                author=claimer,
                                proof=proof,
                                contract=contract,
@@ -926,7 +941,7 @@ SPRIG instance:
                 self.params.pay_challenge_validated(attempt, challenge)
 
     def distribute_all_bets(self) -> None:
-        for attempt in self._dfs(self.proofs[ROOT_HASH]):
+        for attempt in self._dfs(self.proofs[self.root_hash]):
             for c in attempt.challenges:
                 self.update_challenge(self.challenges[c])
             self.update_attempt(attempt)
@@ -976,12 +991,14 @@ SPRIG instance:
         challenges = {h: Challenge(**challenge) for h, challenge in data["challenges"].items()}
         language = Language.load(data['language'])
         root_question = data["root_question"]
+        root_hash = data["root_hash"]
 
         return cls(language=language,
                    params=params,
                    proofs=proofs,
                    challenges=challenges,
-                   root_question=root_question)
+                   root_question=root_question,
+                   root_hash=root_hash)
 
 
 ####################################################
@@ -1023,11 +1040,11 @@ def play_tictactoe(params: Parameters) -> Sprig:
         7 -> 6
         8 -> 6
         9 -> 6
-        """, "no-contract")
+        """, Hash("ctc1"))
 
     time_passes(sprig)
 
-    root = sprig.proofs[ROOT_HASH]
+    root = sprig.proofs[sprig.root_hash]
     c1 = sprig.challenge(MICHAEL, root.challenges[1], "ctc2")
     c2 = sprig.challenge(MICHAEL, root.challenges[3], "ctc3")
 
@@ -1046,9 +1063,9 @@ def play_tictactoe(params: Parameters) -> Sprig:
     sprig.answer_low_level(c2.hash, DIEGO, "-2", "ctc5")
 
     print(sprig.dumps())
-    quit()
+    # quit()
     time_passes(sprig)
-    c3 = sprig.challenge(MICHAEL, a1.challenges[2])
+    c3 = sprig.challenge(MICHAEL, a1.challenges[2], "ctc6")
 
     time_passes(sprig)
 
@@ -1060,7 +1077,7 @@ def play_tictactoe(params: Parameters) -> Sprig:
         7 -> 9
         8 -> 7
         9 -> 7
-        """)
+        """, "ctc7")
 
     for _ in range(5):
         time_passes(sprig)
@@ -1094,14 +1111,14 @@ theorem this_succ_add (n m : Nat) : succ n + m = succ (n + m) := sorry
 --! SPRIG Claim
 theorem this_add_comm (m n : Nat) : m + n = n + m := sorry
 --! Claim end
-""", "ctc1")
+""", Hash("ctc1"))
 
     time_passes(sprig)
 
-    succ_add = sprig.proofs[ROOT_HASH].challenges[0]
+    succ_add = sprig.proofs[sprig.root_hash].challenges[0]
     c1 = sprig.challenge(MICHAEL, succ_add, "ctc2")
 
-    add_comm = sprig.proofs[ROOT_HASH].challenges[1]
+    add_comm = sprig.proofs[sprig.root_hash].challenges[1]
     c2 = sprig.challenge(MICHAEL, add_comm, "ctc3")
 
     time_passes(sprig)

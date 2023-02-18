@@ -1,5 +1,5 @@
 
-.PHONY: backend frontend deploy deploy-frontend deploy-backend  sync-files test fmt install install-dev
+.PHONY: backend frontend deploy deploy-frontend deploy-backend  sync-files test fmt install install-dev backends cloc
 
 PORT=8600
 BACKEND_PORT=8601
@@ -39,3 +39,6 @@ install:
 
 install-dev: install
 	npm install
+
+cloc:
+	cloc . --exclude-dir=node_modules,.mypy_cache,.pytest_cache,.idea,.vscode,build,dist,package-lock.json --by-file-by-lang

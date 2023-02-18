@@ -30,14 +30,14 @@ def example_tictactoe(params: Parameters) -> Iterator[Sprig]:
             7 -> 6
             8 -> 6
             9 -> 6
-            """)
+            """, Hash("ctc0"))
 
         time_passes(sprig)
         yield sprig
 
-        root = sprig.proofs[ROOT_HASH]
-        c1 = sprig.challenge(MICHAEL, root.challenges[1])
-        c2 = sprig.challenge(MICHAEL, root.challenges[3])
+        root = sprig.proofs[sprig.root_hash]
+        c1 = sprig.challenge(MICHAEL, root.challenges[1], "ctc1")
+        c2 = sprig.challenge(MICHAEL, root.challenges[3], "ctc2")
 
         time_passes(sprig)
         yield sprig
@@ -48,16 +48,16 @@ def example_tictactoe(params: Parameters) -> Iterator[Sprig]:
             3 -> 2
             7 -> 9
             8 -> 7
-            9 -> 7""")
+            9 -> 7""", "cta1")
 
         time_passes(sprig)
         yield sprig
 
-        sprig.answer_low_level(c2.hash, DIEGO, "-2")
+        sprig.answer_low_level(c2.hash, DIEGO, "-2", "cta2")
 
         time_passes(sprig)
         yield sprig
-        c3 = sprig.challenge(MICHAEL, a1.challenges[2])
+        c3 = sprig.challenge(MICHAEL, a1.challenges[2], "ctc3")
 
         time_passes(sprig)
         yield sprig
@@ -68,7 +68,7 @@ def example_tictactoe(params: Parameters) -> Iterator[Sprig]:
             3 -> 7
             7 -> 9
             8 -> 7
-            9 -> 7""")
+            9 -> 7""", "cta3")
 
         for _ in range(5):
             time_passes(sprig)

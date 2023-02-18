@@ -11,7 +11,7 @@ def test_serialisation(instance: Sprig) -> None:
     assert new == instance
 
     d = instance.dump_as_dict()
-    assert set(d) == {"language", "params", "proofs", "challenges", "root_question"}
+    assert set(d) == {"language", "params", "proofs", "challenges", "root_question", "root_hash"}
 
 
 @pytest.mark.parametrize(
