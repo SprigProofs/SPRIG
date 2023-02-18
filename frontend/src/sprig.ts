@@ -3,7 +3,7 @@ This contains all the logic of sprig, from the communication with the server
 to the processing of the data.
 */
 
-import _, { type Dictionary } from "lodash";
+import _ from "lodash";
 import dayjs from "dayjs/esm";
 import duration from "dayjs/esm/plugin/duration";
 import relativeTime from "dayjs/esm/plugin/relativeTime"; // for .humanize(  / fromNow()
@@ -15,7 +15,6 @@ dayjs.extend(calendar);
 dayjs.extend(advancedFormat);
 
 import { ElNotification } from "element-plus";
-import { json } from "stream/consumers";
 
 /**
  * Constants
@@ -67,14 +66,14 @@ class Parameters {
     this.maxLength = params.maxLength || params.max_length;
     this.timeForQuestions = dayjs.duration(
       params.timeForQuestions?.asMilliseconds() ||
-      params.timeForQuestions ||
-      params.time_for_questions
+        params.timeForQuestions ||
+        params.time_for_questions
     );
     this.timeForAnswers =
       dayjs.duration(
         params.timeForAnswers?.asMilliseconds() ||
-        params.timeForAnswers ||
-        params.time_for_answers
+          params.timeForAnswers ||
+          params.time_for_answers
       ) || params.timeForAnswers;
     this.upstakes = params.upstakes;
     this.downstakes = params.downstakes;
@@ -498,6 +497,20 @@ class Sprig {
       }
     }
   }
+  static majority(instances: (Sprig|null)[]): Sprig|null {
+    for (const result of instances) {
+      var votes = 0;
+      for (const other of instances) {
+        if (result && other && result.equals(other)) {
+          votes += 1;
+        }
+      }
+      if (votes > instances.length / 2) {
+        return result;
+      }
+    }
+    return null;
+  }
 }
 
 interface ActionData {
@@ -553,8 +566,16 @@ const API_BASE = isLocalhost
   : "https://sprig.therandom.space/api/";
 
 const API_BASES = isLocalhost
-  ? ["http://localhost:8601/", "http://localhost:8602/", "http://localhost:8603/"]
-  : ["https://sprig.therandom.space/api/", "https://sprig2.therandom.space/api/", "https://sprig3.therandom.space/api/"];
+  ? [
+      "http://localhost:8601/",
+      "http://localhost:8602/",
+      "http://localhost:8603/",
+    ]
+  : [
+      "https://sprig.therandom.space/api/",
+      "https://sprig2.therandom.space/api/",
+      "https://sprig3.therandom.space/api/",
+    ];
 
 console.log(location.hostname, isLocalhost, API_BASE);
 
@@ -569,8 +590,8 @@ function logFail(title: string, message: string, data: any) {
   ElNotification.error({ title, message });
 }
 const api = {
-  async get(path: string[]) {
-    const url = API_BASE + path.join("/");
+  async get(path: string[], apiBase: string = API_BASE): Promise<any> {
+    const url = apiBase + path.join("/");
     const resp = await fetch(url).catch((err) => {
       logFail(
         "Error while fetching data",
@@ -595,11 +616,25 @@ const api = {
     }
   },
   async fetchAllInstances(): Promise<Record<string, Sprig>> {
-    return await this.get(["everything"]).then((data) =>
-      _.mapValues(data, (s) => new Sprig(s))
+    const results = await Promise.all(
+      API_BASES.map((apiBase) =>
+        this.get(["everything"], apiBase)
+        .then((data) => _.mapValues(data, (s) => new Sprig(s)))
+        .catch((err) => ({} as Record<string, Sprig>))
+    ));
+
+    console.log("fetchAllInstances (before majority)", results)
+    const all_keys = _.uniq(_.flatten(results.map((r) => Object.keys(r))));
+    const all_instances = all_keys.map((k) =>
+      Sprig.majority(results.map((r) => r[k]))
     );
+    const record = _.zipObject(all_keys, all_instances);
+    console.log("fetchAllInstances (after majority)", record)
+    // Filter out nulls
+    return _.pickBy(record, (v) => v !== null);
+
   },
-  async fetchBank(): Promise<Record<string, number>> {
+  async fetchBank(): Promise<Record<string, number>> {  // TODO: remove
     return await this.get(["users"]);
   },
 
@@ -611,7 +646,7 @@ const api = {
     path: string[],
     query: Record<string, string>,
     body: any,
-    apiBase: string,
+    apiBase: string
   ): Promise<any> {
     const url = new URL(apiBase + path.join("/"));
     for (const key of Object.keys(query)) {
@@ -652,18 +687,21 @@ const api = {
     challengeHash: string,
     skeptic: string,
     contract: string,
-    createdAt: dayjs.Dayjs,
+    createdAt: dayjs.Dayjs
   ): Promise<void> {
-    const results = API_BASES.map((apiBase) => this.post(
-      ["challenge", instanceHash, challengeHash],
-      {
-        skeptic, contract,
-        created_at: createdAt.valueOf().toString(),
-      },
-      null,
-      apiBase,
-    ));
-    await Promise.all(results);
+    const results = API_BASES.map((apiBase) =>
+      this.post(
+        ["challenge", instanceHash, challengeHash],
+        {
+          skeptic,
+          contract,
+          created_at: createdAt.valueOf().toString(),
+        },
+        null,
+        apiBase
+      )
+    );
+    return await Promise.all(results).then(() => null);
     // We don't return anything here,
     // challenges reload the whole store anyway
     // and the server doesn't return anything we did not already know.
@@ -676,53 +714,47 @@ const api = {
     rootClaim: string,
     proof: string,
     contract: string,
-    createdAt: dayjs.Dayjs,
+    createdAt: dayjs.Dayjs
   ): Promise<Sprig> {
     const results: (Sprig | null)[] = await Promise.all(
-      API_BASES.map((apiBase) => this.post(
-        ["instances"],
-        {},
-        {
-          language: language,
-          author: author,
-          params: {
-            root_height: params.rootHeight,
-            max_length: params.maxLength,
-            time_for_questions: params.timeForQuestions.asMilliseconds(),
-            time_for_answers: params.timeForAnswers.asMilliseconds(),
-            upstakes: params.upstakes,
-            downstakes: params.downstakes,
-            question_bounties: params.questionBounties,
-            verification_cost: params.verificationCost,
+      API_BASES.map((apiBase) =>
+        this.post(
+          ["instances"],
+          {},
+          {
+            language: language,
+            author: author,
+            params: {
+              root_height: params.rootHeight,
+              max_length: params.maxLength,
+              time_for_questions: params.timeForQuestions.asMilliseconds(),
+              time_for_answers: params.timeForAnswers.asMilliseconds(),
+              upstakes: params.upstakes,
+              downstakes: params.downstakes,
+              question_bounties: params.questionBounties,
+              verification_cost: params.verificationCost,
+            },
+            root_claim: rootClaim,
+            proof: proof,
+            contract: contract,
+            created_at: createdAt.valueOf(),
           },
-          root_claim: rootClaim,
-          proof: proof,
-          contract: contract,
-          created_at: createdAt.valueOf(),
-        },
-        apiBase,
-      ).then((data) => new Sprig(data))
-        .catch((err) => null)) // We don't want to fail if one of the API fails
+          apiBase
+        )
+          .then((data) => new Sprig(data))
+          .catch((err) => null)
+      ) // We don't want to fail if one of the API fails
     );
 
     // return the majority result
-    for (const result of results) {
-      var votes = 0;
-      for (const other of results) {
-        if (result && other && result.equals(other)) {
-          votes += 1;
-        }
-      }
-      if (votes > results.length / 2) {
-        return result;
-      }
-    }
+    const majority = Sprig.majority(results);
 
-    logFail(
-      "Failed to create instance, backends disagree",
-      "",
-      { results }
-    );
+    if (majority) {
+      return majority;
+    } else {
+      logFail("Failed to create instance, backends disagree", "", { results });
+      throw new Error("Failed to create instance, backends disagree");
+    }
   },
   async newProofAttempt(
     instanceHash: string,
@@ -731,16 +763,41 @@ const api = {
     proof: string,
     author: string,
     contract: string,
-    createdAt: dayjs.Dayjs,
+    createdAt: dayjs.Dayjs
   ): Promise<ProofAttempt> {
-    const results = Promise.all(API_BASES.map((apiBase) => this.post(
-      ["proof", instanceHash, challengeHash],
-      {},
-      {
-        contract, author, statement: proof, machine_level: isMachineLevel,
-        created_at: createdAt.valueOf(),
+    const results = await Promise.all(
+      API_BASES.map((apiBase) =>
+        this.post(
+          ["proof", instanceHash, challengeHash],
+          {},
+          {
+            contract,
+            author,
+            statement: proof,
+            machine_level: isMachineLevel,
+            created_at: createdAt.valueOf(),
+          },
+          apiBase
+        ).then((data) => new ProofAttempt({ instanceHash, ...data }))
+        .catch((err) => null)
+      )
+    );
+
+    // return the majority result
+    for (const result of results) {
+      var votes = 0;
+      for (const other of results) {
+        if (result && other && _.isEqual(result, other)) {
+          votes += 1;
+        }
       }
-    ).then((data) => new ProofAttempt({ instanceHash, ...data }));
+      if (votes > results.length / 2) {
+        return result;
+      }
+    }
+
+    logFail("Failed to create proof attempt, backends disagree", "", { results });
+    throw new Error("Failed to create proof attempt, backends disagree");
   },
 };
 
