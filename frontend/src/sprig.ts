@@ -3,7 +3,7 @@ This contains all the logic of sprig, from the communication with the server
 to the processing of the data.
 */
 
-import _ from "lodash";
+import _, { type Dictionary } from "lodash";
 import dayjs from "dayjs/esm";
 import duration from "dayjs/esm/plugin/duration";
 import relativeTime from "dayjs/esm/plugin/relativeTime"; // for .humanize(  / fromNow()
@@ -15,6 +15,7 @@ dayjs.extend(calendar);
 dayjs.extend(advancedFormat);
 
 import { ElNotification } from "element-plus";
+import { json } from "stream/consumers";
 
 /**
  * Constants
@@ -66,14 +67,14 @@ class Parameters {
     this.maxLength = params.maxLength || params.max_length;
     this.timeForQuestions = dayjs.duration(
       params.timeForQuestions?.asMilliseconds() ||
-        params.timeForQuestions ||
-        params.time_for_questions
+      params.timeForQuestions ||
+      params.time_for_questions
     );
     this.timeForAnswers =
       dayjs.duration(
         params.timeForAnswers?.asMilliseconds() ||
-          params.timeForAnswers ||
-          params.time_for_answers
+        params.timeForAnswers ||
+        params.time_for_answers
       ) || params.timeForAnswers;
     this.upstakes = params.upstakes;
     this.downstakes = params.downstakes;
@@ -272,6 +273,29 @@ class Sprig {
       return new Challenge(challenge);
     });
     this.rootQuestion = sprig.rootQuestion || sprig.root_question;
+  }
+
+  equals(other: Sprig): boolean {
+    // this reason we con't use _.isEqual is that the order
+    // of proofs in Challenge.attempts is not specified
+    // so we need to sort them before comparing.
+    return (
+      this.hash === other.hash &&
+      this.language === other.language &&
+      _.isEqual(this.params, other.params) &&
+      _.isEqual(this.proofs, other.proofs) &&
+      this.rootQuestion === other.rootQuestion &&
+      _.isEqual(
+        _.mapValues(this.challenges, (c) => ({
+          ...c,
+          attempts: _.sortBy(c.attempts),
+        })),
+        _.mapValues(other.challenges, (c) => ({
+          ...c,
+          attempts: _.sortBy(c.attempts),
+        }))
+      )
+    );
   }
 
   uid(): string {
@@ -528,6 +552,10 @@ const API_BASE = isLocalhost
   ? "http://localhost:8601/"
   : "https://sprig.therandom.space/api/";
 
+const API_BASES = isLocalhost
+  ? ["http://localhost:8601/", "http://localhost:8602/", "http://localhost:8603/"]
+  : ["https://sprig.therandom.space/api/", "https://sprig2.therandom.space/api/", "https://sprig3.therandom.space/api/"];
+
 console.log(location.hostname, isLocalhost, API_BASE);
 
 /**
@@ -582,9 +610,10 @@ const api = {
   async post(
     path: string[],
     query: Record<string, string>,
-    body: any
+    body: any,
+    apiBase: string,
   ): Promise<any> {
-    const url = new URL(API_BASE + path.join("/"));
+    const url = new URL(apiBase + path.join("/"));
     for (const key of Object.keys(query)) {
       url.searchParams.append(key, query[key]);
     }
@@ -625,12 +654,19 @@ const api = {
     contract: string,
     createdAt: dayjs.Dayjs,
   ): Promise<void> {
-    return await this.post(
+    const results = API_BASES.map((apiBase) => this.post(
       ["challenge", instanceHash, challengeHash],
-      { skeptic, contract,
-        created_at: createdAt.valueOf().toString(),},
-      null
-    );
+      {
+        skeptic, contract,
+        created_at: createdAt.valueOf().toString(),
+      },
+      null,
+      apiBase,
+    ));
+    await Promise.all(results);
+    // We don't return anything here,
+    // challenges reload the whole store anyway
+    // and the server doesn't return anything we did not already know.
   },
 
   async newInstance(
@@ -642,28 +678,51 @@ const api = {
     contract: string,
     createdAt: dayjs.Dayjs,
   ): Promise<Sprig> {
-    return await this.post(
-      ["instances"],
-      {},
-      {
-        language: language,
-        author: author,
-        params: {
-          root_height: params.rootHeight,
-          max_length: params.maxLength,
-          time_for_questions: params.timeForQuestions.asMilliseconds(),
-          time_for_answers: params.timeForAnswers.asMilliseconds(),
-          upstakes: params.upstakes,
-          downstakes: params.downstakes,
-          question_bounties: params.questionBounties,
-          verification_cost: params.verificationCost,
+    const results: (Sprig | null)[] = await Promise.all(
+      API_BASES.map((apiBase) => this.post(
+        ["instances"],
+        {},
+        {
+          language: language,
+          author: author,
+          params: {
+            root_height: params.rootHeight,
+            max_length: params.maxLength,
+            time_for_questions: params.timeForQuestions.asMilliseconds(),
+            time_for_answers: params.timeForAnswers.asMilliseconds(),
+            upstakes: params.upstakes,
+            downstakes: params.downstakes,
+            question_bounties: params.questionBounties,
+            verification_cost: params.verificationCost,
+          },
+          root_claim: rootClaim,
+          proof: proof,
+          contract: contract,
+          created_at: createdAt.valueOf(),
         },
-        root_claim: rootClaim,
-        proof: proof,
-        contract: contract,
-        created_at: createdAt.valueOf(),
+        apiBase,
+      ).then((data) => new Sprig(data))
+        .catch((err) => null)) // We don't want to fail if one of the API fails
+    );
+
+    // return the majority result
+    for (const result of results) {
+      var votes = 0;
+      for (const other of results) {
+        if (result && other && result.equals(other)) {
+          votes += 1;
+        }
       }
-    ).then((data) => new Sprig(data));
+      if (votes > results.length / 2) {
+        return result;
+      }
+    }
+
+    logFail(
+      "Failed to create instance, backends disagree",
+      "",
+      { results }
+    );
   },
   async newProofAttempt(
     instanceHash: string,
@@ -674,10 +733,11 @@ const api = {
     contract: string,
     createdAt: dayjs.Dayjs,
   ): Promise<ProofAttempt> {
-    return this.post(
+    const results = Promise.all(API_BASES.map((apiBase) => this.post(
       ["proof", instanceHash, challengeHash],
-      { },
-      { contract, author, statement: proof, machine_level: isMachineLevel,
+      {},
+      {
+        contract, author, statement: proof, machine_level: isMachineLevel,
         created_at: createdAt.valueOf(),
       }
     ).then((data) => new ProofAttempt({ instanceHash, ...data }));

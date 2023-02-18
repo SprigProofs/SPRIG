@@ -2,6 +2,10 @@
 This file contains the code of the API / Server.
 
 It reads and updates the sprig instances in the data/ folder.
+
+Environment variables:
+- DATA: the path to the folder where the sprig instances are stored.
+- DEV: set to true if run on localhost (allow cross-origin requests & move the API to / instead of /api).
 """
 
 import os
@@ -14,14 +18,20 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-os.environ["BANK_FILE"] = str((Path(__file__).parent / "data" / "api_bank").absolute())
+# os.environ["BANK_FILE"] = str((Path(__file__).parent / "data" / "api_bank").absolute())
 
 import sprig
 import utils
 
+USE_BLOCKCHAIN = True
+
 DEV = os.environ.get("DEV", "").lower() in ("true", "1", "yes", "y'")
+DATA = Path(os.environ.get("DATA", str(Path(__file__).parent / "data")))
 ROOT_PATH = "/api" if not DEV else ""
 api = FastAPI(root_path=ROOT_PATH)
+
+if not DATA.exists():
+    DATA.mkdir(parents=True)
 
 if DEV:
     # This allows cross-origin requests.
@@ -37,32 +47,26 @@ if DEV:
 
 def all_instances_filenames() -> Iterator[Path]:
     """Yield all the filenames of sprig instances stored on disk."""
-    for file in sprig.DATA.glob("*.json"):
+    for file in DATA.glob(".{64}.json"):
         if file.stem != "users":
             yield file
 
 
-def new_hash() -> str:
-    """Generate a new hash for a new sprig instance."""
-    maxi = max((int(p.stem) for p in all_instances_filenames()), default=0) + 1
-    return f"{maxi:0>5}"
-
-
 def path_from_hash(hash_: str) -> Path:
     """Return the path where the sprig instance corresponding to the hash is stored."""
-    assert len(hash_) == 5
-    assert hash_.isnumeric()
-    return sprig.DATA / f"{hash_}.json"
+    assert hash_.isalnum(), "Contract hash must be alphanumeric."
+    assert len(hash_) == 64, "Contract hash must be 64 characters long."
+    return DATA / f"{hash_}.json"
 
 
-def save(instance: sprig.Sprig, hash_: str) -> None:
+def save(instance: sprig.Sprig) -> None:
     """Save a SPRIG instance on disk."""
-    path_from_hash(hash_).write_text(instance.dumps())
+    path_from_hash(instance.root_hash).write_text(instance.dumps())
 
 
 def load(instance_hash: str) -> sprig.Sprig:
     """Load a prig instance from disk."""
-    return sprig.Sprig.loads(path_from_hash(instance_hash).read_text(), blockchain=True)
+    return sprig.Sprig.loads(path_from_hash(instance_hash).read_text(), blockchain=USE_BLOCKCHAIN)
 
 
 @api.exception_handler(AssertionError)
@@ -111,8 +115,11 @@ def get_everything() -> Any:
         instance = load(file.stem)
         with sprig.time_mode('real'):
             instance.distribute_all_bets()
-        save(instance, file.stem)
+        save(instance)
         data = instance.dump_as_dict()
+        # Note: data already has a key "root_hash" of the same value, which
+        # was added later, but we want to keep the old key "hash" for
+        # compatibility.
         data['hash'] = file.stem
         everything[file.stem] = data
 
@@ -138,22 +145,25 @@ def add_new_instance(new_instance: SprigInitData) -> dict[str, Any]:  # SprigDat
     """
 
     with sprig.time_mode('real'):
-        parameters = sprig.ParametersBlockchain(**new_instance.params.dict())
+        if not USE_BLOCKCHAIN:
+            parameters = sprig.Parameters(**new_instance.params.dict())
+        else:  # We always use the blockchain parameters, except for testing.
+            parameters = sprig.ParametersBlockchain(**new_instance.params.dict())
+
         instance = sprig.Sprig.start(
             new_instance.language,
             parameters,
             new_instance.author,
             new_instance.root_claim,
             new_instance.proof,
-            new_instance.contract,
+            sprig.Hash(new_instance.contract),
             new_instance.created_at,
         )
 
-        h = new_hash()
-        save(instance, h)
+        save(instance)
 
         data = instance.dump_as_dict()
-        data['hash'] = h
+        data['hash'] = instance.root_hash
         return data
 
 
@@ -174,14 +184,18 @@ class ChallengeCreatedData(BaseModel):
 )  #, response_model=ChallengeCreatedData)  # The response_model is not working and I don't know why.
 def new_challenge(skeptic: sprig.Address, claim_hash: sprig.Hash, instance_hash: sprig.Hash,
                   contract: str, created_at: sprig.Time) -> ChallengeCreatedData:
-    """Challenge a claim that isn't yet challenged and still active."""
+    """
+    Challenge a claim that isn't yet challenged and still active.
+
+    created_at: The time at which the challenge was created, in milliseconds since the epoch.
+    """
 
     instance = load(instance_hash)
 
     with sprig.time_mode('real'):
         challenge = instance.challenge(skeptic, claim_hash, contract, created_at)
 
-    save(instance, instance_hash)
+    save(instance)
 
     challenge = instance.challenges[claim_hash]
     return ChallengeCreatedData(
@@ -214,6 +228,6 @@ def new_proof_attempt(instance_hash: sprig.Hash, challenge_hash: sprig.Hash,
         attempt = method(challenge_hash, attempt_data.author, attempt_data.statement,
                          attempt_data.contract, attempt_data.created_at)
 
-    save(instance, instance_hash)
+    save(instance)
 
     return attempt

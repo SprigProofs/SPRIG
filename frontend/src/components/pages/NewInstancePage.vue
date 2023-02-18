@@ -48,17 +48,32 @@ const costs = reactive([
 ]);
 const timeForQuestions = ref(dayjs.duration(1, 'day'));
 const timeForAnswers = ref(dayjs.duration(1, 'day'));
-const selectedLanguage = ref("TicTacToe");
-// const selectedLanguage = ref("Lean4");
+// const selectedLanguage = ref("TicTacToe");
+const selectedLanguage = ref("Lean4");
 const maxProofSize = ref(10000);
-const root_question = ref("...|XX.|... O plays X wins");
-const proof_attempt = ref(`        1 -> 6
-        2 -> 6
-        3 -> 6
-        6 -> 1
-        7 -> 6
-        8 -> 6
-        9 -> 6`);
+const root_question = ref(`--! SPRIG Claim
+theorem this_add_comm (m n : Nat) : m + n = n + m := sorry
+--! Claim end`)
+const proof_attempt = ref(`open Nat
+
+example : m + 0 = m := add_zero m
+example : m + succ n = succ (m + n) := add_succ m n
+
+--! SPRIG Claim
+theorem this_succ_add (n m : Nat) : succ n + m = succ (n + m) := sorry
+--! Claim end
+
+--! SPRIG Claim
+theorem this_add_comm (m n : Nat) : m + n = n + m := sorry
+--! Claim end`)
+// const root_question = ref("...|XX.|... O plays X wins");
+// const proof_attempt = ref(`        1 -> 6
+//         2 -> 6
+//         3 -> 6
+//         6 -> 1
+//         7 -> 6
+//         8 -> 6
+//         9 -> 6`);
 const costToPublish = computed(() => costs[costs.length - 1].downstake);
 const isSubmitting = ref(false);
 const showSignTransaction = ref(false);

@@ -71,7 +71,7 @@ def fmt(s: Any, fg: Color | None = None, bg: Color | None = None, end: bool = Tr
     return f"\033[{flags}m{s}{ending}"
 
 
-def fmt_money(amount: int) -> str:
+def fmt_money(amount: float) -> str:
     return fmt(str(amount) + CURRENCY, ORANGE)
 
 
