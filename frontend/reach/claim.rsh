@@ -2,10 +2,16 @@
 
 const maxParticipants = 10;
 const sizeBinaryInfo = 32;
+const nbrOracles = 5;
+// The minimal number of oracles that need to agree in order to take a decision
+const minForDecisions = nbrOracles/2 + 1;
+
+const Score = UInt;
+const Child = Maybe(Tuple(Address, Contract));
 
 export const main = Reach.App(() => {
   const A = Participant('Alice', {
-    addressSprig: Address,
+    addressesOracles: Array(Address, nbrOracles),
     addressSkeptic: Maybe(Address),
     interaction: Bytes(sizeBinaryInfo),
     wagerUp: UInt, // Non-zero only if a claimer is defending against a skeptic's attack, will go to the skeptic's address if A is wrong
@@ -14,35 +20,35 @@ export const main = Reach.App(() => {
     isBottom: Bool,
   });
 
-  const Sprig = API('Sprig', {
-    incorrectContract: Fun([], Null),
+  const Oracle = API('Oracle', {
+    correctContract: Fun([], Null),
     addParticipant: Fun([Address, Contract], Null),
     announceVerification: Fun([Bool], Null), // Only called if it is at the bottom and should be formal verification
-    announceWinner: Fun([Bool, UInt], Null) // The boolean is whether the original claim or attack of A was right or not,
-  });                                       // and the UInt is the index of the winner in the list of participants if the boolean is false
+    announceWinner: Fun([UInt], Null) // The UInt should be the index of the winner. The index is 0 if the original claim is correct.
+  });
   
   const V = View({
     author: Address,
-    addressSprig: Address,
+    addressesOracles: Array(Address, nbrOracles),
     addressSkeptic: Maybe(Address),
     interaction: Bytes(sizeBinaryInfo),
     wagerUp: UInt,
     wagerDown: UInt,
     deadline: UInt,
     isBottom: Bool,
-    participants: Array(Maybe(Tuple(Address, Contract)), maxParticipants),
+    participants: Array(Child, maxParticipants),
   });
 
   const E = Events({
-    incorrectContract: [],
+    correctContract: [],
     newParticipant: [Address, Contract],
-    announceWinner: [Bool, Address, Contract], // The bool indicates if A was right, the address is the address of the winner, and the contract is the winning interaction
+    announceWinner: [Address, Contract], // The address is the address of the winner, and the contract is the winning interaction
     announceVerification: [Bool],
   });
   init();
 
   A.only(() => {
-    const addressSprig = declassify(interact.addressSprig);
+    const addressesOracles = declassify(interact.addressesOracles);
     const addressSkeptic = declassify(interact.addressSkeptic);
     const interaction = declassify(interact.interaction);
     const wagerUp = declassify(interact.wagerUp); 
@@ -52,12 +58,12 @@ export const main = Reach.App(() => {
     assume(implies(isBottom, wagerDown == 0));
   });
 
-  A.publish(addressSprig, addressSkeptic, interaction, wagerUp, wagerDown, deadline, isBottom)
+  A.publish(addressesOracles, addressSkeptic, interaction, wagerUp, wagerDown, deadline, isBottom)
   .pay(wagerUp + wagerDown);
   require(implies(isBottom, wagerDown == 0));
 
   V.author.set(A);
-  V.addressSprig.set(addressSprig);
+  V.addressesOracles.set(addressesOracles);
   V.addressSkeptic.set(addressSkeptic);
   V.interaction.set(interaction);
   V.wagerUp.set(wagerUp);
@@ -65,9 +71,25 @@ export const main = Reach.App(() => {
   V.deadline.set(deadline);
   V.isBottom.set(isBottom);
 
-  const emptyArray = () => Array.replicate(maxParticipants, Maybe(Tuple(Address, Contract)).None(null)); // Will contain the address of the participants and the contracts of the child interactions
-  const [ isConcluded, numberParticipants, participants ] = 
-    parallelReduce([ false, 0, emptyArray() ])
+  const initParticipants = () => Array.replicate(maxParticipants, 
+                                          Child.None(null))
+                                          .set(0, Child.Some([A, getContract()])); // Will contain the address of the participants and the contracts of the child interactions
+  
+  const [ isConcluded, 
+          isCorrect, 
+          numberParticipants, 
+          participants,
+          scores,
+          hasDeclaredAWinner,
+          verifications
+        ] = 
+    parallelReduce([ false, 
+                      Array.replicate(nbrOracles, false),
+                      1,
+                      initParticipants(),
+                      Array.replicate(maxParticipants, 0),
+                      Array.replicate(nbrOracles, false),
+                      Array.replicate(nbrOracles, Maybe(Bool).None(null)) ])
     .define(() => {
       V.participants.set(participants);
     })
@@ -75,51 +97,66 @@ export const main = Reach.App(() => {
     .invariant(balance() == (isConcluded ? 0 : wagerUp + wagerDown))
     .while ( !isConcluded )
 
-    .api_(Sprig.incorrectContract, () => {
-      check(this == addressSprig, 'You are not Sprig');
-      check(numberParticipants == 0, 'Debate has already begun');
+    .api_(Oracle.correctContract, () => {
+      const index = addressesOracles.findIndex(x => x == this);
+      check(isSome(index), 'You are not an oracle');
       return [ 0, (ret) => {
-        E.incorrectContract();
-        transfer(wagerUp + wagerDown).to(A);
+        E.correctContract();
         ret(null);
-        return [ true, 0, participants ];
+        return [ false, isCorrect.set(fromSome(index, 0), true), numberParticipants, participants, scores, hasDeclaredAWinner, verifications ];
       } ];
     })
 
-    .api_(Sprig.addParticipant, (newPart, newInter) => {
-      check(this == addressSprig, 'You are not Sprig');
+    .api_(Oracle.addParticipant, (newPart, newInter) => {
+      const index = addressesOracles.findIndex(x => x == this);
+      check(isSome(index), 'You are not an oracle');
       check(numberParticipants < maxParticipants, 'Too many participants');
       check(!isBottom, 'Cannot challenge a bottom claim');
+      const newChild = Child.Some([ newPart, newInter ]);
+      check(!participants.includes(newChild), "It is already a participant")
       return [ 0, (ret) => {
-        const newListParticipants = participants.set(numberParticipants, Maybe(Tuple(Address, Contract)).Some([newPart, newInter]));
+        const newListParticipants = participants.set(numberParticipants, newChild);
         E.newParticipant(newPart, newInter);
         ret(null);
-        return [ false, numberParticipants + 1, newListParticipants ];
+        return [ false, isCorrect, numberParticipants + 1, newListParticipants, scores, hasDeclaredAWinner, verifications ];
       } ];
     })
 
-    .api_(Sprig.announceWinner, (wasARight, indexWinner) => {
-      check(this == addressSprig, 'You are not Sprig');
-      check(wasARight || indexWinner < numberParticipants, 'This participant does not exist.');
+    .api_(Oracle.announceWinner, (indexWinner) => {
+      const index = addressesOracles.findIndex(x => x == this);
+      check(isSome(index), 'You are not an oracle');
+      check(!hasDeclaredAWinner[fromSome(index, 0)], 'You already declared a winner');
+      check(indexWinner < numberParticipants, 'This participant does not exist.');
       check(!isBottom, 'Can only announce verification.')
       return [ 0, (ret) => {
-        const winner = wasARight ? [ A, getContract() ] : fromSome(participants[indexWinner], [ A, getContract() ]);
-        E.announceWinner(wasARight, winner[0], winner[1]);
-        transfer(wagerDown).to(winner[0]);
-        transfer(wagerUp).to(wasARight ? A : fromSome(addressSkeptic, A));
+        const newHasDeclaredAWinner = hasDeclaredAWinner.set(fromSome(index,0), true);
+        const newScore = scores[indexWinner] + 1;
+        const newScores = scores.set(indexWinner, newScore);
+        const newIsConcluded = newScore == minForDecisions;
+        if ( newIsConcluded ){
+          const winner = fromSome(participants[indexWinner], [ A, getContract() ]);
+          E.announceWinner(winner[0], winner[1]);
+          transfer(wagerDown).to(winner[0]);
+          transfer(wagerUp).to(indexWinner == 0 ? A : fromSome(addressSkeptic, A));
+        }
         ret(null);
-        return [ true, numberParticipants, participants ];
+        return [ newIsConcluded, isCorrect, numberParticipants, participants, newScores, newHasDeclaredAWinner, verifications ];
       } ];
     })
 
-    .api_(Sprig.announceVerification, (wasRight) => {
-      check(this == addressSprig, 'You are not Sprig');
+    .api_(Oracle.announceVerification, (wasRight) => {
+      const index = addressesOracles.findIndex(x => x == this);
+      check(isSome(index), 'You are not an oracle');
       check(isBottom, 'Can only announce formal verification if it is bottom.');
       return [ 0, (ret) => {
-        E.announceVerification(wasRight);
-        transfer(wagerUp).to(wasRight ? A : fromSome(addressSkeptic, A));
+        const newVerifications = verifications.set(fromSome(index,0), Maybe(Bool).Some(wasRight));
+        const newIsConcluded = (newVerifications.count(x => x == Maybe(Bool).Some(wasRight)) == minForDecisions);
+        if ( newIsConcluded ) {
+          E.announceVerification(wasRight);
+          transfer(wagerUp).to(wasRight ? A : fromSome(addressSkeptic, A));
+        }
         ret(null);
-        return [ true, 0, participants ];
+        return [ newIsConcluded, isCorrect, numberParticipants, participants, scores, hasDeclaredAWinner, newVerifications ];
       } ];
     });
 
