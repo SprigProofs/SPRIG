@@ -6,7 +6,6 @@ const nbrOracles = 5;
 // The minimal number of oracles that need to agree in order to take a decision
 const minForDecisions = nbrOracles/2 + 1;
 
-const Score = UInt;
 const Child = Maybe(Tuple(Address, Contract));
 
 export const main = Reach.App(() => {
@@ -92,18 +91,29 @@ export const main = Reach.App(() => {
                       Array.replicate(nbrOracles, Maybe(Bool).None(null)) ])
     .define(() => {
       V.participants.set(participants);
+      const verificationConcluded = () => (verifications.count(x => x == Maybe(Bool).Some(true)) == minForDecisions)
+                      || (verifications.count(x => x == Maybe(Bool).Some(false)) == minForDecisions);
     })
     .invariant(numberParticipants <= maxParticipants)
     .invariant(balance() == (isConcluded ? 0 : wagerUp + wagerDown))
+    .invariant(implies(isBottom, scores.all(x => x == 0) && hasDeclaredAWinner.all(x => x == false)))
+    .invariant(implies(isBottom && isConcluded, verificationConcluded()))
+    // Should be true, but is not able to verify:
+    // .invariant(implies(isBottom && verificationConcluded(), isConcluded))
+    .invariant(implies(!isBottom, isConcluded == scores.any(x => x == minForDecisions)))
+    .invariant(implies(!isBottom, scores.all(x => x <= minForDecisions)))
     .while ( !isConcluded )
 
     .api_(Oracle.correctContract, () => {
       const index = addressesOracles.findIndex(x => x == this);
       check(isSome(index), 'You are not an oracle');
       return [ 0, (ret) => {
-        E.correctContract();
+        const newIsCorrect = isCorrect.set(fromSome(index, 0), true);
+        if ( newIsCorrect.count(x => x) == minForDecisions ){
+          E.correctContract();
+        }
         ret(null);
-        return [ false, isCorrect.set(fromSome(index, 0), true), numberParticipants, participants, scores, hasDeclaredAWinner, verifications ];
+        return [ false, newIsCorrect, numberParticipants, participants, scores, hasDeclaredAWinner, verifications ];
       } ];
     })
 
@@ -145,11 +155,13 @@ export const main = Reach.App(() => {
     })
 
     .api_(Oracle.announceVerification, (wasRight) => {
-      const index = addressesOracles.findIndex(x => x == this);
-      check(isSome(index), 'You are not an oracle');
-      check(isBottom, 'Can only announce formal verification if it is bottom.');
+      const someIndex = addressesOracles.findIndex(x => x == this);
+      check(isSome(someIndex), 'You are not an oracle');
+      check(isBottom, 'Can only announce formal verification if it is bottom');
+      const index = fromSome(someIndex, 0);
+      check(isNone(verifications[index]), "You already announced a verification")
       return [ 0, (ret) => {
-        const newVerifications = verifications.set(fromSome(index,0), Maybe(Bool).Some(wasRight));
+        const newVerifications = verifications.set(index, Maybe(Bool).Some(wasRight));
         const newIsConcluded = (newVerifications.count(x => x == Maybe(Bool).Some(wasRight)) == minForDecisions);
         if ( newIsConcluded ) {
           E.announceVerification(wasRight);
