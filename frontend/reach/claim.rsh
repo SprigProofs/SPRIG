@@ -2,7 +2,7 @@
 
 const maxParticipants = 10;
 const sizeBinaryInfo = 32;
-const nbrOracles = 5;
+const nbrOracles = 3;
 // The minimal number of oracles that need to agree in order to take a decision
 const minForDecisions = nbrOracles/2 + 1;
 

@@ -26,7 +26,7 @@ export const hashingChallenge = (addressContractAnswer, indexPartChallenged) =>
   sha256(addressContractAnswer + indexPartChallenged.toString());
 
 export const answer = (account,
-                   addressSprig,
+                   addressesOracles,
                    addressSkeptic,
                    interactionHash,
                    deadline,
@@ -40,7 +40,7 @@ export const answer = (account,
   */
   const ctc = account.contract(backendClaim);
   const interact = {
-    addressSprig: addressSprig,
+    addressesOracles: addressesOracles,
     addressSkeptic: (addressSkeptic === null ? ['None', null] : ['Some', addressSkeptic]),
     interaction: interactionHash,
     wagerUp: wagerUp,
@@ -53,12 +53,12 @@ export const answer = (account,
 
 // To create and return the contract for a new Sprig
 export const newSprig = (account,
-                        addressSprig,
+                        addressesOracles,
                         interactionHash,
                         deadline,
                         wagerDown,
 ) => answer(account,
-  addressSprig,
+  addressesOracles,
   null,
   interactionHash,
   deadline,
@@ -68,7 +68,7 @@ export const newSprig = (account,
   );
 
 export const challenge = (account,
-                         addressSprig,
+                         addressesOracles,
                          interactionHash,
                          deadline,
                          wagerDown,
@@ -78,14 +78,14 @@ export const challenge = (account,
     challenge.
 
   */
-  const ctc = account.contract(backendChallenge);
-  const interact = {
-    addressSprig: addressSprig,
-    interaction: interactionHash,
-    wagerDown: wagerDown,
-    deadline: deadline,
-  };
-  return [ctc, ctc.p.Alice(interact)];
+  return answer(account,
+                addressesOracles,
+                null,
+                interactionHash,
+                deadline,
+                0,
+                wagerDown,
+                );
 }
 
 export const verifyAnswer = async (ctc,
@@ -103,7 +103,9 @@ export const verifyAnswer = async (ctc,
     A view is a function that returns a Maybe, because it can be not set for the moment.
   */
   const correctAuthor = stdlib.formatAddress((await ctc.views.author())[1]) == author;
-  const correctSprig = stdlib.formatAddress((await ctc.views.addressSprig())[1]) == addressSprig;
+  const correctSprig = (await ctc.views.addressesOracles())[1]
+                        .map(stdlib.formatAddress)
+                        .includes(addressSprig);
   const correctSkeptic = (addressSkeptic === null)
     ? (await ctc.views.addressSkeptic())[1][0] == 'None'
     : stdlib.formatAddress((await ctc.views.addressSkeptic())[1][1]) ==  addressSkeptic;
@@ -136,7 +138,6 @@ export const verifyChallenge = async (ctc,
                                deadline,
                                wagerDown,
                                ) => {
-  console.log("YOOOO")
   const correctAuthor = stdlib.formatAddress((await ctc.views.author())[1]) == author;
   const correctSprig = stdlib.formatAddress((await ctc.views.addressSprig())[1]) == addressSprig;
   const correctInteraction = uIntArrayToHex((await ctc.views.interaction())[1]) == interactionHash;
@@ -157,21 +158,12 @@ export const monitorEventsAnswer = async (ctc) => {
     Run to have messages on the console for each
     important event of the contract.
   */
-  ctc.events.incorrectContract.monitor((event) => {console.log(`The contract was deemed incorrect at time ${event.when}.`)})
+  ctc.events.correctContract.monitor((event) => {console.log(`The contract was deemed correct at time ${event.when}.`)})
   ctc.events.newParticipant.monitor((event) => {console.log(`A new participant has been added, with address ${event.what[0]}, with contract ${event.what[1]}`)});
-  ctc.events.announceWinner.monitor((event) => {console.log(`The winner is announced: the claim was ${event.what[0] ? "correct" : "incorrect"} and the winner is ${event.what[1]} with contract ${event.what[2]}`)});
+  ctc.events.announceWinner.monitor((event) => {console.log(`The winner is announced: the winner is ${event.what[0]} with contract ${event.what[1]}`)});
   ctc.events.announceVerification.monitor((event) => {console.log(`The verification is done, and the claim was ${event.what[0] ? "correct" : "incorrect"}`)});
 }
 
-export const monitorEventsChallenge = async (ctc) => {
-  /*
-    Run to have messages on the console for each
-    important event of the contract.
-  */
-  ctc.events.incorrectContract.monitor((event) => {console.log(`The contract was deemed incorrect at time ${event.when}.`)})
-  ctc.events.newParticipant.monitor((event) => {console.log(`A new participant has been added, with address ${event.what[0]}, with contract ${event.what[1]}`)});
-  ctc.events.announceWinner.monitor((event) => {console.log(`The winner is announced: the claim was ${event.what[0] ? "correct" : "incorrect"} and the winner is ${event.what[1]} with contract ${event.what[2]}`)});
-}
 export const getBalance = async (acc) => {
   // To get the balance of an account
   const bal = await acc.balanceOf();
