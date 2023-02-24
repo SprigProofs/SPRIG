@@ -15,8 +15,8 @@ const getParticipants = async (ctc) => {
     return None
   }
   else{
-    // resultView[1] is of the form [["Some", address0], ["Some", address1],..., ["Some", addressn], ["None", Null], ["None", Null],..., ["None", Null]]
-    // and each addressk is a tuple (addressAccount, addressContract)
+    // resultView[1] is of the form [["Some", address0], ["Some", address_1],..., ["Some", address_n], ["None", Null], ["None", Null],..., ["None", Null]]
+    // and each address_k is a tuple (addressAccount, addressContract)
     return resultView[1].filter(x => x[0] == "Some").map(x => x[1]);
   }
 }
@@ -89,11 +89,15 @@ if (process.argv.length > 2){
       const [addressNewParticipant,
             addressContractNewParticipant,
             ] = process.argv.slice(5);
-      ctc.apis.Sprig.addParticipant(addressNewParticipant, parseInt(addressContractNewParticipant));
+      // When we try to add a participant, it is possible that another oracle has added them already.
+      try{
+        await ctc.apis.Oracle.addParticipant(addressNewParticipant, parseInt(addressContractNewParticipant));}
+      catch (e){
+        if ( !e.message.includes("It is already a participant") ) throw e}
       break;
     case "ANNOUNCE_VERIFICATION":
       const verification = process.argv[5];
-      ctc.apis.Sprig.announceVerification(verification=="true" || verification=="True");
+      ctc.apis.Oracle.announceVerification(verification=="true" || verification=="True");
       break;
     case "ANNOUNCE_WINNER":
       const [wasRight,
@@ -105,7 +109,7 @@ if (process.argv.length > 2){
         const contracts = participants.map(x => stdlib.bigNumberToNumber(x[1]));
         indexWinner = contracts.indexOf(parseInt(addressContractWinner));
       }
-      ctc.apis.Sprig.announceWinner(wasRight=="true" || wasRight=="True", indexWinner);
+      ctc.apis.Oracle.announceWinner(wasRight=="true" || wasRight=="True", indexWinner);
       break;
     default:
       throw new Error("Action not handled.")

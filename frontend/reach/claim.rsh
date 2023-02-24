@@ -35,6 +35,7 @@ export const main = Reach.App(() => {
     wagerDown: UInt,
     deadline: UInt,
     isBottom: Bool,
+    isCorrect: Array(Bool, nbrOracles),
     participants: Array(Child, maxParticipants),
   });
 
@@ -91,6 +92,7 @@ export const main = Reach.App(() => {
                       Array.replicate(nbrOracles, Maybe(Bool).None(null)) ])
     .define(() => {
       V.participants.set(participants);
+      V.isCorrect.set(isCorrect);
       const verificationConcluded = () => (verifications.count(x => x == Maybe(Bool).Some(true)) == minForDecisions)
                       || (verifications.count(x => x == Maybe(Bool).Some(false)) == minForDecisions);
     })

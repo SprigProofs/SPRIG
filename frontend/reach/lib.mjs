@@ -83,7 +83,7 @@ export const challenge = (account,
                 null,
                 interactionHash,
                 deadline,
-                0,
+                stdlib.parseCurrency(0),
                 wagerDown,
                 );
 }
@@ -114,17 +114,16 @@ export const verifyAnswer = async (ctc,
   const correctWagerUp = stdlib.eq((await ctc.views.wagerUp())[1], wagerUp);
   const correctDeadline = stdlib.eq((await ctc.views.deadline())[1], deadline);
   const correctBottom = (await ctc.views.isBottom())[1] == isBottom;
-  console.log(
+  /*console.log(
     "correctSprig", correctSprig,
-    "correctSkeptic", correctSkeptic,
-    "correctInteraction", correctInteraction,
-    "correctWagerDown", correctWagerDown,
-    "correctWagerUp", correctWagerUp,
-    "correctDeadline", correctDeadline,
-    "correctBottom", correctBottom,
-    "correctAuthor", correctAuthor, (await ctc.views.author())[1]
-  );
-  console.log("deadlines", stdlib.bigNumberToNumber((await ctc.views.deadline())[1]), deadline)
+    "\ncorrectSkeptic", correctSkeptic, addressSkeptic, (await ctc.views.addressSkeptic()),
+    "\ncorrectInteraction", correctInteraction,
+    "\ncorrectWagerDown", correctWagerDown,
+    "\ncorrectWagerUp", correctWagerUp,
+    "\ncorrectDeadline", correctDeadline,
+    "\ncorrectBottom", correctBottom,
+    "\ncorrectAuthor", correctAuthor
+  );*/
   return correctSprig && correctSkeptic
         && correctInteraction && correctWagerDown
         && correctWagerUp && correctDeadline
@@ -138,19 +137,15 @@ export const verifyChallenge = async (ctc,
                                deadline,
                                wagerDown,
                                ) => {
-  const correctAuthor = stdlib.formatAddress((await ctc.views.author())[1]) == author;
-  const correctSprig = stdlib.formatAddress((await ctc.views.addressSprig())[1]) == addressSprig;
-  const correctInteraction = uIntArrayToHex((await ctc.views.interaction())[1]) == interactionHash;
-  const correctWagerDown = stdlib.eq((await ctc.views.wagerDown())[1], wagerDown);
-  const correctDeadline = stdlib.eq((await ctc.views.deadline())[1], deadline);
-  console.log("correctAuthor", correctAuthor,
-    "correctSprig", correctSprig,
-    "correctInteraction", correctInteraction,
-    "correctWagerDown", correctWagerDown,
-    "correctDeadline", correctDeadline);
-  // log deadlines
-  console.log("deadlines", stdlib.bigNumberToNumber((await ctc.views.deadline())[1]), deadline)
-  return correctAuthor && correctSprig && correctInteraction && correctWagerDown && correctDeadline;
+  return verifyAnswer(ctc,
+                      author,
+                      addressSprig,
+                      null,
+                      interactionHash,
+                      deadline,
+                      stdlib.parseCurrency(0),
+                      wagerDown,
+                      false);
 };
 
 export const monitorEventsAnswer = async (ctc) => {
@@ -163,6 +158,8 @@ export const monitorEventsAnswer = async (ctc) => {
   ctc.events.announceWinner.monitor((event) => {console.log(`The winner is announced: the winner is ${event.what[0]} with contract ${event.what[1]}`)});
   ctc.events.announceVerification.monitor((event) => {console.log(`The verification is done, and the claim was ${event.what[0] ? "correct" : "incorrect"}`)});
 }
+
+export const monitorEventsChallenge = async (ctc) => {monitorEventsAnswer(ctc);}
 
 export const getBalance = async (acc) => {
   // To get the balance of an account

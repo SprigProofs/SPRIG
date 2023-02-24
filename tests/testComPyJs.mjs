@@ -1,6 +1,7 @@
 import * as rchfd from '../reach/index.mjs'
 import {stdlib} from '../reach/index.mjs'
 /*
+  Warning: this does not work anymore with the current contracts.
   Testing the Reach frontend in Javascript,
   and the interactions between Python and Javascript. First run
   this, and then run testComPyJs.py after pasting the infos given
