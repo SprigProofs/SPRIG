@@ -56,10 +56,9 @@ if (process.argv.length > 2){
   const passPhrase = await readFile("./SPRIG.SECRET", {encoding: "utf-8"});
 
   const [action, typeContract, addressContract] = process.argv.slice(2,5);
-  const backend = {"CHALLENGE":backendChallenge, "ANSWER":backendClaim}[typeContract];
+  const backend = {"CHALLENGE":backendClaim, "ANSWER":backendClaim}[typeContract];
   const accountSprig = await stdlib.newAccountFromMnemonic(passPhrase);
   const addressSprig = stdlib.formatAddress(accountSprig.getAddress());
-  assert(addressSprig == SPRIG_ADDRESS, "The secret of the Sprig account does not match the stored address. Secret: " + addressSprig + ", stored: " + SPRIG_ADDRESS);
 
   const ctc = accountSprig.contract(backend, parseInt(addressContract));
   switch (action) {
@@ -109,7 +108,7 @@ if (process.argv.length > 2){
         const contracts = participants.map(x => stdlib.bigNumberToNumber(x[1]));
         indexWinner = contracts.indexOf(parseInt(addressContractWinner));
       }
-      ctc.apis.Oracle.announceWinner(wasRight=="true" || wasRight=="True", indexWinner);
+      ctc.apis.Oracle.announceWinner(indexWinner);
       break;
     default:
       throw new Error("Action not handled.")
