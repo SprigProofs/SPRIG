@@ -1,4 +1,4 @@
-import { stdlib, verifyAnswer, verifyChallenge, SPRIG_ADDRESS } from './lib.mjs';
+import { stdlib, verifyAnswer, verifyChallenge, SPRIG_ADDRESSES } from './lib.mjs';
 import * as backendClaim from './build/claim.main.mjs';
 import * as backendChallenge from './build/challenge.main.mjs';
 
@@ -43,7 +43,7 @@ import assert from 'assert';
   To announce a verification:
     ["ANNOUNCE_VERIFICATION", "ANSWER", addressContract,
     wasRight]
-    
+
   To announce a winner:
     ["ANNOUNCE_WINNER", "ANSWER" || "CHALLENGE",
     wasRight, addressContractWinner]
@@ -53,12 +53,15 @@ import assert from 'assert';
 if (process.argv.length > 2){
   stdlib.setProviderByName("TestNet");
 
-  const passPhrase = await readFile("./SPRIG.SECRET", {encoding: "utf-8"});
+  const secret_file = (process.env.DATA || "./data") + "/SECRET_SANTA";
+
+  const secret = await readFile(secret_file, {encoding: "utf-8"});
 
   const [action, typeContract, addressContract] = process.argv.slice(2,5);
-  const backend = {"CHALLENGE":backendClaim, "ANSWER":backendClaim}[typeContract];
-  const accountSprig = await stdlib.newAccountFromMnemonic(passPhrase);
+  const backend = backendClaim;
+  const accountSprig = await stdlib.newAccountFromSecret(secret);
   const addressSprig = stdlib.formatAddress(accountSprig.getAddress());
+  assert(SPRIG_ADDRESSES.includes(addressSprig), "The secret of the Sprig account does not match any stored address. Secret: " + addressSprig + ", stored: " + SPRIG_ADDRESSES);
 
   const ctc = accountSprig.contract(backend, parseInt(addressContract));
   switch (action) {

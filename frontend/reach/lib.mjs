@@ -7,7 +7,12 @@ export const stdlib = typeof process === 'object'
     : loadStdlib('ALGO');  // Browser
 
 // stdlib.setProviderByName("TestNet");
-export const SPRIG_ADDRESS = 'H4RUFKUVAVR7MH6GF45IE3GW73D4ISNJ4Q6CEWLMI6E4NN6TZATHNIUKQM';
+// export const SPRIG_ADDRESS = 'H4RUFKUVAVR7MH6GF45IE3GW73D4ISNJ4Q6CEWLMI6E4NN6TZATHNIUKQM';
+export const SPRIG_ADDRESSES = [
+  'VY4OFDKCNHTNXB7B36H5YP2XUTIAZCJHKHPJD3V6DED2Y7CRA72W6EDIPU',
+  'LPI3D5YBLSOX2T3FEAENXUG7J6URCX2PYGEVK26Y7K5V5LAFTDSW5CBAUU',
+  'OEKIUSWDTRNTH4JEVAXKC2YNZ5B5P45KEQERWHAXO2UZLLBADIQMD6XQQ4',
+]
 
 // Function to get the UNIX timestamp that it will be after some time. Time should be a number of milliseconds
 export const deadlineFromTime = (time) => time + Date.now();

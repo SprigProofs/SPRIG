@@ -10,6 +10,8 @@ backend:
 
 frontend:
 	cd frontend && PORT=$(PORT) npm run dev
+data/
+data/
 
 backends:
 	DEV=true DATA=data0 poetry run uvicorn api:api --port $(BACKEND_PORT) --reload --log-level=trace &

@@ -57,7 +57,7 @@ export const store: Store = reactive<Store>({
                 const parent = inst.proofs[chall.parent];
                 return blockchain.challenge(
                     acc,
-                    blockchain.SPRIG_ADDRESS,
+                    blockchain.SPRIG_ADDRESSES,
                     blockchain.hashingChallenge(parent.contract, parent.challenges.indexOf(challenge)),
                     creation.add(inst.params.timeForAnswers).valueOf(),
                     reach.parseCurrency(inst.params.downstakes[chall.height]),
@@ -77,7 +77,7 @@ export const store: Store = reactive<Store>({
             // @ts-ignore
             (acc) => blockchain.newSprig(
                 acc,
-                blockchain.SPRIG_ADDRESS,
+                blockchain.SPRIG_ADDRESSES,
                 blockchain.hashingAnswer(proof),
                 creation.add(params.timeForQuestions).valueOf(),
                 reach.parseCurrency(params.downstakes[params.rootHeight - 1]),
@@ -99,7 +99,7 @@ export const store: Store = reactive<Store>({
                 const height = isMachineLevel ? 0 : chall.height - 1;
                 return blockchain.answer(
                     acc,
-                    blockchain.SPRIG_ADDRESS,
+                    blockchain.SPRIG_ADDRESSES,
                     chall.author,
                     blockchain.hashingAnswer(proof, chall.contract),
                     creation.add(inst.params.timeForQuestions).valueOf(),
@@ -187,7 +187,9 @@ export async function ensureWalletConnected() {
             // Private devnet
             store.account = await reach.newTestAccount(reach.parseCurrency(5));
             // We make sure there is some money on the sprig address, otherwise it fails
-            await reach.fundFromFaucet(blockchain.SPRIG_ADDRESS, reach.parseCurrency(2));
+            blockchain.SPRIG_ADDRESSES.forEach(async (a) => {
+                await reach.fundFromFaucet(a, reach.parseCurrency(2));
+            });
         }
         ElNotification.info({ title: "Wallet connected", message: store.account.address });
 
