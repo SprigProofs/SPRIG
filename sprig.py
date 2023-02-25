@@ -28,7 +28,6 @@ Hash = NewType("Hash", str)
 Time = NewType("Time", int)
 Branch = list[tuple[str, int]]
 
-# ROOT_HASH = Hash("P0")
 SPRIG_ADDRESS = Address("@SPRIG")
 MACHINE_VERIF = Address("@MACHINE_VERIF")
 

@@ -26,7 +26,6 @@ enum Unit {
   MINUTES = "minute",
 }
 
-const ROOT_HASH = "P0";
 enum Status {
   CHALLENGED = "challenged",
   UNCHALLENGED = "unchallenged",
@@ -114,7 +113,7 @@ class ProofAttempt {
   instanceHash: string;
 
   constructor(attempt: Record<string, any>) {
-    this.hash = attempt.hash;
+    this.hash = attempt.hash || attempt.contract;
     this.parent = attempt.parent;
     this.author = attempt.author;
     this.contract = attempt.contract;
@@ -176,7 +175,7 @@ class Challenge {
   author?: string;
   contract?: string;
   createdAt: dayjs.Dayjs;
-  challengedAt: dayjs.Dayjs;
+  challengedAt?: dayjs.Dayjs;
   openUntil: dayjs.Dayjs;
   attempts: string[];
   status: Status;
@@ -189,9 +188,8 @@ class Challenge {
     this.author = challenge.author;
     this.contract = challenge.contract;
     this.createdAt = dayjs(challenge.created_at || challenge.createdAt);
-    this.challengedAt = dayjs(
-      challenge.challenged_at || challenge.challengedAt
-    );
+    const challengedAt = challenge.challenged_at || challenge.challengedAt;
+    this.challengedAt = challengedAt ? dayjs(challengedAt) : null;
     this.openUntil = dayjs(challenge.open_until || challenge.openUntil);
     this.attempts = challenge.attempts;
     this.status = challenge.status;
@@ -258,6 +256,7 @@ class Sprig {
   proofs: Record<string, ProofAttempt>;
   challenges: Record<string, Challenge>;
   rootQuestion: string;
+  rootHash: string;
 
   constructor(sprig: Record<string, any>) {
     this.hash = sprig.hash;
@@ -272,30 +271,39 @@ class Sprig {
       return new Challenge(challenge);
     });
     this.rootQuestion = sprig.rootQuestion || sprig.root_question;
+    this.rootHash = sprig.rootHash || sprig.root_hash;
   }
 
   equals(other: Sprig): boolean {
     // this reason we con't use _.isEqual is that the order
     // of proofs in Challenge.attempts is not specified
     // so we need to sort them before comparing.
-    return (
-      this.hash === other.hash &&
-      this.language === other.language &&
-      _.isEqual(this.params, other.params) &&
-      _.isEqual(this.proofs, other.proofs) &&
-      this.rootQuestion === other.rootQuestion &&
-      _.isEqual(
-        _.mapValues(this.challenges, (c) => ({
-          ...c,
-          attempts: _.sortBy(c.attempts),
-        })),
-        _.mapValues(other.challenges, (c) => ({
-          ...c,
-          attempts: _.sortBy(c.attempts),
-        }))
-      )
+    console.log("comparing", this, other)
+    const hash = this.hash === other.hash;
+    console.log("hash", hash)
+    const language = this.language === other.language;
+    console.log("language", language)
+    const params = _.isEqual(this.params, other.params);
+    console.log("params", params)
+    const proofs = _.isEqual(this.proofs, other.proofs);
+    console.log("proofs", proofs)
+    const rootQuestion = this.rootQuestion === other.rootQuestion;
+    console.log("rootQuestion", rootQuestion)
+    const challenges = _.isEqual(
+      _.mapValues(this.challenges, (c) => ({
+        ...c,
+        attempts: _.sortBy(c.attempts),
+      })),
+      _.mapValues(other.challenges, (c) => ({
+        ...c,
+        attempts: _.sortBy(c.attempts),
+      }))
     );
-  }
+    console.log("challenges", challenges)
+    const rootHash = this.rootHash === other.rootHash;
+    console.log("rootHash", rootHash)
+    return hash && language && params && proofs && rootQuestion && challenges;
+    }
 
   uid(): string {
     return "#" + this.hash;
@@ -310,7 +318,8 @@ class Sprig {
     return openAttempts + openChallenges;
   }
   rootAttempt() {
-    return this.proofs[ROOT_HASH];
+    console.log("rootHash", this.rootHash, this.proofs)
+    return this.proofs[this.rootHash];
   }
   author() {
     return this.rootAttempt().author;
@@ -505,7 +514,7 @@ class Sprig {
           votes += 1;
         }
       }
-      if (votes > instances.length / 2) {
+      if (votes > instances.length / 2.0) {
         return result;
       }
     }
@@ -561,9 +570,6 @@ class User {
 
 const isLocalhost =
   location.hostname === "localhost" || location.hostname === "127.0.0.1";
-const API_BASE = isLocalhost
-  ? "http://localhost:8601/"
-  : "https://sprig.therandom.space/api/";
 
 const API_BASES = isLocalhost
   ? [
@@ -577,7 +583,7 @@ const API_BASES = isLocalhost
       "https://sprig3.therandom.space/api/",
     ];
 
-console.log(location.hostname, isLocalhost, API_BASE);
+console.log(location.hostname, isLocalhost, API_BASES);
 
 /**
  * Inform about an error.
@@ -590,7 +596,7 @@ function logFail(title: string, message: string, data: any) {
   ElNotification.error({ title, message });
 }
 const api = {
-  async get(path: string[], apiBase: string = API_BASE): Promise<any> {
+  async get(path: string[], apiBase: string): Promise<any> {
     const url = apiBase + path.join("/");
     const resp = await fetch(url).catch((err) => {
       logFail(
@@ -633,9 +639,6 @@ const api = {
     // Filter out nulls
     return _.pickBy(record, (v) => v !== null);
 
-  },
-  async fetchBank(): Promise<Record<string, number>> {  // TODO: remove
-    return await this.get(["users"]);
   },
 
   // async fetchInstance(hash: string): Promise<Sprig> {

@@ -3,7 +3,7 @@ import { api, dayjs, Parameters, ProofAttempt, Sprig, User, isLocalhost } from "
 import { reactive, type Ref } from "vue";
 import type { Account as AccountReach, Backend, Contract } from '@reach-sh/stdlib/ALGO';
 
-const USE_TESTNET = true;
+const USE_TESTNET = 1;
 
 interface Account extends AccountReach {
     balance: number;
@@ -32,11 +32,9 @@ export const store: Store = reactive<Store>({
     async reload() {
         console.log('reload');
         store.fail = false;
-        return Promise.all(
-            [api.fetchAllInstances(), api.fetchBank()]
-        ).then(([instances, bank]) => {
+        return api.fetchAllInstances()
+            .then((instances) => {
             store.instances = instances;
-            store.bank = bank;
             store.loaded = true;
         }, () => {
             store.fail = true;

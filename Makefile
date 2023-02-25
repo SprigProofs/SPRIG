@@ -10,13 +10,15 @@ backend:
 
 frontend:
 	cd frontend && PORT=$(PORT) npm run dev
-data/
-data/
 
-backends:
-	DEV=true DATA=data0 poetry run uvicorn api:api --port $(BACKEND_PORT) --reload --log-level=trace &
-	DEV=true DATA=data1 poetry run uvicorn api:api --port $$(($(BACKEND_PORT)+1)) --reload --log-level=trace &
-	DEV=true DATA=data2 poetry run uvicorn api:api --port $$(($(BACKEND_PORT)+2)) --reload --log-level=trace &
+backend0:
+	DEV=true DATA=data0 poetry run uvicorn api:api --port $(BACKEND_PORT) --reload --log-level=trace
+backend1:
+	DEV=true DATA=data1 poetry run uvicorn api:api --port $$(($(BACKEND_PORT)+1)) --reload --log-level=trace
+backend2:
+	DEV=true DATA=data2 poetry run uvicorn api:api --port $$(($(BACKEND_PORT)+2)) --reload --log-level=trace
+
+backends: backend0 backend1 backend2
 
 deploy: deploy-frontend deploy-backend
 

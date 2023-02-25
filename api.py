@@ -12,6 +12,7 @@ import os
 from pathlib import Path
 import traceback
 from typing import Any, Iterator
+from pprint import pprint
 
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import JSONResponse
@@ -47,15 +48,14 @@ if DEV:
 
 def all_instances_filenames() -> Iterator[Path]:
     """Yield all the filenames of sprig instances stored on disk."""
-    for file in DATA.glob(".{64}.json"):
+    for file in DATA.glob(r"*.json"):
         if file.stem != "users":
             yield file
 
 
 def path_from_hash(hash_: str) -> Path:
     """Return the path where the sprig instance corresponding to the hash is stored."""
-    assert hash_.isalnum(), "Contract hash must be alphanumeric."
-    assert len(hash_) == 64, "Contract hash must be 64 characters long."
+    assert hash_.isnumeric(), "Contract hash must be numeric."
     return DATA / f"{hash_}.json"
 
 
@@ -100,6 +100,7 @@ class SprigData(BaseModel):
     proofs: dict[sprig.Hash, sprig.ProofAttempt]
     challenges: dict[sprig.Hash, sprig.Challenge]
     root_question: sprig.Hash
+    root_hash: sprig.Hash
 
     class Config:
         arbitrary_types_allowed = True
@@ -143,6 +144,8 @@ def add_new_instance(new_instance: SprigInitData) -> dict[str, Any]:  # SprigDat
 
     The language is the name of the desired language.
     """
+    print("Creating new instance...", DATA)
+    pprint(new_instance.dict())
 
     with sprig.time_mode('real'):
         if not USE_BLOCKCHAIN:

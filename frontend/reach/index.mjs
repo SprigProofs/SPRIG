@@ -1,6 +1,5 @@
 import { stdlib, verifyAnswer, verifyChallenge, SPRIG_ADDRESSES } from './lib.mjs';
 import * as backendClaim from './build/claim.main.mjs';
-import * as backendChallenge from './build/challenge.main.mjs';
 
 
 const getParticipants = async (ctc) => {
@@ -55,7 +54,7 @@ if (process.argv.length > 2){
 
   const secret_file = (process.env.DATA || "./data") + "/SECRET_SANTA";
 
-  const secret = await readFile(secret_file, {encoding: "utf-8"});
+  const secret = (await readFile(secret_file, {encoding: "utf-8"})).trim();
 
   const [action, typeContract, addressContract] = process.argv.slice(2,5);
   const backend = backendClaim;
