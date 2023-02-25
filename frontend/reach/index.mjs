@@ -63,6 +63,7 @@ if (process.argv.length > 2){
   assert(SPRIG_ADDRESSES.includes(addressSprig), "The secret of the Sprig account does not match any stored address. Secret: " + addressSprig + ", stored: " + SPRIG_ADDRESSES);
 
   const ctc = accountSprig.contract(backend, parseInt(addressContract));
+  const isAlreadyClosed = (await ctc.views.author())[0] == "None"
   switch (action) {
     case "VERIFY":
       const [author,
@@ -97,20 +98,24 @@ if (process.argv.length > 2){
         if ( !e.message.includes("It is already a participant") ) throw e}
       break;
     case "ANNOUNCE_VERIFICATION":
-      const verification = process.argv[5];
-      ctc.apis.Oracle.announceVerification(verification=="true" || verification=="True");
+      if (!isAlreadyClosed){
+        const verification = process.argv[5];
+        ctc.apis.Oracle.announceVerification(verification=="true" || verification=="True");
+    }
       break;
     case "ANNOUNCE_WINNER":
       const [wasRight,
             addressContractWinner
             ] = process.argv.slice(5);
       let indexWinner = 0;
-      if (wasRight == "false" || wasRight == "False"){
-        const participants = await getParticipants(ctc);
-        const contracts = participants.map(x => stdlib.bigNumberToNumber(x[1]));
-        indexWinner = contracts.indexOf(parseInt(addressContractWinner));
+      if (!isAlreadyClosed){
+        if (wasRight == "false" || wasRight == "False"){
+          const participants = await getParticipants(ctc);
+          const contracts = participants.map(x => stdlib.bigNumberToNumber(x[1]));
+          indexWinner = contracts.indexOf(parseInt(addressContractWinner));
+        }
+        ctc.apis.Oracle.announceWinner(indexWinner);
       }
-      ctc.apis.Oracle.announceWinner(indexWinner);
       break;
     default:
       throw new Error("Action not handled.")
