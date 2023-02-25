@@ -15,11 +15,11 @@ const secretBob = "0x" + "2".repeat(64);
 const secretCharlie = "0x" + "3".repeat(64);
 const startingBalance = stdlib.parseCurrency(100);
 const accAlice = await stdlib.newAccountFromSecret(secretAlice);
-const addressAlice = accAlice.getAddress();
+const addressAlice = stdlib.formatAddress(await accAlice.getAddress());
 const accBob = await stdlib.newAccountFromSecret(secretBob);
-const addressBob = await accBob.getAddress();
+const addressBob = stdlib.formatAddress(await accBob.getAddress());
 const accCharlie = await stdlib.newAccountFromSecret(secretCharlie);
-const addressCharlie = await accCharlie.getAddress();
+const addressCharlie = stdlib.formatAddress(await accCharlie.getAddress());
 const addressesOracles = [addressAlice, addressBob, addressCharlie];
 
 await stdlib.fundFromFaucet(addressAlice, startingBalance);

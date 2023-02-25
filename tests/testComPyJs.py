@@ -1,12 +1,12 @@
-from ..sprig import *
+from sprig import *
 """See testComPyJs.mjs for infos"""
 
 root_height = 2
 duration = 10_000_000
 wagerUp = 5
 wagerDown = 10
-addressAlice = "0xd04ab232742bb4ab3a1368bd4615e4e6d0224ab71a016baf8520a332c9778737"
-addressBob = "0xa09aa5f47a6759802ff955f8dc2d2a14a5c99d23be97f864127ff9383455a4f0"
+addressAlice = "2BFLEMTUFO2KWOQTNC6UMFPE43ICESVXDIAWXL4FECRTFSLXQ43Y4T7XGU"
+addressBob = "UCNKL5D2M5MYAL7ZKX4NYLJKCSS4THJDX2L7QZASP74TQNCVUTYKTMWCMM"
 
 proofRoot = "-!:=cE\n+."
 partAttackedChallenge1 = 1
@@ -15,16 +15,18 @@ partAttackedChallenge2 = 3
 proof2 = "Seems true to me"
 
 # Paste here informations given by the console, replacing the current infos
-ctcRoot = 53
-deadlineRoot = 1670508559745
-ctcChallenge1 = 54
-deadlineChallenge1 = 1670508559809
-ctcAnswer1 = 59
-deadlineAnswer1 = 1670508559889
-ctcChallenge2 = 64
-deadlineChallenge2 = 1670508559957
-ctcAnswer2 = 69
-deadlineAnswer2 = 1670508560043
+ctcRoot =  324
+deadlineRoot =  1677298126559
+ctcChallenge1 =  325
+deadlineChallenge1 =  1677298126654
+ctcAnswer1 =  330
+deadlineAnswer1 =  1677298126753
+ctcChallenge2 =  335
+deadlineChallenge2 =  1677298126848
+ctcAnswer2 =  340
+deadlineAnswer2 =  1677298126945
+
+print(deadlineRoot - duration)
 
 param = ParametersBlockchain(root_height=root_height,
                              max_length=100,
@@ -35,16 +37,15 @@ param = ParametersBlockchain(root_height=root_height,
                              question_bounties=[0] + [wagerDown] * (root_height - 1),
                              verification_cost=1)
 
-s = Sprig(language="hihi", params=param, proofs={}, challenges={}, root_question="")
+s = Sprig(language="hihi", params=param, proofs={}, challenges={}, root_question="", root_hash=1)
 
-rootAttempt = ProofAttempt(hash=1,
-                           parent=None,
+rootAttempt = ProofAttempt(parent=None,
                            contract=str(ctcRoot),
                            author=addressAlice,
                            proof=proofRoot,
                            height=root_height - 1,
                            status="UNCHALLENGED",
-                           created_at=deadlineRoot - duration,
+                           created_at=(deadlineRoot - duration),
                            challenges=[None] * 10,
                            money_held=0)
 
@@ -52,7 +53,7 @@ s.proofs.update({rootAttempt.hash: rootAttempt})
 
 assert (param.pay_new_proof_attempt(rootAttempt, s))
 
-challenge1 = Challenge(hash=rootAttempt.hash + 1,
+challenge1 = Challenge(hash=rootAttempt.hash + "1",
                        parent=rootAttempt.hash,
                        contract=str(ctcChallenge1),
                        author=addressBob,
@@ -68,8 +69,7 @@ s.challenges.update({challenge1.hash: challenge1})
 
 assert (param.pay_new_challenge(challenge1.author, rootAttempt, challenge1))
 
-answer1 = ProofAttempt(hash=challenge1.hash + 1,
-                       parent=challenge1.hash,
+answer1 = ProofAttempt(parent=challenge1.hash,
                        contract=str(ctcAnswer1),
                        author=addressAlice,
                        proof=proof1,
@@ -86,7 +86,7 @@ assert (param.pay_new_proof_attempt(answer1, s))
 param.pay_attempt_accepted(answer1)
 param.pay_challenge_rejected(answer1, s)
 
-challenge2 = Challenge(hash=answer1.hash + 1,
+challenge2 = Challenge(hash=answer1.hash + "1",
                        parent=rootAttempt.hash,
                        contract=str(ctcChallenge2),
                        author=addressBob,
@@ -102,8 +102,7 @@ s.challenges.update({challenge2.hash: challenge2})
 
 assert (param.pay_new_challenge(challenge2.author, rootAttempt, challenge2))
 
-answer2 = ProofAttempt(hash=challenge2.hash + 1,
-                       parent=challenge2.hash,
+answer2 = ProofAttempt(parent=challenge2.hash,
                        contract=str(ctcAnswer2),
                        author=addressAlice,
                        proof=proof2,
