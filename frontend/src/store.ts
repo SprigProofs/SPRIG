@@ -1,5 +1,5 @@
 import { ElNotification } from 'element-plus';
-import { api, dayjs, Parameters, ProofAttempt, Sprig, User, isLocalhost } from "./sprig";
+import { api, dayjs, Parameters, ProofAttempt, Sprig, User, isLocalhost, logFail } from "./sprig";
 import { reactive, type Ref } from "vue";
 import type { Account as AccountReach, Backend, Contract } from '@reach-sh/stdlib/ALGO';
 
@@ -131,8 +131,7 @@ async function createContract(what: string,
     let hasFailed = null;
     p.catch((e: { message: any; }) => {
         hasFailed = e;
-        console.log("Error", e);
-        ElNotification.error({ title: "Error", message: e.message });
+        logFail("Error while creating contract", e.message, e)
         togglePopup.value = false;
     });
     // Wait for the contract to be created
@@ -142,12 +141,12 @@ async function createContract(what: string,
         const a = await ctc.views.author();
         if (a[0] == "Some") {
             const ctcID = await ctcInfo(ctc);
-            ElNotification({ title: "Contract created", message: ctcID });
+            ElNotification({ title: "Smartcontract created", message: "ID: " + ctcID + "\nWait until most backend acknoledge it.", duration: 10000 });
             togglePopup.value = false;
 
             // Server
             const obj = await serverInteract(ctcID);
-            ElNotification({ title: `${what} created!` });
+            ElNotification({ title: `${what} acknoledged!` });
             await store.reload();
             return obj;
         }

@@ -65,14 +65,14 @@ class Parameters {
     this.maxLength = params.maxLength || params.max_length;
     this.timeForQuestions = dayjs.duration(
       params.timeForQuestions?.asMilliseconds() ||
-        params.timeForQuestions ||
-        params.time_for_questions
+      params.timeForQuestions ||
+      params.time_for_questions
     );
     this.timeForAnswers =
       dayjs.duration(
         params.timeForAnswers?.asMilliseconds() ||
-          params.timeForAnswers ||
-          params.time_for_answers
+        params.timeForAnswers ||
+        params.time_for_answers
       ) || params.timeForAnswers;
     this.upstakes = params.upstakes;
     this.downstakes = params.downstakes;
@@ -278,17 +278,17 @@ class Sprig {
     // this reason we con't use _.isEqual is that the order
     // of proofs in Challenge.attempts is not specified
     // so we need to sort them before comparing.
-    console.log("comparing", this, other)
+    console.log("comparing", this, other);
     const hash = this.hash === other.hash;
-    console.log("hash", hash)
+    console.log("hash", hash);
     const language = this.language === other.language;
-    console.log("language", language)
+    console.log("language", language);
     const params = _.isEqual(this.params, other.params);
-    console.log("params", params)
+    console.log("params", params);
     const proofs = _.isEqual(this.proofs, other.proofs);
-    console.log("proofs", proofs)
+    console.log("proofs", proofs);
     const rootQuestion = this.rootQuestion === other.rootQuestion;
-    console.log("rootQuestion", rootQuestion)
+    console.log("rootQuestion", rootQuestion);
     const challenges = _.isEqual(
       _.mapValues(this.challenges, (c) => ({
         ...c,
@@ -299,11 +299,11 @@ class Sprig {
         attempts: _.sortBy(c.attempts),
       }))
     );
-    console.log("challenges", challenges)
+    console.log("challenges", challenges);
     const rootHash = this.rootHash === other.rootHash;
-    console.log("rootHash", rootHash)
+    console.log("rootHash", rootHash);
     return hash && language && params && proofs && rootQuestion && challenges;
-    }
+  }
 
   uid(): string {
     return "#" + this.hash;
@@ -318,7 +318,7 @@ class Sprig {
     return openAttempts + openChallenges;
   }
   rootAttempt() {
-    console.log("rootHash", this.rootHash, this.proofs)
+    console.log("rootHash", this.rootHash, this.proofs);
     return this.proofs[this.rootHash];
   }
   author() {
@@ -506,7 +506,7 @@ class Sprig {
       }
     }
   }
-  static majority(instances: (Sprig|null)[]): Sprig|null {
+  static majority(instances: (Sprig | null)[]): Sprig | null {
     for (const result of instances) {
       var votes = 0;
       for (const other of instances) {
@@ -573,15 +573,15 @@ const isLocalhost =
 
 const API_BASES = isLocalhost
   ? [
-      "http://localhost:8601/",
-      "http://localhost:8602/",
-      "http://localhost:8603/",
-    ]
+    "http://localhost:8601/",
+    "http://localhost:8602/",
+    "http://localhost:8603/",
+  ]
   : [
-      "https://sprig.therandom.space/api/",
-      "https://sprig2.therandom.space/api/",
-      "https://sprig3.therandom.space/api/",
-    ];
+    "https://sprig.therandom.space/api/",
+    "https://sprig2.therandom.space/api/",
+    "https://sprig3.therandom.space/api/",
+  ];
 
 console.log(location.hostname, isLocalhost, API_BASES);
 
@@ -593,7 +593,7 @@ console.log(location.hostname, isLocalhost, API_BASES);
  */
 function logFail(title: string, message: string, data: any) {
   console.error(title, message, data);
-  ElNotification.error({ title, message });
+  ElNotification.error({ title, message, duration: 0 });
 }
 const api = {
   async get(path: string[], apiBase: string): Promise<any> {
@@ -601,7 +601,7 @@ const api = {
     const resp = await fetch(url).catch((err) => {
       logFail(
         "Error while fetching data",
-        "The backend may be down. Are you online ?",
+        "One backend may be down. This is fine as long as " + Math.ceil(API_BASES.length / 2 + 0.5) + " out of " + API_BASES.length + " are up.",
         { url, err }
       );
       return Promise.reject(err);
@@ -625,17 +625,17 @@ const api = {
     const results = await Promise.all(
       API_BASES.map((apiBase) =>
         this.get(["everything"], apiBase)
-        .then((data) => _.mapValues(data, (s) => new Sprig(s)))
-        .catch((err) => ({} as Record<string, Sprig>))
-    ));
+          .then((data) => _.mapValues(data, (s) => new Sprig(s)))
+          .catch((err) => ({} as Record<string, Sprig>))
+      ));
 
-    console.log("fetchAllInstances (before majority)", results)
+    console.log("fetchAllInstances (before majority)", results);
     const all_keys = _.uniq(_.flatten(results.map((r) => Object.keys(r))));
     const all_instances = all_keys.map((k) =>
       Sprig.majority(results.map((r) => r[k]))
     );
     const record = _.zipObject(all_keys, all_instances);
-    console.log("fetchAllInstances (after majority)", record)
+    console.log("fetchAllInstances (after majority)", record);
     // Filter out nulls
     return _.pickBy(record, (v) => v !== null);
 
@@ -663,7 +663,7 @@ const api = {
     }).catch((err) => {
       logFail(
         "Error with posting data",
-        "The backend may be down. Are you online ?",
+        "One backend may be down. This is fine as long as " + Math.ceil(API_BASES.length / 2 + 0.5) + " out of " + API_BASES.length + " are up.",
         { url, err, body }
       );
       return Promise.reject(err);
@@ -782,7 +782,7 @@ const api = {
           },
           apiBase
         ).then((data) => new ProofAttempt({ instanceHash, ...data }))
-        .catch((err) => null)
+          .catch((err) => null)
       )
     );
 
@@ -890,6 +890,7 @@ export {
   download,
   isLocalhost,
   linkTo,
+  logFail,
   Parameters,
   ProofAttempt,
   Sprig,
