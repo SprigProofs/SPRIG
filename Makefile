@@ -26,7 +26,7 @@ deploy-frontend:
 
 deploy-backend:
 	git ls-files | rsync -azP --files-from=- . sprig.therandom.space:sprig
-	ssh sprig.therandom.space systemctl --user restart sprig sprig-viazovska sprig-grothendieck
+	ssh sprig.therandom.space systemctl --user restart sprig sprig-viazovska sprig-grothendieck sprig-repeated-ping
 
 deploy-secrets:
 	scp data0/SECRET_SANTA sprig.therandom.space:sprig/data1/

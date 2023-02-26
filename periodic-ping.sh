@@ -1,5 +1,6 @@
 #!/bin/bash
 
+sleep 60
 # request /everything every ~5 minutes for the three sprig servers
 # so that they update their instances
 while true; do
