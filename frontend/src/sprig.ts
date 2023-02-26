@@ -579,8 +579,8 @@ const API_BASES = isLocalhost
   ]
   : [
     "https://sprig.therandom.space/api/",
-    "https://sprig2.therandom.space/api/",
-    "https://sprig3.therandom.space/api/",
+    "https://viazovska.sprig.therandom.space/api/",
+    "https://grothendieck.sprig.therandom.space/api/",
   ];
 
 console.log(location.hostname, isLocalhost, API_BASES);
