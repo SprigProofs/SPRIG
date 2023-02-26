@@ -141,12 +141,12 @@ async function createContract(what: string,
         const a = await ctc.views.author();
         if (a[0] == "Some") {
             const ctcID = await ctcInfo(ctc);
-            ElNotification({ title: "Smartcontract created", message: "ID: " + ctcID + "\nWait until most backend acknoledge it.", duration: 10000 });
+            ElNotification({ title: "Smartcontract created", message: "ID: " + ctcID + "\nWait until most backend acknowledge it.", duration: 10000 });
             togglePopup.value = false;
 
             // Server
             const obj = await serverInteract(ctcID);
-            ElNotification({ title: `${what} acknoledged!` });
+            ElNotification({ title: `${what} acknowledged!` });
             await store.reload();
             return obj;
         }
