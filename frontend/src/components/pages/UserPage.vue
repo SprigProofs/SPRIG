@@ -9,7 +9,6 @@ const props = defineProps<{
 }>();
 
 const user: User = store.getUser(props.name);
-console.log(user)
 
 type Contribution = ProofAttempt | Challenge;
 const contributions = (user.attempts as Contribution[]).concat(user.challenges);

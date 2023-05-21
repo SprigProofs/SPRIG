@@ -35,7 +35,7 @@ const linkClasses = {
 </script>
 
 <template>
-    <Tooltip v-if="tooltip === true" width="200">
+    <Tooltip v-if="tooltip === true" width="600">
         <template #reference>
             <RouterLink :to="link" class="text-gray-800 italic text-sm font-mono
                 px-1 py-0.5 border-b transition

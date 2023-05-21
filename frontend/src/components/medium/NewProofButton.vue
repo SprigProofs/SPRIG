@@ -4,6 +4,8 @@
     <span class="whitespace-nowrap">New proof</span>
   </Button>
   <SlideOver v-model="slideOpen" panel-title="New proof attempt">
+    <WaitWallectConnect v-model="showSignTransaction" />
+
     <div class="space-y-4">
       <div v-if="!preview">
         <div class="prose">
@@ -60,7 +62,6 @@
             <li v-if="costs.downstake > 0"><Price :amount="costs.downstake" /> for the downstake (reimbursed if the proof is true)</li>
             <li v-if="costs.verification > 0"><Price :amount="costs.verification" /> for machine verification</li>
           </ul>
-
         </div>
 
       </div>
@@ -92,11 +93,13 @@ import LANGS from '../languages';
 import ProofAttemptPageVue from '../pages/ProofAttemptPage.vue';
 import dayjs from 'dayjs';
 import { useRouter } from 'vue-router';
+import WaitWallectConnect from './WaitWallectConnect.vue';
 
 const slideOpen = ref(false);
 const templateVisible = ref(false);
 const preview = ref(false);
 const proofSent = ref(false);
+const showSignTransaction = ref(false);
 const instancePreview = ref(null);
 const costs = reactive({
   upstake: 0,
@@ -119,6 +122,7 @@ function openDialog() {
 async function publish() {
   proofSent.value = true;
   store.newProofAttempt(
+    showSignTransaction,
     props.instance.hash, props.challenge.hash,
     lang.challengeCount(proofInput.value) === 0,
     proofInput.value
@@ -162,7 +166,7 @@ function togglePreview() {
       hash: "X",
       instanceHash: hash,
       parent: props.challenge.hash,
-      author: store.user,
+      author: store.account?.address || "You!",
       proof: proofInput.value,
       height,
       status: Status.UNCHALLENGED,

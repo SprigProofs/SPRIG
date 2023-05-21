@@ -36,6 +36,11 @@
                 <v-icon name="md-lockclock" class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" aria-hidden="true" />
                 Closing&nbsp;<Time :time="attempt.expires(instance)" suffix />
               </div>
+              <a :href="'https://testnet.algoexplorer.io/application/'+attempt.contract"
+                  class="mt-2 flex items-center text-sm text-gray-500">
+                  <v-icon name="md-insertdrivefile-round" class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" aria-hidden="true" />
+                  <span class="hover:underline">Contract&nbsp;{{ attempt.contract }}</span>
+              </a>
             </div>
           </div>
         </div>
@@ -141,7 +146,14 @@
         </section>
 
         <section class="flex flex-col w-full">
-          <h2 class="small-title mb-2">Proof attempt</h2>
+          <div class="flex justify-between items-center">
+            <h2 class="small-title mb-2">Proof attempt</h2>
+            <div v-if="lang.fullText"
+              class="flex text-gray-700 space-x-1 text-xl">
+                <Button icon="md-copyall" @click="copy(lang.fullText(attempt, instance))">Copy</Button>
+                <Button icon="md-simcarddownload-round" @click="download(`proof${attempt.uid()}.lean`, lang.fullText(attempt, instance))">Download</Button>
+            </div>
+          </div>
 
           <!-- <button
                     v-if="!showPreviousDefinitions"
@@ -194,7 +206,7 @@
 <script setup lang="ts">
 
 import { inject, reactive, ref, watch } from 'vue';
-import { Sprig, Status } from '../../sprig';
+import { copy, download, Sprig, Status } from '../../sprig';
 import { store } from '../../store';
 import { Price, StatusTag, Time } from "../small";
 import User from '../medium/User.vue';

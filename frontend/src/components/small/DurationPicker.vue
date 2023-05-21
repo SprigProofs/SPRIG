@@ -21,7 +21,7 @@
 </template>
 
 <script setup lang="ts">
-import { Duration } from 'dayjs/esm/plugin/duration';
+import type { Duration } from 'dayjs/esm/plugin/duration';
 import { nextTick, ref } from 'vue';
 import { Unit, dayjs } from '../../sprig';
 

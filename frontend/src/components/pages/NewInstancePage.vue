@@ -8,49 +8,79 @@ import { store } from '../../store';
 import Languages from '../languages';
 import DurationPicker from '../small/DurationPicker.vue';
 import Button from '../small/Button.vue';
+import WaitWallectConnect from '../medium/WaitWallectConnect.vue';
 import LoadingIndicator from '../small/LoadingIndicator.vue';
 
 const router = useRouter();
 
+const unit = 0.001;
+// const unit = 1/5;
+
 const costs = reactive([
   {  // machine level
-    upstake: 5,
+    upstake: 5 * unit,
     downstake: 0,  // not used
     questionBounty: 0,  // not used
     key: "My",
     height: 0,
   },
   {
-    upstake: 5,
-    downstake: 50,
-    questionBounty: 20,
+    upstake: 5 * unit,
+    downstake: 50 * unit,
+    questionBounty: 20 * unit,
     key: "name",
     height: 1,
   },
   {
-    upstake: 10,
-    downstake: 100,
-    questionBounty: 25,
+    upstake: 10 * unit,
+    downstake: 100 * unit,
+    questionBounty: 25 * unit,
     key: "is",
     height: 2,
   },
   {  // root
     upstake: 0,  // not used
-    downstake: 200,
-    questionBounty: 50,
+    downstake: 200 * unit,
+    questionBounty: 50 * unit,
     key: "Bob",
     height: 3,
   },
 ]);
 const timeForQuestions = ref(dayjs.duration(1, 'day'));
 const timeForAnswers = ref(dayjs.duration(1, 'day'));
+// const selectedLanguage = ref("TicTacToe");
 const selectedLanguage = ref("Lean4");
 const maxProofSize = ref(10000);
-const root_question = ref("");
-const proof_attempt = ref("");
+const root_question = ref(`--! SPRIG Claim
+theorem this_add_comm (m n : Nat) : m + n = n + m := sorry
+--! Claim end`)
+const proof_attempt = ref(`open Nat
+
+example : m + 0 = m := add_zero m
+example : m + succ n = succ (m + n) := add_succ m n
+
+--! SPRIG Claim
+theorem this_succ_add (n m : Nat) : succ n + m = succ (n + m) := sorry
+--! Claim end
+
+--! SPRIG Claim
+theorem this_add_comm (m n : Nat) : m + n = n + m := sorry
+--! Claim end`)
+// const root_question = ref("...|XX.|... O plays X wins");
+// const proof_attempt = ref(`        1 -> 6
+//         2 -> 6
+//         3 -> 6
+//         6 -> 1
+//         7 -> 6
+//         8 -> 6
+//         9 -> 6`);
 const costToPublish = computed(() => costs[costs.length - 1].downstake);
 const isSubmitting = ref(false);
+const showSignTransaction = ref(false);
 
+// TODO: raise this to 1, or handle floats server side.
+//       currently the server considers only integer parts of the cost.
+const minStake = 0;
 
 function newCostRow(height: number) {
   costs.splice(height, 0, {
@@ -88,19 +118,19 @@ const invalidInputs = computed(() => {
     if (row.height == 0) {
       if (row.downstake != 0)
         fails.push(`Downstake for height ${row.height} must be zero.`);
-    } else if (row.downstake < 1)
+    } else if (row.downstake < minStake)
       fails.push(`Downstake for height ${row.height} must be greater than 1.`);
 
     if (row.height == costs.length - 1) {
       if (row.upstake != 0)
         fails.push(`Upstake for height ${row.height} must be zero.`);
-    } else if (row.upstake < 1)
+    } else if (row.upstake < minStake)
       fails.push(`Upstake for height ${row.height} must be greater than 1.`);
 
     if (row.height == 0) {
       if (row.questionBounty != 0)
         fails.push(`Question Bounty for height ${row.height} must be zero.`);
-    } else if (row.questionBounty < 1)
+    } else if (row.questionBounty < minStake)
       fails.push(`Question bounty for height ${row.height} must be greater than 1.`);
   });
 
@@ -130,6 +160,7 @@ function createInstance() {
   });
 
   store.newInstance(
+    showSignTransaction,
     selectedLanguage.value,
     params,
     root_question.value,
@@ -137,6 +168,7 @@ function createInstance() {
   ).then(instance => {
     nextTick(() => router.push(linkTo(instance)));
   }).catch(error => {
+    console.error("While submitting new instance:", error);
     isSubmitting.value = false;
   });
 }
@@ -145,6 +177,8 @@ function createInstance() {
 
 <template>
   <div class="bg-gray-100">
+    <WaitWallectConnect v-model="showSignTransaction" />
+
     <div class="max-w-4xl lg:mx-auto sm:mx-6 my-8">
       <h1 class="px-4 sm:px-0 text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
         New SPRIG Instance
@@ -232,10 +266,10 @@ function createInstance() {
                               {{ costs.length - 1 }} (root)</td>
                             <td></td>
                             <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                              <input type="number" min="1" v-model="costs[costs.length - 1].downstake">
+                              <input type="number" :min="minStake" v-model="costs[costs.length - 1].downstake">
                             </td>
                             <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                              <input type="number" min="1" v-model="costs[costs.length - 1].questionBounty">
+                              <input type="number" :min="minStake" v-model="costs[costs.length - 1].questionBounty">
                             </td>
                             <td class="relative">
                               <button @click.prevent="newCostRow(costs.length - 1)"
@@ -250,13 +284,13 @@ function createInstance() {
                               {{ row.height }}
                             </td>
                             <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                              <input type="number" min="1" v-model="row.upstake">
+                              <input type="number" :min="minStake" v-model="row.upstake">
                             </td>
                             <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                              <input type="number" min="1" v-model="row.downstake">
+                              <input type="number" :min="minStake" v-model="row.downstake">
                             </td>
                             <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                              <input type="number" min="1" v-model="row.questionBounty">
+                              <input type="number" :min="minStake" v-model="row.questionBounty">
                             </td>
                             <td
                               class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
@@ -277,7 +311,7 @@ function createInstance() {
                             <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
                               0 (machine)</td>
                             <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                              <input type="number" min="1" v-model="costs[0].upstake" class="w-24">
+                              <input type="number" :min="minStake" v-model="costs[0].upstake" class="w-24">
                             </td>
                             <td></td>
                             <td></td>
@@ -287,7 +321,7 @@ function createInstance() {
 
                         </tbody>
                       </table>
-                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -310,7 +344,8 @@ function createInstance() {
                 Initial proof attempt</h3>
               <p class="mt-1 text-sm text-gray-600">
                 For details on the format, see
-                <router-link to="/docs" target="_blank" class="underline hover:text-purple-700 after:content-['↗']">the documentation</router-link>.
+                <router-link to="/docs" target="_blank" class="underline hover:text-purple-700 after:content-['↗']">the
+                  documentation</router-link>.
               </p>
             </div>
           </div>
@@ -324,8 +359,8 @@ function createInstance() {
                       Root claim
                     </label>
                     <div class="mt-1">
-                      <textarea id="about" name="about" rows="3" v-model="root_question"
-                        autocorrect="false" spellcheck="false"
+                      <textarea id="about" name="about" rows="3" v-model="root_question" autocorrect="false"
+                        spellcheck="false"
                         class="font-mono whitespace-pre shadow-sm focus:ring-indigo-500 focus:border-indigo-500 mt-1 block w-full sm:text-sm border border-gray-300 rounded-sm"
                         placeholder="theorem riemann_hypothesis ..." />
                     </div>
@@ -336,8 +371,8 @@ function createInstance() {
                       Partial proof
                     </label>
                     <div class="mt-1">
-                      <textarea id="about" name="partial_proof" rows="7" v-model="proof_attempt"
-                        autocorrect="false" spellcheck="false"
+                      <textarea id="about" name="partial_proof" rows="7" v-model="proof_attempt" autocorrect="false"
+                        spellcheck="false"
                         class="font-mono whitespace-pre shadow-sm focus:ring-indigo-500 focus:border-indigo-500 mt-1 block w-full sm:text-sm border border-gray-300 rounded-sm"
                         placeholder="theorem riemann_hypothesis ..." />
                     </div>
@@ -354,11 +389,10 @@ function createInstance() {
                       <li v-for="fail in invalidInputs" class="">{{ fail }}</li>
                     </ul>
                   </div>
-                  <Button v-if="!isSubmitting"
-                    type="submit" color="indigo" filled
-                    @click.prevent="createInstance()"
-                    :disabled="invalidInputs.length > 0"
-                    >Publish and lock&nbsp;<Price :amount="costToPublish"/></Button>
+                  <Button v-if="!isSubmitting" type="submit" color="indigo" filled @click.prevent="createInstance()"
+                    :disabled="invalidInputs.length > 0">Publish and lock&nbsp;
+                    <Price :amount="costToPublish" />
+                  </Button>
                   <LoadingIndicator v-else>
                     Submiting instance...
                   </LoadingIndicator>
@@ -374,7 +408,7 @@ function createInstance() {
 
 
 <style>
-  td > input {
-    width: 100% !important;
-  }
+td>input {
+  width: 100% !important;
+}
 </style>

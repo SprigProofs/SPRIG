@@ -5,7 +5,7 @@ description = "A centralised implementation of the SPRIG protocol"
 authors = ["ddorn <diego.dorn@free.fr>"]
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.9"
 uvicorn = "^0.15.0"
 fastapi = "^0.70.0"
 requests = "^2.27.1"

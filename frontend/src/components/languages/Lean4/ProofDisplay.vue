@@ -16,10 +16,9 @@
 
 <script setup lang="ts">
 
-import { Sprig, dedent } from '../../../sprig';
+import { type Sprig, dedent } from '../../../sprig';
 import ChallengePart from '../../medium/ChallengePart.vue';
 import { computed } from '@vue/reactivity';
-import LabeledData from '../../small/LabeledData.vue';
 import { collectPreviousDefs, getBlocks } from './Lean4'
 
 const props = withDefaults(defineProps<{
@@ -33,5 +32,7 @@ const props = withDefaults(defineProps<{
 const attempt = computed(() => props.instance.proofs[props.attemptHash]);
 const blocks = computed(() => getBlocks(dedent(attempt.value.proof)));
 const previousDefs = computed(() => dedent(collectPreviousDefs(props.instance, attempt.value.parent)).trim());
+
+const fullProof = computed(() => collectPreviousDefs(props.instance, attempt.value.parent) + attempt.value.proof);
 
 </script>

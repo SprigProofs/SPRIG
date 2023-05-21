@@ -1,7 +1,13 @@
+data?/
+node_modules
 video/
+video-2/
 __pycache__
 data/
 tmp
 .vscode/
 monthly_report.md
 sprig.pdf
+.reach
+dist
+SPRIG.SECRET

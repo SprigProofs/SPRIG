@@ -37,7 +37,6 @@ function getBlocks(proof: string): Block[] {
             if (end === -1) end = proof.length;
 
             const content = dedent(proof.substring(i, end));
-            console.log(content, proof)
             if (content.length > 0) {
                 blocks.push({
                     start: i,
@@ -121,4 +120,9 @@ function challengeCount(text: string): number {
     return getChallenges(text).length;
 }
 
-export { title, attemptTemplate, challengeCount, getBlocks, getChallenges, extractTitle, collectPreviousDefs };
+function fullText(attempt: ProofAttempt, instance: Sprig): string {
+    return (collectPreviousDefs(instance, attempt.parent, true) + "\n" + attempt.proof).trim();
+}
+
+export { title, attemptTemplate, challengeCount, getBlocks, getChallenges,
+extractTitle, collectPreviousDefs, fullText };

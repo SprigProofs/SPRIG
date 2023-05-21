@@ -4,7 +4,7 @@ import { computed, reactive, ref } from 'vue';
 import _ from 'lodash';
 import dayjs from 'dayjs/esm';
 
-import { Status, decided, Sprig, ProofAttempt, Parameters, Challenge, linkTo, SprigObject } from '../../sprig';
+import { Status, decided, Sprig, ProofAttempt, Parameters, Challenge, linkTo, type SprigObject } from '../../sprig';
 import { store } from '../../store';
 import { StatusTag, LanguageTag } from '../small';
 import SprigNodeList from '../medium/SprigNodeList.vue';
@@ -216,7 +216,7 @@ const results = computed<SprigObject[]>(() => {
     combineWeights(getWeights(getItem(a), getType(a)))
     - combineWeights(getWeights(getItem(b), getType(b)))
   ));
-  console.log(all.map(o => weightDebug(getItem(o), getType(o))));
+  // console.log(all.map(o => weightDebug(getItem(o), getType(o))));
 
   return all;
 });

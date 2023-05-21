@@ -1,15 +1,29 @@
-from importlib.resources import path
-import os
-import shutil
+from time import time_ns
 import pytest
 from fastapi.testclient import TestClient
+import functools
 import json
 
+import api as api_module
 from api import all_instances_filenames, api, load, path_from_hash, save
 from sprig import *
 from tests.test_fixtures import example_tictactoe
 
 client = TestClient(api)
+
+
+def no_blockchain(func):
+
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        saved = api_module.USE_BLOCKCHAIN
+        api_module.USE_BLOCKCHAIN = False
+        try:
+            return func(*args, **kwargs)
+        finally:
+            api_module.USE_BLOCKCHAIN = saved
+
+    return wrapper
 
 
 @pytest.mark.parametrize(
@@ -81,7 +95,9 @@ def test_instance_get(hash: str) -> None:
     assert stored == data
 
 
+@no_blockchain
 def test_post_new_instance() -> None:
+    root_hash = "0" * 64
     creation_data = {
         'params': {
             'root_height': 5,
@@ -108,6 +124,10 @@ def test_post_new_instance() -> None:
             8 -> 9
             9 -> 7
         """,
+        "contract":
+            root_hash,
+        "created_at":
+            now(),
     }
 
     before = set(all_instances_filenames())
@@ -123,16 +143,20 @@ def test_post_new_instance() -> None:
     # We clean up early the file we just created, so that it is deleted even if some test fails
     path.unlink()
 
+    assert data['hash'] == root_hash
     assert data['params'] == creation_data['params']
     assert data['language'] == creation_data['language']
     assert data['root_question'] == creation_data['root_claim']
-    assert data['proofs'][ROOT_HASH]['author'] == creation_data['author']
-    assert data['proofs'][ROOT_HASH]['proof'] == creation_data['proof']
+    assert data['proofs'][root_hash]['author'] == creation_data['author']
+    assert data['proofs'][root_hash]['proof'] == creation_data['proof']
+    assert data['proofs'][root_hash]['contract'] == root_hash
 
 
+@no_blockchain
 def test_challenge_claim_api() -> None:
     DAY = 86_400_000
     with time_mode('real'):
+        hash_ = Hash("F" * 64)
         sprig = Sprig.start(
             'TicTacToe', Parameters(3, 100, DAY, DAY, [1, 1, 0], [0, 1, 1], [0, 1, 1], 1),
             Address("Diego"), "...|XX.|... O plays X wins", """1 -> 6
@@ -142,12 +166,17 @@ def test_challenge_claim_api() -> None:
             7 -> 6
             8 -> 6
             9 -> 6
-            """)
-        save(sprig, '42424')
+            """, hash_)
+        save(sprig)
         try:
-            response = client.post('/challenge/42424/C1', params={'skeptic': 'diego'})
+            response = client.post(f'/challenge/{hash_}/C1',
+                                   params={
+                                       'skeptic': 'diego',
+                                       "created_at": now(),
+                                       "contract": hash_
+                                   })
             print(response.json())
             assert response.status_code == 200
             assert set(response.json()) == {'balance', 'parent', 'challenge'}
         finally:
-            path_from_hash('42424').unlink()
+            path_from_hash(hash_).unlink()
