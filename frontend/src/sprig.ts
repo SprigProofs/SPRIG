@@ -578,7 +578,7 @@ const API_BASES = isLocalhost
     "http://localhost:8603/",
   ]
   : [
-    "https://sprig.therandom.space/api/",
+    "https://sprigproofs.org/api/",
     "https://viazovska.sprig.therandom.space/api/",
     "https://grothendieck.sprig.therandom.space/api/",
   ];

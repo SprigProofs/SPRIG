@@ -48,7 +48,8 @@ else:
     api.add_middleware(
         CORSMiddleware,
         # Not sure if this is precisely what we need, but it seems to work.
-        allow_origin_regex=r"https://(.*\.)?sprig\.therandom\.space",
+        # allow_origin_regex=r"https://(.*\.)?sprig\.therandom\.space",
+        allow_origins=["*"],
         # allow_credentials=True,
         allow_methods=["*"],
         # allow_headers=["*"],

@@ -3,7 +3,7 @@
 www.sprig.ch
 
 A description of the SPRIG protocol can be found here: https://export.arxiv.org/abs/2102.03044v1
-A test version of the website is available at: https://sprig.therandom.space
+A test version of the website is available at: https://sprigproofs.org
 
 This repository contains a semi-centralised version of the SPRIG protocol
 whose purpose is to experiment with the protocol
