@@ -1,16 +1,16 @@
 import re
 import os, subprocess
 
-import docker  # type: ignore
-
 from languages.base import Language
-from typing import Dict, List, NewType, Optional
 
-REGEX = r'(theorem|lemma|example)\s([^\s]*)\s\(.*\)\s:\s(.*)\s:='
+REGEX = r'(theorem|lemma|example) .*:='
 DEV = os.environ.get("DEV", "").lower() in ("true", "1", "yes", "y'")
 DUPLICATE_TOKENS = ['theorem', 'lemma', 'example', ':=']
 OPENING_TAG = '--! SPRIG Claim'
 CLOSING_TAG = '--! Claim end'
+
+if not DEV:
+    import docker
 
 
 class Lean4(Language):
@@ -226,9 +226,11 @@ class Lean4(Language):
         assert 'sorry' not in root_question[attempt_ends[0].end(
         ):], "The root question contains a sorry outside of the challenge markers."
 
-        challenged_thm = re.match(
-            REGEX, root_question[attempt_starts[0].end() + 1:attempt_ends[0].start()].strip())
-        assert challenged_thm is not None, "The root question cannot be parsed."
+        between_markers = root_question[attempt_starts[0].end() + 1:attempt_ends[0].start()]
+        assert between_markers.count(":=") == 1, "The root question should contain exactly one theorem (i.e. one :=) between the challenge markers."
+
+        thm = re.match(REGEX, between_markers)
+        assert thm is not None, f"Could not recognize a theorem between the challenge markers: {between_markers}"
 
         assert self.lean_validate(root_question)
 
