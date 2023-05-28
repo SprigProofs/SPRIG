@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 import re
 import os, subprocess
 import logging
@@ -12,6 +13,13 @@ CLOSING_TAG = '--! Claim end'
 
 if not DEV:
     import docker
+
+
+class ValidationException(AssertionError):
+    """Exception raised when validation fails."""
+
+    def __init__(self, message: str):
+        super().__init__(f"The Lean code was not valid: {message}")
 
 
 class Lean4(Language):
@@ -30,7 +38,7 @@ class Lean4(Language):
             docker_client.images.build(path='.', tag='sprig/lean4')
             print('Build done')
 
-    def lean_validate(self, lean_code: str) -> bool:
+    def lean_validate(self, lean_code: str) -> None:
         """
         Call lean to verify validity of machine proof
         """
@@ -45,14 +53,14 @@ class Lean4(Language):
         f.close()
 
         # Call lean, potentially in a container
-        isValid = False
+        is_valid = False
         if DEV:
             out = subprocess.Popen(['lean', f'{os.getcwd()}/tmp_file{random_id}'],
                                    stdout=subprocess.PIPE,
                                    stderr=subprocess.STDOUT)
             stdout, _ = out.communicate()
 
-            isValid = out.returncode == 0
+            is_valid = out.returncode == 0
             feedback = stdout.decode()
         else:
             feedback = self.docker_client.containers.run(
@@ -65,16 +73,19 @@ class Lean4(Language):
                 },
                 remove=True).decode()
 
-            isValid = int(feedback.strip().split('\n')[-1]) == 0
+            is_valid = int(feedback.strip().split('\n')[-1]) == 0
             feedback = '\n'.join(feedback.strip().split('\n')[:-1])
 
         logging.info(f'Lean validation feedback:\n{feedback}')
 
         # Delete file and return
         os.remove(f'{os.getcwd()}/tmp_file{random_id}')
-        return isValid
 
-    def gather_and_validate(self, root_question: str, branch: list[tuple[str, int]], proof: str) -> bool:
+        if not is_valid:
+            raise ValidationException(feedback)
+
+
+    def gather_and_validate(self, root_question: str, branch: list[tuple[str, int]], proof: str) -> None:
         """
         Gather proof elements and call lean validate
         """
@@ -92,7 +103,8 @@ class Lean4(Language):
 
         # Validate proof with lean
         full_proof = '\n'.join(proof_elements)
-        return self.lean_validate(full_proof)
+
+        self.lean_validate(full_proof)
 
     def check_answer(self, root_question: str, branch: list[tuple[str, int]], proof: str) -> bool:
         """
@@ -146,7 +158,12 @@ class Lean4(Language):
         if 'sorry' in machine_proof:
             return False
 
-        return self.gather_and_validate(root_question, branch, machine_proof)
+        # Sadly we don't provide feedback here... yet!
+        try:
+            self.gather_and_validate(root_question, branch, machine_proof)
+        except ValidationException:
+            return False
+        return True
 
     def validate_attempt(self, root_question: str, branch: list[tuple[str, int]],
                          attempt: str) -> bool:
@@ -207,13 +224,12 @@ class Lean4(Language):
         else:
             assert 'sorry' not in attempt, "A machine level proof should not contain a sorry."
 
-        assert self.gather_and_validate(root_question, branch, attempt), "The proof is not valid Lean code"
+        self.gather_and_validate(root_question, branch, attempt)
 
         return True
 
     def validate_top_level(self, root_question: str) -> bool:
         """Check that an initial claim is valid. Raises AssertionError if not."""
-        #assert lean_validate(root_question), "This is not a valid lean file"
 
         # Get markers
         attempt_starts = list(re.compile(OPENING_TAG).finditer(root_question))
@@ -237,8 +253,7 @@ class Lean4(Language):
         thm = re.match(REGEX, between_markers)
         assert thm is not None, f"Could not recognize a theorem between the challenge markers: {between_markers}"
 
-        assert self.lean_validate(root_question)
-
+        self.lean_validate(root_question)
         return True
 
     def nb_of_challenges(self, proof: str) -> int:
