@@ -62,7 +62,10 @@ function extractTitle(proofAttempt: string, challengeNb: number): string {
 }
 
 function collectPreviousDefs(instance: Sprig, start: string | null, removeChallengeTags: boolean = true): string {
-    if (start === undefined || start === null) return '';
+    if (start === undefined || start === null) {
+        let endOfDefs = instance.rootQuestion.indexOf(CHALENGE_START);
+        return instance.rootQuestion.substring(0, endOfDefs);
+    }
     const challenge = instance.challenges[start];
     const parent = instance.proofs[challenge.parent];
     const challengeNb = parent.challenges.indexOf(challenge.hash);

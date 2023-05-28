@@ -278,17 +278,18 @@ class Sprig {
     // this reason we con't use _.isEqual is that the order
     // of proofs in Challenge.attempts is not specified
     // so we need to sort them before comparing.
-    console.log("comparing", this, other);
+
+    // console.log("comparing", this, other);
     const hash = this.hash === other.hash;
-    console.log("hash", hash);
+    // console.log("hash", hash);
     const language = this.language === other.language;
-    console.log("language", language);
+    // console.log("language", language);
     const params = _.isEqual(this.params, other.params);
-    console.log("params", params);
+    // console.log("params", params);
     const proofs = _.isEqual(this.proofs, other.proofs);
-    console.log("proofs", proofs);
+    // console.log("proofs", proofs);
     const rootQuestion = this.rootQuestion === other.rootQuestion;
-    console.log("rootQuestion", rootQuestion);
+    // console.log("rootQuestion", rootQuestion);
     const challenges = _.isEqual(
       _.mapValues(this.challenges, (c) => ({
         ...c,
@@ -299,9 +300,9 @@ class Sprig {
         attempts: _.sortBy(c.attempts),
       }))
     );
-    console.log("challenges", challenges);
+    // console.log("challenges", challenges);
     const rootHash = this.rootHash === other.rootHash;
-    console.log("rootHash", rootHash);
+    // console.log("rootHash", rootHash);
     return hash && language && params && proofs && rootQuestion && challenges;
   }
 
