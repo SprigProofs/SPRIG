@@ -8,6 +8,7 @@ Environment variables:
 - DEV: set to true if run on localhost (allow cross-origin requests & move the API to / instead of /api).
 """
 
+from io import StringIO
 import os
 from pathlib import Path
 import traceback
@@ -96,7 +97,11 @@ async def unicorn_exception_handler(request: Request, exc: AssertionError) -> JS
         detail = exc.args[0]
     else:
         detail = "Unkown error, please report this."
-        traceback.print_tb(exc.__traceback__)
+        logging.error(exc)
+        file = StringIO()
+        traceback.print_tb(exc.__traceback__, file=file)
+        logging.error(file.getvalue())
+
     return JSONResponse(
         status_code=400,
         content={"detail": detail},
