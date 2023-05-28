@@ -55,6 +55,17 @@ else:
         # allow_headers=["*"],
     )
 
+import logging
+
+# log to a file
+logging.basicConfig(
+    filename=DATA / "api.log",
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s %(message)s",
+)
+
+logging.warning("Starting API...")
+
 
 def all_instances_filenames() -> Iterator[Path]:
     """Yield all the filenames of sprig instances stored on disk."""

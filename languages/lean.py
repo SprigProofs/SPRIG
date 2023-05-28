@@ -1,5 +1,6 @@
 import re
 import os, subprocess
+import logging
 
 from languages.base import Language
 
@@ -34,6 +35,8 @@ class Lean4(Language):
         Call lean to verify validity of machine proof
         """
 
+        logging.info(f'Validating lean code:\n{lean_code}')
+
         random_id = os.urandom(16).hex()
 
         # Write code to file
@@ -65,17 +68,19 @@ class Lean4(Language):
             isValid = int(feedback.strip().split('\n')[-1]) == 0
             feedback = '\n'.join(feedback.strip().split('\n')[:-1])
 
+        logging.info(f'Lean validation feedback:\n{feedback}')
+
         # Delete file and return
         os.remove(f'{os.getcwd()}/tmp_file{random_id}')
-        print(feedback)
         return isValid
 
-    def gather_and_validate(self, branch: list[tuple[str, int]], proof: str) -> bool:
+    def gather_and_validate(self, root_question: str, branch: list[tuple[str, int]], proof: str) -> bool:
         """
         Gather proof elements and call lean validate
         """
 
         # Accumulate content of proof, ignoring challenged elements and what follows them
+        branch.append((root_question, 0))
         proof_elements = []
         for proof_attempt, chal_nb in branch:
             challenge_starts = list(re.compile(OPENING_TAG).finditer(proof_attempt))
@@ -141,7 +146,7 @@ class Lean4(Language):
         if 'sorry' in machine_proof:
             return False
 
-        return self.gather_and_validate(branch, machine_proof)
+        return self.gather_and_validate(root_question, branch, machine_proof)
 
     def validate_attempt(self, root_question: str, branch: list[tuple[str, int]],
                          attempt: str) -> bool:
@@ -202,7 +207,7 @@ class Lean4(Language):
         else:
             assert 'sorry' not in attempt, "A machine level proof should not contain a sorry."
 
-        assert self.gather_and_validate(branch, attempt), "The proof is not valid Lean code"
+        assert self.gather_and_validate(root_question, branch, attempt), "The proof is not valid Lean code"
 
         return True
 

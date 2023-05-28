@@ -866,7 +866,11 @@ SPRIG instance:
     # Updating the state of the tree.
 
     def gather_branch(self, challenge_hash: Hash) -> Branch:
-        """Get the content of the branch above (and including) a challenge."""
+        """Get the content of the branch above (and including) a challenge.
+
+        The branch is a list of (proof, index) tuples, where index is the index of the challenge in the proof.
+        The first element of the list is the challenge itself, the last element is the root question.
+        """
 
         branch: Branch = []
         h: Hash | None = challenge_hash
