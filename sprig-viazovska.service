@@ -1,0 +1,15 @@
+[Unit]
+Description=Sprig Backend 1 (Viazovska)
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/srv/sprig
+Environment=DATA=data1
+ExecStart=/usr/bin/make backend1-prod
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

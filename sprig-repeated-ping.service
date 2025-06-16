@@ -1,0 +1,14 @@
+[Unit]
+Description=Sprig Repeated Ping Service
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/srv/sprig
+ExecStart=/bin/bash /srv/sprig/periodic-ping.sh
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

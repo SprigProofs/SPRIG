@@ -3,30 +3,45 @@
 
 PORT=8600
 BACKEND_PORT=8601
+DEPLOY_HOST=pine
+DEPLOY_PATH=/srv/sprig
 
 backend:
-	DEV=true uv run uvicorn api:api --port $(BACKEND_PORT) --reload --log-level=trace
+	DEV=true uv run uvicorn api:app --port $(BACKEND_PORT) --reload --log-level=trace
 
 frontend:
 	cd frontend && PORT=$(PORT) npm run dev
 
 backend0:
-	DEV=true DATA=data0 uv run uvicorn api:api --port $(BACKEND_PORT) --reload --log-level=trace
+	DEV=true DATA=data0 uv run uvicorn api:app --port $(BACKEND_PORT) --reload --log-level=trace
 backend1:
-	DEV=true DATA=data1 uv run uvicorn api:api --port $$(($(BACKEND_PORT)+1)) --reload --log-level=trace
+	DEV=true DATA=data1 uv run uvicorn api:app --port $$(($(BACKEND_PORT)+1)) --reload --log-level=trace
 backend2:
-	DEV=true DATA=data2 uv run uvicorn api:api --port $$(($(BACKEND_PORT)+2)) --reload --log-level=trace
+	DEV=true DATA=data2 uv run uvicorn api:app --port $$(($(BACKEND_PORT)+2)) --reload --log-level=trace
 backends: backend0 backend1 backend2
 
+
+# I've set DEV=true here because there's an issue building the docker image for lean on pine.
+# So it falls back to the local lean installation (which is not available on pine, but that's fine: it doesn't crash instantly).
+# No one is making claims anyway.
+backend0-prod:
+	DEV=true DATA=data0 uv run uvicorn api:app --port $(BACKEND_PORT)
+backend1-prod:
+	DEV=true DATA=data1 uv run uvicorn api:app --port $$(($(BACKEND_PORT)+1))
+backend2-prod:
+	DEV=true DATA=data2 uv run uvicorn api:app --port $$(($(BACKEND_PORT)+2))
+
+backends-prod: backend0-prod backend1-prod backend2-prod
 
 deploy: deploy-frontend deploy-backend
 
 deploy-frontend:
-	cd frontend && npm run build && scp -r dist sprig.therandom.space:sprig/frontend/
+	cd frontend && npm run build && scp -r dist ${DEPLOY_HOST}:${DEPLOY_PATH}/frontend
 
 deploy-backend:
-	git ls-files | rsync -azP --files-from=- . sprig.therandom.space:sprig
-	ssh sprig.therandom.space systemctl --user restart sprig sprig-viazovska sprig-grothendieck sprig-repeated-ping
+	git ls-files | rsync -azP --files-from=- . ${DEPLOY_HOST}:${DEPLOY_PATH}/
+	scp *.service ${DEPLOY_HOST}:/etc/systemd/system/
+	ssh ${DEPLOY_HOST} 'systemctl daemon-reload && systemctl restart "sprig*" && journalctl -u "sprig*" -f'
 
 deploy-secrets:
 	scp data0/SECRET_SANTA sprig.therandom.space:sprig/data1/

@@ -1,0 +1,15 @@
+[Unit]
+Description=Sprig Backend 0
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/srv/sprig
+Environment=DATA=data0
+ExecStart=/usr/bin/make backend0-prod
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

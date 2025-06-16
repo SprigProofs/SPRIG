@@ -574,9 +574,9 @@ const isLocalhost =
 
 const API_BASES = isLocalhost
   ? [
-    "http://localhost:8601/",
-    "http://localhost:8602/",
-    "http://localhost:8603/",
+    "http://localhost:8601/api/",
+    "http://localhost:8602/api/",
+    "http://localhost:8603/api/",
   ]
   : [
     "https://sprigproofs.org/api/",

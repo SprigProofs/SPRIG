@@ -1,0 +1,15 @@
+[Unit]
+Description=Sprig Backend 2 (Grothendieck)
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/srv/sprig
+Environment=DATA=data2
+ExecStart=/usr/bin/make backend2-prod
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

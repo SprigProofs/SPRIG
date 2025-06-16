@@ -14,9 +14,11 @@ from pathlib import Path
 import traceback
 from typing import Any, Iterator
 from pprint import pprint
+import warnings
 
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, ConfigDict
 
@@ -29,11 +31,24 @@ USE_BLOCKCHAIN = True
 
 DEV = os.environ.get("DEV", "").lower() in ("true", "1", "yes", "y'")
 DATA = Path(os.environ.get("DATA", str(Path(__file__).parent / "data")))
-ROOT_PATH = "/api" if not DEV else ""
-api = FastAPI(root_path=ROOT_PATH)
+DIST_PATH = Path(__file__).parent / "frontend" / "dist"
+
+# Create the main app that will handle routing
+app = FastAPI()
+
+# Create the API app that contains all the API logic
+api = FastAPI()
 
 if not DATA.exists():
     DATA.mkdir(parents=True)
+
+app.mount("/api", api)
+if DIST_PATH.exists():
+    app.mount("/", StaticFiles(directory=str(DIST_PATH), html=True), name="static")
+    print(f"Serving static files from {DIST_PATH}")
+else:
+    warnings.warn("No dist folder found, cannot serve the frontend.")
+
 
 if DEV:
     # This allows cross-origin requests.
@@ -46,6 +61,7 @@ if DEV:
         # allow_headers=["*"],
     )
 else:
+    # In production: serve static files at root, API at /api
     api.add_middleware(
         CORSMiddleware,
         # Not sure if this is precisely what we need, but it seems to work.
