@@ -18,7 +18,7 @@ from pprint import pprint
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 # os.environ["BANK_FILE"] = str((Path(__file__).parent / "data" / "api_bank").absolute())
 
@@ -128,9 +128,7 @@ class SprigData(BaseModel):
     root_question: sprig.Hash
     root_hash: sprig.Hash
 
-    class Config:
-        arbitrary_types_allowed = True
-        orm_mode = True
+    model_config = ConfigDict(arbitrary_types_allowed=True, from_attributes=True)
 
 
 @api.get("/everything", response_model=dict[sprig.Hash, SprigData])
@@ -171,13 +169,13 @@ def add_new_instance(new_instance: SprigInitData) -> dict[str, Any]:  # SprigDat
     The language is the name of the desired language.
     """
     print("Creating new instance...", DATA)
-    pprint(new_instance.dict())
+    pprint(new_instance.model_dump())
 
     with sprig.time_mode('real'):
         if not USE_BLOCKCHAIN:
-            parameters = sprig.Parameters(**new_instance.params.dict())
+            parameters = sprig.Parameters(**new_instance.params.model_dump())
         else:  # We always use the blockchain parameters, except for testing.
-            parameters = sprig.ParametersBlockchain(**new_instance.params.dict())
+            parameters = sprig.ParametersBlockchain(**new_instance.params.model_dump())
 
         instance = sprig.Sprig.start(
             new_instance.language,

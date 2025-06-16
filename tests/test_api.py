@@ -41,7 +41,7 @@ def no_blockchain(func):
 )
 def test_all_get_are_success(path: str) -> None:
     response = client.get(path)
-    assert response.ok
+    assert response.is_success
 
 
 @pytest.mark.skip()
@@ -156,7 +156,7 @@ def test_post_new_instance() -> None:
 def test_challenge_claim_api() -> None:
     DAY = 86_400_000
     with time_mode('real'):
-        hash_ = Hash("F" * 64)
+        hash_ = Hash("12345")
         sprig = Sprig.start(
             'TicTacToe', Parameters(3, 100, DAY, DAY, [1, 1, 0], [0, 1, 1], [0, 1, 1], 1),
             Address("Diego"), "...|XX.|... O plays X wins", """1 -> 6
